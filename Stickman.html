@@ -103,7 +103,7 @@
     </div>
 
     <div class="instructions">
-        [WASD] Move &nbsp;|&nbsp; [SPACEBAR] Punch
+        [WASD] Move
     </div>
 
     <script>
@@ -119,9 +119,7 @@
             y: 0,
             speed: 4.5,
             facing: 1, // 1 = Right, -1 = Left
-            walkFrame: 0,
-            punchTimer: 0,
-            punchDuration: 12 // duration in frames that the punch remains extended
+            walkFrame: 0
         };
 
         function resizeCanvas() {
@@ -139,8 +137,8 @@
 
         // CONTROLS HANDLERS
         window.addEventListener('keydown', (e) => {
-            if (['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
-                e.preventDefault(); // Prevents page scrolling on space bar/arrow keys
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+                e.preventDefault();
             }
             keys[e.code] = true;
         });
@@ -153,14 +151,7 @@
             player.x = canvas.width / 2;
             player.y = canvas.height / 2;
             player.facing = 1;
-            player.punchTimer = 0;
             player.walkFrame = 0;
-        }
-
-        function triggerPunch() {
-            if (player.punchTimer === 0) {
-                player.punchTimer = player.punchDuration;
-            }
         }
 
         function updatePhysics() {
@@ -184,9 +175,9 @@
             player.y += dy * player.speed;
 
             // Keep stickman inside canvas boundaries
-            const margin = 25;
+            const margin = 15;
             player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
-            player.y = Math.max(margin + 30, Math.min(canvas.height - margin - 20, player.y));
+            player.y = Math.max(margin + 15, Math.min(canvas.height - margin - 10, player.y));
 
             // Walk animation cycle updates
             if (dx !== 0 || dy !== 0) {
@@ -194,30 +185,22 @@
             } else {
                 player.walkFrame = 0;
             }
-
-            // Punch Trigger
-            if (keys['Space']) {
-                triggerPunch();
-            }
-
-            if (player.punchTimer > 0) {
-                player.punchTimer--;
-            }
         }
 
-        function drawStickman(x, y, facing, walkFrame, punchTimer) {
+        function drawStickman(x, y, facing, walkFrame) {
             ctx.strokeStyle = '#ffffff';
             ctx.fillStyle = '#ffffff';
-            ctx.lineWidth = 2.5;
+            ctx.lineWidth = 1.8;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
 
-            const headRadius = 10;
-            const bodyLength = 30;
-            const legLength = 22;
+            // Halved character dimensions
+            const headRadius = 5;
+            const bodyLength = 15;
+            const legLength = 11;
             const neckY = y - bodyLength;
             const headY = neckY - headRadius;
-            const shoulderY = neckY + 8;
+            const shoulderY = neckY + 4;
 
             // 1. Head
             ctx.beginPath();
@@ -226,7 +209,7 @@
 
             // Eye direction indicator
             ctx.beginPath();
-            ctx.arc(x + facing * 4, headY - 1, 1.5, 0, Math.PI * 2);
+            ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
             ctx.fill();
 
             // 2. Torso
@@ -236,7 +219,7 @@
             ctx.stroke();
 
             // 3. Legs
-            const legSwing = Math.sin(walkFrame) * 12;
+            const legSwing = Math.sin(walkFrame) * 6;
 
             // Left / Right Legs
             ctx.beginPath();
@@ -250,33 +233,17 @@
             ctx.stroke();
 
             // 4. Back Arm
-            const armSwing = Math.sin(walkFrame + Math.PI) * 8;
+            const armSwing = Math.sin(walkFrame + Math.PI) * 4;
             ctx.beginPath();
             ctx.moveTo(x, shoulderY);
-            ctx.lineTo(x - facing * 8 - armSwing, shoulderY + 12);
+            ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
             ctx.stroke();
 
-            // 5. Front Arm (Punch / Walking Pose)
+            // 5. Front Arm
             ctx.beginPath();
             ctx.moveTo(x, shoulderY);
-
-            if (punchTimer > 0) {
-                // Extended Punch
-                const fistX = x + facing * 34;
-                const fistY = shoulderY - 2;
-
-                ctx.lineTo(fistX, fistY);
-                ctx.stroke();
-
-                // Fist Node
-                ctx.beginPath();
-                ctx.arc(fistX, fistY, 3.5, 0, Math.PI * 2);
-                ctx.fill();
-            } else {
-                // Idle / Walking arm motion
-                ctx.lineTo(x + facing * 8 + armSwing, shoulderY + 12);
-                ctx.stroke();
-            }
+            ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
+            ctx.stroke();
         }
 
         function draw() {
@@ -285,7 +252,7 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Draw Stickman
-            drawStickman(player.x, player.y, player.facing, player.walkFrame, player.punchTimer);
+            drawStickman(player.x, player.y, player.facing, player.walkFrame);
         }
 
         function animate() {
