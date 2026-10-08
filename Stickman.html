@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman Starter Canvas</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            overflow: hidden;
+            padding: 16px;
+        }
+
+        /* Top Header Bar */
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1100px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ffffff;
+        }
+
+        h1 {
+            font-size: 18px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            padding: 6px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .btn-reset:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        /* Main Canvas Container */
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 1100px;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #000000;
+            border: 1px solid #ffffff;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .instructions {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #888888;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div id="header">
+        <h1>Stickman Engine</h1>
+        <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvas-wrapper">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+    <div class="instructions">
+        [WASD] Move &nbsp;|&nbsp; [SPACEBAR] Punch
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // KEYBOARD INPUT STATE
+        const keys = {};
+
+        // STICKMAN PLAYER STATE
+        const player = {
+            x: 0,
+            y: 0,
+            speed: 4.5,
+            facing: 1, // 1 = Right, -1 = Left
+            walkFrame: 0,
+            punchTimer: 0,
+            punchDuration: 12 // duration in frames that the punch remains extended
+        };
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            
+            // Set initial position to exact center on first load
+            if (player.x === 0 && player.y === 0) {
+                resetSimulation();
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // CONTROLS HANDLERS
+        window.addEventListener('keydown', (e) => {
+            if (['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+                e.preventDefault(); // Prevents page scrolling on space bar/arrow keys
+            }
+            keys[e.code] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        function resetSimulation() {
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            player.facing = 1;
+            player.punchTimer = 0;
+            player.walkFrame = 0;
+        }
+
+        function triggerPunch() {
+            if (player.punchTimer === 0) {
+                player.punchTimer = player.punchDuration;
+            }
+        }
+
+        function updatePhysics() {
+            // Movement Direction Calculation
+            let dx = 0;
+            let dy = 0;
+
+            if (keys['KeyW'] || keys['Keyw']) dy -= 1;
+            if (keys['KeyS'] || keys['Keys']) dy += 1;
+            if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
+            if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+
+            // Normalize diagonal movement vector speed
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.7071;
+                dy *= 0.7071;
+            }
+
+            // Update stickman position
+            player.x += dx * player.speed;
+            player.y += dy * player.speed;
+
+            // Keep stickman inside canvas boundaries
+            const margin = 25;
+            player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
+            player.y = Math.max(margin + 30, Math.min(canvas.height - margin - 20, player.y));
+
+            // Walk animation cycle updates
+            if (dx !== 0 || dy !== 0) {
+                player.walkFrame += 0.25;
+            } else {
+                player.walkFrame = 0;
+            }
+
+            // Punch Trigger
+            if (keys['Space']) {
+                triggerPunch();
+            }
+
+            if (player.punchTimer > 0) {
+                player.punchTimer--;
+            }
+        }
+
+        function drawStickman(x, y, facing, walkFrame, punchTimer) {
+            ctx.strokeStyle = '#ffffff';
+            ctx.fillStyle = '#ffffff';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const headRadius = 10;
+            const bodyLength = 30;
+            const legLength = 22;
+            const neckY = y - bodyLength;
+            const headY = neckY - headRadius;
+            const shoulderY = neckY + 8;
+
+            // 1. Head
+            ctx.beginPath();
+            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Eye direction indicator
+            ctx.beginPath();
+            ctx.arc(x + facing * 4, headY - 1, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Torso
+            ctx.beginPath();
+            ctx.moveTo(x, neckY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            // 3. Legs
+            const legSwing = Math.sin(walkFrame) * 12;
+
+            // Left / Right Legs
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - legSwing, y + legLength);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + legSwing, y + legLength);
+            ctx.stroke();
+
+            // 4. Back Arm
+            const armSwing = Math.sin(walkFrame + Math.PI) * 8;
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(x - facing * 8 - armSwing, shoulderY + 12);
+            ctx.stroke();
+
+            // 5. Front Arm (Punch / Walking Pose)
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+
+            if (punchTimer > 0) {
+                // Extended Punch
+                const fistX = x + facing * 34;
+                const fistY = shoulderY - 2;
+
+                ctx.lineTo(fistX, fistY);
+                ctx.stroke();
+
+                // Fist Node
+                ctx.beginPath();
+                ctx.arc(fistX, fistY, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                // Idle / Walking arm motion
+                ctx.lineTo(x + facing * 8 + armSwing, shoulderY + 12);
+                ctx.stroke();
+            }
+        }
+
+        function draw() {
+            // Clear canvas background
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Stickman
+            drawStickman(player.x, player.y, player.facing, player.walkFrame, player.punchTimer);
+        }
+
+        function animate() {
+            updatePhysics();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            animate();
+        };
+    </script>
+</body>
+</html>
