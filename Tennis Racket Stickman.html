@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman Adventure</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            overflow: hidden;
+            padding: 16px;
+        }
+
+        /* Top Header Bar */
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1100px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ffffff;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            font-weight: bold;
+            align-items: center;
+        }
+
+        .hearts {
+            color: #ff4d4d;
+            letter-spacing: 2px;
+        }
+
+        .inventory {
+            display: flex;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .item-badge {
+            padding: 2px 8px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #888;
+        }
+
+        .item-badge.active {
+            border-color: #00ffcc;
+            color: #00ffcc;
+            text-shadow: 0 0 5px #00ffcc;
+        }
+
+        .item-badge.golden {
+            border-color: #ffd700;
+            color: #ffd700;
+            text-shadow: 0 0 8px #ffd700;
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            padding: 6px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .btn-reset:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        /* Main Canvas Container */
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 1100px;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #050505;
+            border: 1px solid #ffffff;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .instructions {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #aaa;
+            text-align: center;
+        }
+
+        /* Overlay Messages */
+        #game-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+            z-index: 10;
+            text-align: center;
+        }
+
+        #game-overlay h2 {
+            font-size: 32px;
+            margin-bottom: 12px;
+            letter-spacing: 2px;
+        }
+
+        #game-overlay p {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #ccc;
+        }
+
+        #game-overlay button {
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 10px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div id="header">
+        <div class="stats-bar">
+            <span>LEVEL <span id="level-display">1</span></span>
+            <span class="hearts" id="hearts-display">♥♥♥♥♥♥♥♥♥♥</span>
+            <div class="inventory">
+                <span id="badge-key" class="item-badge">KEY</span>
+                <span id="badge-shield" class="item-badge">SHIELD</span>
+                <span id="badge-racket" class="item-badge">RACKET</span>
+            </div>
+        </div>
+        <button class="btn-reset" onclick="resetGameToLevel1()">Reset Game</button>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvas-wrapper">
+        <canvas id="simCanvas"></canvas>
+        <div id="game-overlay">
+            <h2 id="overlay-title">GAME OVER</h2>
+            <p id="overlay-msg">You lost all your hearts!</p>
+            <button onclick="dismissOverlay()">Play Again</button>
+        </div>
+    </div>
+
+    <div class="instructions">
+        [WASD / Arrow Keys] Move &nbsp;|&nbsp; [SPACE] Attack / Swipe Racket
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // GAME STATE
+        let level = 1;
+        let hearts = 10;
+        let invulnerableFrames = 0;
+        let gameEnded = false;
+        let beatGame = false;
+
+        // UNLOCKS & INVENTORY
+        let hasKey = false;
+        let hasShield = false;
+        let hasRacket = false;
+        let hasGoldenEquipment = false;
+
+        // KEYBOARD INPUT STATE
+        const keys = {};
+
+        // PLAYER STATE
+        const player = {
+            x: 0,
+            y: 0,
+            speed: 4.2,
+            facing: 1, // 1 = Right, -1 = Left
+            walkFrame: 0,
+            isAttacking: false,
+            attackTimer: 0,
+            attackDuration: 12 // frames
+        };
+
+        // WORLD OBJECTS
+        let walls = [];
+        let chests = [];
+        let exitDoor = null;
+        let slimes = [];
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            
+            if (player.x === 0 && player.y === 0) {
+                initLevel(level);
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // CONTROLS HANDLERS
+        window.addEventListener('keydown', (e) => {
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+                e.preventDefault();
+            }
+            keys[e.code] = true;
+
+            if (e.code === 'Space' && !player.isAttacking && (hasRacket || hasGoldenEquipment)) {
+                player.isAttacking = true;
+                player.attackTimer = player.attackDuration;
+                performRacketSwipe();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        // UPDATE HUD
+        function updateHUD() {
+            document.getElementById('level-display').innerText = level;
+            
+            // Render Hearts
+            let heartsStr = '';
+            for (let i = 0; i < 10; i++) {
+                heartsStr += (i < hearts) ? '♥' : '♡';
+            }
+            document.getElementById('hearts-display').innerText = heartsStr;
+
+            // Badges
+            const kBadge = document.getElementById('badge-key');
+            const sBadge = document.getElementById('badge-shield');
+            const rBadge = document.getElementById('badge-racket');
+
+            kBadge.className = 'item-badge' + (hasKey ? ' active' : '');
+            
+            if (hasGoldenEquipment) {
+                sBadge.className = 'item-badge golden';
+                sBadge.innerText = 'GOLD SHIELD';
+                rBadge.className = 'item-badge golden';
+                rBadge.innerText = 'GOLD RACKET';
+            } else {
+                sBadge.className = 'item-badge' + (hasShield ? ' active' : '');
+                sBadge.innerText = 'SHIELD';
+                rBadge.className = 'item-badge' + (hasRacket ? ' active' : '');
+                rBadge.innerText = 'RACKET';
+            }
+        }
+
+        // GENERATE RANDOM LEVEL
+        function initLevel(lvl) {
+            hasKey = false;
+            hasShield = hasGoldenEquipment; // keep golden shield if unlocked
+            hasRacket = hasGoldenEquipment; // keep golden racket if unlocked
+            exitDoor = null;
+
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            player.facing = 1;
+            player.walkFrame = 0;
+
+            // 1. Generate Walls
+            walls = [];
+            const numWalls = 6 + Math.floor(Math.random() * 4);
+            const centerMargin = 100; // Keep spawn area clean
+
+            for (let i = 0; i < numWalls; i++) {
+                let w = 80 + Math.random() * 120;
+                let h = 20 + Math.random() * 80;
+                if (Math.random() > 0.5) {
+                    let temp = w; w = h; h = temp; // Vertical walls
+                }
+                let x = Math.random() * (canvas.width - w - 40) + 20;
+                let y = Math.random() * (canvas.height - h - 40) + 20;
+
+                // Avoid player spawn center
+                if (Math.abs((x + w/2) - canvas.width/2) < centerMargin &&
+                    Math.abs((y + h/2) - canvas.height/2) < centerMargin) {
+                    continue;
+                }
+
+                walls.push({ x, y, width: w, height: h });
+            }
+
+            // 2. Spawn 3 Treasure Chests (Key, Shield, Racket)
+            chests = [];
+            const chestTypes = ['key', 'shield', 'racket'];
+            chestTypes.forEach(type => {
+                let chestX, chestY, valid = false;
+                while (!valid) {
+                    chestX = 40 + Math.random() * (canvas.width - 80);
+                    chestY = 40 + Math.random() * (canvas.height - 80);
+                    valid = !checkWallCollision(chestX - 15, chestY - 15, 30, 30) &&
+                            Math.hypot(chestX - canvas.width/2, chestY - canvas.height/2) > 100;
+                }
+                chests.push({ x: chestX, y: chestY, type: type, opened: false });
+            });
+
+            // 3. Spawn Slimes based on level logic
+            slimes = [];
+            const totalCount = 2 + (lvl - 1) * 2;
+
+            if (lvl === 10) {
+                // Level 10: Boss Slime + remaining Mega Slimes
+                slimes.push(createSlime('boss'));
+                for (let i = 0; i < totalCount - 1; i++) {
+                    slimes.push(createSlime('mega'));
+                }
+            } else if (lvl >= 6) {
+                // Levels 6-9: Mega Slimes default
+                for (let i = 0; i < totalCount; i++) {
+                    slimes.push(createSlime('mega'));
+                }
+            } else if (lvl >= 3) {
+                // Levels 3-5: Big Slimes default
+                for (let i = 0; i < totalCount; i++) {
+                    slimes.push(createSlime('big'));
+                }
+            } else {
+                // Levels 1-2: Regular Slimes
+                for (let i = 0; i < totalCount; i++) {
+                    slimes.push(createSlime('regular'));
+                }
+            }
+
+            updateHUD();
+        }
+
+        function createSlime(type, spawnX, spawnY) {
+            let radius = 12;
+            let speed = 1.8;
+            let color = '#33ff33';
+
+            if (type === 'big') {
+                radius = 20;
+                speed = 1.4;
+                color = '#ff9900';
+            } else if (type === 'mega') {
+                radius = 30;
+                speed = 1.1;
+                color = '#ff0055';
+            } else if (type === 'boss') {
+                radius = 45;
+                speed = 0.8;
+                color = '#aa00ff';
+            }
+
+            // Random edge spawn if position not specified
+            if (spawnX === undefined || spawnY === undefined) {
+                let valid = false;
+                while (!valid) {
+                    spawnX = Math.random() * (canvas.width - 60) + 30;
+                    spawnY = Math.random() * (canvas.height - 60) + 30;
+                    if (!checkWallCollision(spawnX - radius, spawnY - radius, radius*2, radius*2) &&
+                        Math.hypot(spawnX - player.x, spawnY - player.y) > 180) {
+                        valid = true;
+                    }
+                }
+            }
+
+            return {
+                x: spawnX,
+                y: spawnY,
+                radius: radius,
+                speed: speed,
+                type: type,
+                color: color,
+                vx: 0,
+                vy: 0
+            };
+        }
+
+        function checkWallCollision(x, y, w, h) {
+            for (let wall of walls) {
+                if (x < wall.x + wall.width &&
+                    x + w > wall.x &&
+                    y < wall.y + wall.height &&
+                    y + h > wall.y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function checkPointWallCollision(px, py, radius = 0) {
+            for (let wall of walls) {
+                if (px + radius > wall.x &&
+                    px - radius < wall.x + wall.width &&
+                    py + radius > wall.y &&
+                    py - radius < wall.y + wall.height) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function spawnExitDoor() {
+            let valid = false;
+            let doorX, doorY;
+            while (!valid) {
+                doorX = 50 + Math.random() * (canvas.width - 100);
+                doorY = 50 + Math.random() * (canvas.height - 100);
+                if (!checkWallCollision(doorX - 20, doorY - 30, 40, 60)) {
+                    valid = true;
+                }
+            }
+            exitDoor = { x: doorX, y: doorY, width: 34, height: 50 };
+        }
+
+        function resetGameToLevel1() {
+            level = 1;
+            hearts = 10;
+            hasGoldenEquipment = false;
+            gameEnded = false;
+            document.getElementById('game-overlay').style.display = 'none';
+            initLevel(1);
+        }
+
+        function dismissOverlay() {
+            document.getElementById('game-overlay').style.display = 'none';
+            resetGameToLevel1();
+        }
+
+        function gameOver() {
+            gameEnded = true;
+            document.getElementById('overlay-title').innerText = "GAME OVER";
+            document.getElementById('overlay-title').style.color = "#ff4d4d";
+            document.getElementById('overlay-msg').innerText = "You ran out of hearts! Returning to Level 1.";
+            document.getElementById('game-overlay').style.display = 'flex';
+        }
+
+        function gameVictory() {
+            gameEnded = true;
+            hasGoldenEquipment = true;
+            document.getElementById('overlay-title').innerText = "YOU BEAT THE GAME!";
+            document.getElementById('overlay-title').style.color = "#ffd700";
+            document.getElementById('overlay-msg').innerText = "Congratulations! Unlocked Golden Tennis Racket & Shield!";
+            document.getElementById('game-overlay').style.display = 'flex';
+            updateHUD();
+        }
+
+        // SWIPE ATTACK LOGIC
+        function performRacketSwipe() {
+            const attackRange = 55;
+            const attackAngle = player.facing === 1 ? 0 : Math.PI;
+
+            let newSlimes = [];
+            let slimesToRemove = new Set();
+
+            slimes.forEach((slime, index) => {
+                const dist = Math.hypot(slime.x - player.x, slime.y - player.y);
+                const angle = Math.atan2(slime.y - player.y, slime.x - player.x);
+                
+                // Check if slime is within arc range in front of stickman
+                let angleDiff = Math.abs(angle - attackAngle);
+                if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+
+                if (dist < attackRange + slime.radius && angleDiff < Math.PI / 1.8) {
+                    slimesToRemove.add(index);
+
+                    // Splitting logic
+                    if (slime.type === 'boss') {
+                        // Boss -> 3 Mega Slimes
+                        for (let k = 0; k < 3; k++) {
+                            let angleOffset = (k - 1) * 0.5;
+                            newSlimes.push(createSlime('mega', slime.x + Math.cos(angleOffset)*20, slime.y + Math.sin(angleOffset)*20));
+                        }
+                    } else if (slime.type === 'mega') {
+                        // Mega -> 2 Big Slimes
+                        for (let k = 0; k < 2; k++) {
+                            let angleOffset = (k === 0 ? -0.4 : 0.4);
+                            newSlimes.push(createSlime('big', slime.x + Math.cos(angleOffset)*15, slime.y + Math.sin(angleOffset)*15));
+                        }
+                    } else if (slime.type === 'big') {
+                        // Big -> 3 Regular Slimes
+                        for (let k = 0; k < 3; k++) {
+                            let angleOffset = (k - 1) * 0.4;
+                            newSlimes.push(createSlime('regular', slime.x + Math.cos(angleOffset)*12, slime.y + Math.sin(angleOffset)*12));
+                        }
+                    }
+                    // Regular slimes are just removed!
+                }
+            });
+
+            // Filter out defeated slimes and add new split slimes
+            slimes = slimes.filter((_, idx) => !slimesToRemove.has(idx)).concat(newSlimes);
+        }
+
+        // UPDATE GAME PHYSICS & LOGIC
+        function updatePhysics() {
+            if (gameEnded) return;
+
+            // Attack timer
+            if (player.isAttacking) {
+                player.attackTimer--;
+                if (player.attackTimer <= 0) player.isAttacking = false;
+            }
+
+            if (invulnerableFrames > 0) invulnerableFrames--;
+
+            // Player Movement
+            let dx = 0;
+            let dy = 0;
+
+            if (keys['KeyW'] || keys['Keyw'] || keys['ArrowUp']) dy -= 1;
+            if (keys['KeyS'] || keys['Keys'] || keys['ArrowDown']) dy += 1;
+            if (keys['KeyA'] || keys['Keya'] || keys['ArrowLeft']) { dx -= 1; player.facing = -1; }
+            if (keys['KeyD'] || keys['Keyd'] || keys['ArrowRight']) { dx += 1; player.facing = 1; }
+
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.7071;
+                dy *= 0.7071;
+            }
+
+            const nextX = player.x + dx * player.speed;
+            const nextY = player.y + dy * player.speed;
+
+            // Player Wall Collision -> Teleport back to center if hit
+            if (checkPointWallCollision(nextX, nextY, 10)) {
+                player.x = canvas.width / 2;
+                player.y = canvas.height / 2;
+            } else {
+                player.x = nextX;
+                player.y = nextY;
+            }
+
+            // Boundary limits
+            const margin = 15;
+            player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
+            player.y = Math.max(margin + 15, Math.min(canvas.height - margin - 10, player.y));
+
+            // Walk Frame Cycle
+            if (dx !== 0 || dy !== 0) {
+                player.walkFrame += 0.25;
+            } else {
+                player.walkFrame = 0;
+            }
+
+            // Chest Interactions
+            chests.forEach(chest => {
+                if (!chest.opened && Math.hypot(player.x - chest.x, player.y - chest.y) < 25) {
+                    chest.opened = true;
+                    if (chest.type === 'key') {
+                        hasKey = true;
+                        spawnExitDoor();
+                    } else if (chest.type === 'shield') {
+                        hasShield = true;
+                    } else if (chest.type === 'racket') {
+                        hasRacket = true;
+                    }
+                    updateHUD();
+                }
+            });
+
+            // Slimes AI Movement & Wall Turning
+            slimes.forEach(slime => {
+                // Vector towards player
+                let toPlayerX = player.x - slime.x;
+                let toPlayerY = player.y - slime.y;
+                let dist = Math.hypot(toPlayerX, toPlayerY);
+
+                if (dist > 0) {
+                    let dirX = toPlayerX / dist;
+                    let dirY = toPlayerY / dist;
+
+                    let stepX = dirX * slime.speed;
+                    let stepY = dirY * slime.speed;
+
+                    // Test wall collision along ideal path
+                    if (checkPointWallCollision(slime.x + stepX, slime.y + stepY, slime.radius)) {
+                        // Turn 90 degrees (+90 or -90 deg depending on which stays closer to player)
+                        let rot1X = -dirY;
+                        let rot1Y = dirX;
+                        let rot2X = dirY;
+                        let rot2Y = -dirX;
+
+                        // Choose turn direction that keeps moving towards player or clear of wall
+                        let test1X = slime.x + rot1X * slime.speed;
+                        let test1Y = slime.y + rot1Y * slime.speed;
+
+                        if (!checkPointWallCollision(test1X, test1Y, slime.radius)) {
+                            slime.x += rot1X * slime.speed;
+                            slime.y += rot1Y * slime.speed;
+                        } else {
+                            slime.x += rot2X * slime.speed;
+                            slime.y += rot2Y * slime.speed;
+                        }
+                    } else {
+                        slime.x += stepX;
+                        slime.y += stepY;
+                    }
+                }
+
+                // Check Damage Collision with Stickman
+                if (invulnerableFrames === 0 && Math.hypot(player.x - slime.x, player.y - slime.y) < slime.radius + 10) {
+                    // Shield reduces/blocks damage effect visually or absorbs hit
+                    hearts--;
+                    invulnerableFrames = 45; // ~0.75 seconds immunity
+                    updateHUD();
+
+                    if (hearts <= 0) {
+                        gameOver();
+                    }
+                }
+            });
+
+            // Exit Door Interaction
+            if (exitDoor && hasKey && slimes.length === 0) {
+                if (Math.hypot(player.x - exitDoor.x, player.y - exitDoor.y) < 30) {
+                    if (level === 10) {
+                        gameVictory();
+                    } else {
+                        level++;
+                        initLevel(level);
+                    }
+                }
+            }
+        }
+
+        // RENDERING FUNCTIONS
+        function drawWalls() {
+            ctx.fillStyle = '#222222';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+
+            walls.forEach(w => {
+                ctx.fillRect(w.x, w.y, w.width, w.height);
+                ctx.strokeRect(w.x, w.y, w.width, w.height);
+            });
+        }
+
+        function drawChests() {
+            chests.forEach(chest => {
+                ctx.save();
+                ctx.translate(chest.x, chest.y);
+
+                if (chest.opened) {
+                    ctx.strokeStyle = '#666666';
+                    ctx.fillStyle = '#222222';
+                    ctx.strokeRect(-12, -8, 24, 16);
+                    ctx.fillRect(-12, -8, 24, 16);
+                } else {
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.fillStyle = '#8b5a2b';
+                    ctx.lineWidth = 2;
+                    ctx.fillRect(-14, -10, 28, 20);
+                    ctx.strokeRect(-14, -10, 28, 20);
+
+                    // Lock indicator
+                    ctx.fillStyle = '#ffd700';
+                    ctx.fillRect(-3, -2, 6, 6);
+                }
+                ctx.restore();
+            });
+        }
+
+        function drawExitDoor() {
+            if (!exitDoor) return;
+
+            ctx.save();
+            ctx.translate(exitDoor.x, exitDoor.y);
+
+            const isOpen = hasKey && slimes.length === 0;
+
+            ctx.strokeStyle = isOpen ? '#00ffcc' : '#555555';
+            ctx.fillStyle = isOpen ? '#003322' : '#111111';
+            ctx.lineWidth = 3;
+
+            // Door Frame
+            ctx.fillRect(-17, -25, 34, 50);
+            ctx.strokeRect(-17, -25, 34, 50);
+
+            // Door Knob
+            ctx.fillStyle = isOpen ? '#00ffcc' : '#888888';
+            ctx.beginPath();
+            ctx.arc(8, 2, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Status label above door
+            ctx.fillStyle = isOpen ? '#00ffcc' : '#888888';
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(isOpen ? 'EXIT OPEN' : 'LOCKED', 0, -32);
+
+            ctx.restore();
+        }
+
+        function drawSlimes() {
+            slimes.forEach(slime => {
+                ctx.save();
+                ctx.translate(slime.x, slime.y);
+
+                ctx.fillStyle = slime.color;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+
+                // Slime Body (semi-circle dome)
+                ctx.beginPath();
+                ctx.arc(0, 0, slime.radius, Math.PI, 0, false);
+                ctx.quadraticCurveTo(slime.radius, slime.radius, 0, slime.radius);
+                ctx.quadraticCurveTo(-slime.radius, slime.radius, -slime.radius, 0);
+                ctx.fill();
+                ctx.stroke();
+
+                // Eyes
+                ctx.fillStyle = '#ffffff';
+                let eyeOffset = slime.radius * 0.35;
+                ctx.beginPath();
+                ctx.arc(-eyeOffset, -slime.radius * 0.2, slime.radius * 0.22, 0, Math.PI * 2);
+                ctx.arc(eyeOffset, -slime.radius * 0.2, slime.radius * 0.22, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(-eyeOffset + 1, -slime.radius * 0.2, slime.radius * 0.1, 0, Math.PI * 2);
+                ctx.arc(eyeOffset + 1, -slime.radius * 0.2, slime.radius * 0.1, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            });
+        }
+
+        function drawStickman(x, y, facing, walkFrame) {
+            ctx.save();
+
+            // Flashing effect when hit
+            if (invulnerableFrames > 0 && Math.floor(invulnerableFrames / 4) % 2 === 0) {
+                ctx.globalAlpha = 0.3;
+            }
+
+            const strokeColor = hasGoldenEquipment ? '#ffd700' : '#ffffff';
+            ctx.strokeStyle = strokeColor;
+            ctx.fillStyle = strokeColor;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const headRadius = 6;
+            const bodyLength = 16;
+            const legLength = 12;
+            const neckY = y - bodyLength;
+            const headY = neckY - headRadius;
+            const shoulderY = neckY + 4;
+
+            // 1. Shield Drawing
+            if (hasShield || hasGoldenEquipment) {
+                ctx.save();
+                ctx.strokeStyle = hasGoldenEquipment ? '#ffd700' : '#00ffcc';
+                ctx.fillStyle = hasGoldenEquipment ? 'rgba(255, 215, 0, 0.2)' : 'rgba(0, 255, 204, 0.2)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x - facing * 8, neckY + 4, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // 2. Head
+            ctx.beginPath();
+            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Eye direction indicator
+            ctx.beginPath();
+            ctx.arc(x + facing * 2.5, headY - 0.5, 1, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 3. Torso
+            ctx.beginPath();
+            ctx.moveTo(x, neckY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            // 4. Legs
+            const legSwing = Math.sin(walkFrame) * 6;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - legSwing, y + legLength);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + legSwing, y + legLength);
+            ctx.stroke();
+
+            // 5. Back Arm
+            const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+            ctx.stroke();
+
+            // 6. Front Arm & Tennis Racket
+            const handX = x + facing * 8 + armSwing;
+            const handY = shoulderY + 4;
+
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(handX, handY);
+            ctx.stroke();
+
+            if (hasRacket || hasGoldenEquipment) {
+                ctx.save();
+                ctx.strokeStyle = hasGoldenEquipment ? '#ffd700' : '#00ffcc';
+                ctx.lineWidth = 2;
+
+                // Racket handle
+                let racketAngle = player.isAttacking ? (facing * 0.8) : (facing * 0.2);
+                let handleEndX = handX + Math.cos(racketAngle) * 12 * facing;
+                let handleEndY = handY + Math.sin(racketAngle) * 12;
+
+                ctx.beginPath();
+                ctx.moveTo(handX, handY);
+                ctx.lineTo(handleEndX, handleEndY);
+                ctx.stroke();
+
+                // Racket Head
+                ctx.beginPath();
+                ctx.ellipse(handleEndX + facing * 8, handleEndY, 8, 5, racketAngle, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Swing Effect
+                if (player.isAttacking) {
+                    ctx.strokeStyle = hasGoldenEquipment ? 'rgba(255, 215, 0, 0.6)' : 'rgba(0, 255, 204, 0.6)';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.arc(x, y - 8, 45, facing === 1 ? -Math.PI/3 : Math.PI*2/3, facing === 1 ? Math.PI/3 : Math.PI*4/3);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Render entities
+            drawWalls();
+            drawExitDoor();
+            drawChests();
+            drawSlimes();
+            drawStickman(player.x, player.y, player.facing, player.walkFrame);
+        }
+
+        function animate() {
+            updatePhysics();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            animate();
+        };
+    </script>
+</body>
+</html>
