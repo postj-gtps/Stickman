@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman vs Slime Maze</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            overflow: hidden;
+            padding: 16px;
+        }
+
+        /* Top Header Bar */
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1100px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ffffff;
+        }
+
+        h1 {
+            font-size: 18px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .hud-info {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .hud-level {
+            color: #00ff66;
+        }
+
+        .hud-status {
+            color: #ffcc00;
+        }
+
+        .hud-status.active {
+            color: #ff3300;
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { opacity: 0.7; }
+            to { opacity: 1; }
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            padding: 6px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .btn-reset:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        /* Main Canvas Container */
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 1100px;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #000000;
+            border: 1px solid #ffffff;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .instructions {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #aaaaaa;
+            text-align: center;
+        }
+
+        /* Overlay Next Level Button */
+        .btn-next-level {
+            margin-top: 20px;
+            background: #00ff66;
+            color: #000000;
+            border: none;
+            padding: 10px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: transform 0.1s ease, background-color 0.15s ease;
+        }
+
+        .btn-next-level:hover {
+            background: #ffffff;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div id="header">
+        <h1>Stickman Engine</h1>
+        <div class="hud-info">
+            <span id="level-display" class="hud-level">LEVEL 1</span>
+            <span id="slime-count">SLIMES LEFT: 6</span>
+            <span id="powerup-status" class="hud-status">POWER-UP: READY (TOUCH EDGE)</span>
+        </div>
+        <button class="btn-reset" onclick="resetGameToLevelOne()">Restart</button>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvas-wrapper">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+    <div class="instructions">
+        [WASD / Arrows] Move | Center Circle is a Safe Zone | Touch Screen Edge to Launch 10s Fireballs | [Space] Next Level
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // KEYBOARD INPUT STATE
+        const keys = {};
+
+        // GAME TIMING
+        let lastTime = performance.now();
+
+        // LEVELING MECHANIC STATE
+        let level = 1;
+        let levelCompleted = false;
+
+        // RAINBOW COLOR CYCLE (Green -> Blue -> Violet -> Red -> Orange -> Yellow)
+        const rainbowColors = [
+            '#00ff66', // Green
+            '#0099ff', // Blue
+            '#aa33ff', // Violet
+            '#ff2255', // Red
+            '#ff8800', // Orange
+            '#ffee00'  // Yellow
+        ];
+
+        // GAME STATE
+        let hasVisitedCenter = true;
+        let fireballActive = false;
+        let fireballTimer = 0; // 10 seconds duration
+        let fireballShootCooldown = 0;
+
+        // CENTER SAFE ZONE RADIUS
+        const CENTER_ZONE_RADIUS = 45;
+
+        // STICKMAN PLAYER STATE
+        const player = {
+            x: 0,
+            y: 0,
+            speed: 210, // Pixels per second
+            facing: 1,  // 1 = Right, -1 = Left
+            walkFrame: 0,
+            moveDirX: 1,
+            moveDirY: 0
+        };
+
+        // FIREBALLS & PARTICLES
+        let fireballs = [];
+        let particles = [];
+
+        // MAZE WALLS
+        let walls = [];
+        const WALL_THICKNESS = 6; // Thin walls
+
+        // SLIME BLOBS
+        let slimes = [];
+
+        // RANDOMLY GENERATE MAZE WALLS (+1 Wall Per Level)
+        function generateRandomMaze() {
+            walls = [];
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const centerSafeRadius = 90; // Keeps center zone clear of wall geometry
+            const edgeMargin = 45;       // Keeps screen borders open for travel
+
+            const numWalls = 13 + level;
+            let attempts = 0;
+
+            while (walls.length < numWalls && attempts < 500) {
+                attempts++;
+                const isHorizontal = Math.random() < 0.5;
+                const length = Math.floor(Math.random() * (canvas.width * 0.16)) + 70;
+
+                let wx, wy, ww, wh;
+
+                if (isHorizontal) {
+                    ww = length;
+                    wh = WALL_THICKNESS;
+                    wx = Math.random() * (canvas.width - ww - edgeMargin * 2) + edgeMargin;
+                    wy = Math.random() * (canvas.height - wh - edgeMargin * 2) + edgeMargin;
+                } else {
+                    ww = WALL_THICKNESS;
+                    wh = length;
+                    wx = Math.random() * (canvas.width - ww - edgeMargin * 2) + edgeMargin;
+                    wy = Math.random() * (canvas.height - wh - edgeMargin * 2) + edgeMargin;
+                }
+
+                // Ensure center zone stays completely clear
+                const wallCenterX = wx + ww / 2;
+                const wallCenterY = wy + wh / 2;
+                const distToCenter = Math.hypot(wallCenterX - centerX, wallCenterY - centerY);
+
+                if (distToCenter < centerSafeRadius + Math.max(ww, wh) / 2) {
+                    continue;
+                }
+
+                // Minimum spacing between walls to prevent total enclosures
+                let overlaps = false;
+                const spacing = 30;
+                for (let w of walls) {
+                    if (wx - spacing < w.x + w.w &&
+                        wx + ww + spacing > w.x &&
+                        wy - spacing < w.y + w.h &&
+                        wy + wh + spacing > w.y) {
+                        overlaps = true;
+                        break;
+                    }
+                }
+
+                if (!overlaps) {
+                    walls.push({ x: wx, y: wy, w: ww, h: wh });
+                }
+            }
+        }
+
+        // INITIALIZE SLIMES (+1 Slime Per Level & Rainbow Colors)
+        function initSlimes() {
+            const slimeCount = 5 + level;
+            slimes = [];
+
+            // Get current level color from rainbow cycle
+            const currentSlimeColor = rainbowColors[(level - 1) % rainbowColors.length];
+
+            for (let i = 0; i < slimeCount; i++) {
+                const angle = (i / slimeCount) * Math.PI * 2;
+                const radiusX = (canvas.width / 2) * 0.85;
+                const radiusY = (canvas.height / 2) * 0.85;
+
+                let sx = canvas.width / 2 + Math.cos(angle) * radiusX;
+                let sy = canvas.height / 2 + Math.sin(angle) * radiusY;
+
+                // Adjust position if overlapping a wall
+                for (let wall of walls) {
+                    if (circleRectIntersect(sx, sy, 14, wall.x, wall.y, wall.w, wall.h)) {
+                        sx += (sx < canvas.width / 2 ? -25 : 25);
+                        sy += (sy < canvas.height / 2 ? -25 : 25);
+                    }
+                }
+
+                slimes.push({
+                    id: i,
+                    x: sx,
+                    y: sy,
+                    radius: 14,
+                    speed: 100, // Pixels per second
+                    color: currentSlimeColor,
+                    alive: true,
+                    bounceTimer: 0,
+                    bounceVx: 0,
+                    bounceVy: 0,
+                    pulse: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            
+            resetSimulation();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // CONTROLS HANDLERS
+        window.addEventListener('keydown', (e) => {
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+                e.preventDefault();
+            }
+            keys[e.code] = true;
+
+            if (e.code === 'Space' && levelCompleted) {
+                advanceToNextLevel();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        function resetStickmanToCenter() {
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            player.facing = 1;
+            player.walkFrame = 0;
+            player.moveDirX = 1;
+            player.moveDirY = 0;
+            
+            // Instantly strip active fireball power when resetting to center
+            fireballActive = false;
+            fireballTimer = 0;
+            hasVisitedCenter = true; // Landing in center recharges/primes for next journey
+        }
+
+        function resetSimulation() {
+            levelCompleted = false;
+            fireballs = [];
+            particles = [];
+            generateRandomMaze();
+            resetStickmanToCenter();
+            initSlimes();
+            lastTime = performance.now();
+        }
+
+        function resetGameToLevelOne() {
+            level = 1;
+            resetSimulation();
+        }
+
+        function advanceToNextLevel() {
+            level++;
+            resetSimulation();
+        }
+
+        // COLLISION HELPERS
+        function rectOverlap(r1, r2) {
+            return !(r2.x > r1.x + r1.w || 
+                     r2.x + r2.w < r1.x || 
+                     r2.y > r1.y + r1.h || 
+                     r2.y + r2.h < r1.y);
+        }
+
+        function circleRectIntersect(cx, cy, radius, rx, ry, rw, rh) {
+            const closestX = Math.max(rx, Math.min(cx, rx + rw));
+            const closestY = Math.max(ry, Math.min(cy, ry + rh));
+            const distX = cx - closestX;
+            const distY = cy - closestY;
+            return (distX * distX + distY * distY) < (radius * radius);
+        }
+
+        function updatePhysics(dt) {
+            if (levelCompleted) return;
+
+            // 1. Movement Direction Calculation
+            let dx = 0;
+            let dy = 0;
+
+            if (keys['KeyW'] || keys['Keyw'] || keys['ArrowUp']) dy -= 1;
+            if (keys['KeyS'] || keys['Keys'] || keys['ArrowDown']) dy += 1;
+            if (keys['KeyA'] || keys['Keya'] || keys['ArrowLeft']) { dx -= 1; player.facing = -1; }
+            if (keys['KeyD'] || keys['Keyd'] || keys['ArrowRight']) { dx += 1; player.facing = 1; }
+
+            // Normalize diagonal movement vector speed
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.7071;
+                dy *= 0.7071;
+            }
+
+            if (dx !== 0 || dy !== 0) {
+                player.moveDirX = dx;
+                player.moveDirY = dy;
+                player.walkFrame += dt * 12;
+            } else {
+                player.walkFrame = 0;
+            }
+
+            // Proposed new position
+            const newX = player.x + dx * player.speed * dt;
+            const newY = player.y + dy * player.speed * dt;
+
+            // Stickman Bounding Box for Wall Collision
+            const playerBox = {
+                x: newX - 5,
+                y: newY - 20,
+                w: 10,
+                h: 22
+            };
+
+            // Rule 1: Check wall touch -> Reset to center & clear power-up
+            let hitWall = false;
+            for (let wall of walls) {
+                if (rectOverlap(playerBox, wall)) {
+                    hitWall = true;
+                    break;
+                }
+            }
+
+            if (hitWall) {
+                createSplatter(player.x, player.y - 10, '#ffffff', 8);
+                resetStickmanToCenter();
+                return;
+            }
+
+            // Apply movement & keep inside screen borders
+            const margin = 15;
+            player.x = Math.max(margin, Math.min(canvas.width - margin, newX));
+            player.y = Math.max(margin + 15, Math.min(canvas.height - margin - 10, newY));
+
+            // Center Zone Check (Recharges Power-Up trigger)
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const distToCenter = Math.hypot(player.x - centerX, player.y - centerY);
+            if (distToCenter < CENTER_ZONE_RADIUS) {
+                hasVisitedCenter = true;
+            }
+
+            // Power-Up Activation at Screen Edges (10 Seconds Duration)
+            const edgeThreshold = 22;
+            const atEdge = (
+                player.x <= edgeThreshold || 
+                player.x >= canvas.width - edgeThreshold || 
+                player.y <= edgeThreshold + 15 || 
+                player.y >= canvas.height - edgeThreshold - 10
+            );
+
+            if (atEdge && hasVisitedCenter) {
+                fireballActive = true;
+                fireballTimer = 10.0;
+                hasVisitedCenter = false; // Must return to center area to recharge
+            }
+
+            // Power-up Timer & Automatic Shooting
+            if (fireballActive) {
+                fireballTimer -= dt;
+                if (fireballTimer <= 0) {
+                    fireballActive = false;
+                    fireballTimer = 0;
+                } else {
+                    fireballShootCooldown -= dt;
+                    if (fireballShootCooldown <= 0) {
+                        fireballShootCooldown = 0.22; // Shoot fireball every ~0.22 seconds
+                        fireballs.push({
+                            x: player.x,
+                            y: player.y - 10,
+                            vx: player.moveDirX * 500,
+                            vy: player.moveDirY * 500,
+                            radius: 6
+                        });
+                    }
+                }
+            }
+
+            // Update Fireballs
+            for (let i = fireballs.length - 1; i >= 0; i--) {
+                let fb = fireballs[i];
+                fb.x += fb.vx * dt;
+                fb.y += fb.vy * dt;
+
+                // Fireball particle trail
+                if (Math.random() < 0.6) {
+                    particles.push({
+                        x: fb.x,
+                        y: fb.y,
+                        vx: (Math.random() - 0.5) * 40,
+                        vy: (Math.random() - 0.5) * 40,
+                        color: Math.random() < 0.5 ? '#ff4400' : '#ffcc00',
+                        size: Math.random() * 4 + 2,
+                        life: 0.25
+                    });
+                }
+
+                // Fireball vs Wall Collision
+                let fbHitWall = false;
+                for (let wall of walls) {
+                    if (circleRectIntersect(fb.x, fb.y, fb.radius, wall.x, wall.y, wall.w, wall.h)) {
+                        fbHitWall = true;
+                        break;
+                    }
+                }
+
+                // Fireball vs Bounds Collision
+                if (fbHitWall || fb.x < 0 || fb.x > canvas.width || fb.y < 0 || fb.y > canvas.height) {
+                    createSplatter(fb.x, fb.y, '#ff4400', 6);
+                    fireballs.splice(i, 1);
+                    continue;
+                }
+
+                // Fireball vs Slime Collision
+                for (let slime of slimes) {
+                    if (slime.alive) {
+                        const dist = Math.hypot(fb.x - slime.x, fb.y - slime.y);
+                        if (dist < fb.radius + slime.radius) {
+                            slime.alive = false; // Eliminated!
+                            createSplatter(slime.x, slime.y, slime.color, 20);
+                            fireballs.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Slime AI Movement
+            for (let slime of slimes) {
+                if (!slime.alive) continue;
+
+                slime.pulse += dt * 4;
+
+                let moveX = 0;
+                let moveY = 0;
+
+                if (slime.bounceTimer > 0) {
+                    slime.bounceTimer -= dt;
+                    moveX = slime.bounceVx;
+                    moveY = slime.bounceVy;
+                } else {
+                    // Pursue Stickman
+                    const targetX = player.x - slime.x;
+                    const targetY = (player.y - 10) - slime.y;
+                    const dist = Math.hypot(targetX, targetY);
+
+                    if (dist > 0) {
+                        moveX = (targetX / dist);
+                        moveY = (targetY / dist);
+                    }
+                }
+
+                const nextSlimeX = slime.x + moveX * slime.speed * dt;
+                const nextSlimeY = slime.y + moveY * slime.speed * dt;
+
+                let slimeCollided = false;
+
+                // Screen edge collision check
+                if (nextSlimeX - slime.radius < 0 || nextSlimeX + slime.radius > canvas.width ||
+                    nextSlimeY - slime.radius < 0 || nextSlimeY + slime.radius > canvas.height) {
+                    slimeCollided = true;
+                }
+
+                // Center Circle Zone Protection Check
+                const distSlimeToCenter = Math.hypot(nextSlimeX - centerX, nextSlimeY - centerY);
+                let hitCenterBoundary = false;
+
+                if (distSlimeToCenter < CENTER_ZONE_RADIUS + slime.radius) {
+                    slimeCollided = true;
+                    hitCenterBoundary = true;
+                }
+
+                // Maze wall collision check
+                if (!slimeCollided) {
+                    for (let wall of walls) {
+                        if (circleRectIntersect(nextSlimeX, nextSlimeY, slime.radius, wall.x, wall.y, wall.w, wall.h)) {
+                            slimeCollided = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Collision Turn Logic
+                if (slimeCollided) {
+                    if (hitCenterBoundary) {
+                        const awayAngle = Math.atan2(slime.y - centerY, slime.x - centerX);
+                        const offset = (Math.random() < 0.5 ? 1 : -1) * (Math.PI / 4);
+                        const bounceAngle = awayAngle + offset;
+
+                        slime.bounceVx = Math.cos(bounceAngle);
+                        slime.bounceVy = Math.sin(bounceAngle);
+                        slime.bounceTimer = 0.5;
+                    } else {
+                        const currentAngle = Math.atan2(moveY, moveX);
+                        const turnDirection = (Math.random() < 0.5 ? 1 : -1) * (Math.PI / 2);
+                        const newAngle = currentAngle + turnDirection;
+
+                        slime.bounceVx = Math.cos(newAngle);
+                        slime.bounceVy = Math.sin(newAngle);
+                        slime.bounceTimer = 0.45;
+                    }
+                } else {
+                    slime.x = nextSlimeX;
+                    slime.y = nextSlimeY;
+                }
+
+                // Slime hits Stickman -> Resets position AND clears active fireball power-up!
+                const distToPlayer = Math.hypot(slime.x - player.x, slime.y - (player.y - 10));
+                if (distToPlayer < slime.radius + 8) {
+                    createSplatter(player.x, player.y - 10, slime.color, 12);
+                    resetStickmanToCenter(); // Clears fireballs & resets location
+                }
+            }
+
+            // Update Particle Effects
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.life -= dt;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Check Level Completion Condition
+            const aliveCount = slimes.filter(s => s.alive).length;
+            if (aliveCount === 0) {
+                levelCompleted = true;
+            }
+
+            // Update HUD Info
+            document.getElementById('level-display').innerText = `LEVEL ${level}`;
+            document.getElementById('slime-count').innerText = `SLIMES LEFT: ${aliveCount}`;
+            const statusElem = document.getElementById('powerup-status');
+            if (fireballActive) {
+                statusElem.innerText = `FIREBALL ACTIVE: ${Math.ceil(fireballTimer)}s`;
+                statusElem.className = 'hud-status active';
+            } else if (hasVisitedCenter) {
+                statusElem.innerText = `POWER-UP: READY (TOUCH EDGE)`;
+                statusElem.className = 'hud-status';
+            } else {
+                statusElem.innerText = `POWER-UP: RETURN TO CENTER TO RECHARGE`;
+                statusElem.className = 'hud-status';
+            }
+        }
+
+        function createSplatter(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 120 + 30;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    color: color,
+                    size: Math.random() * 3 + 2,
+                    life: Math.random() * 0.3 + 0.2
+                });
+            }
+        }
+
+        function drawStickman(x, y, facing, walkFrame) {
+            ctx.strokeStyle = '#ffffff';
+            ctx.fillStyle = '#ffffff';
+            ctx.lineWidth = 1.8;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const headRadius = 5;
+            const bodyLength = 15;
+            const legLength = 11;
+            const neckY = y - bodyLength;
+            const headY = neckY - headRadius;
+            const shoulderY = neckY + 4;
+
+            // Fireball Aura Effect
+            if (fireballActive) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(x, y - 10, 18, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 68, 0, 0.25)';
+                ctx.fill();
+                ctx.strokeStyle = '#ffcc00';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Eye direction indicator
+            ctx.beginPath();
+            ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Torso
+            ctx.beginPath();
+            ctx.moveTo(x, neckY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            // Legs
+            const legSwing = Math.sin(walkFrame) * 6;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - legSwing, y + legLength);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + legSwing, y + legLength);
+            ctx.stroke();
+
+            // Arms
+            const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
+            ctx.stroke();
+        }
+
+        function drawSlime(slime) {
+            ctx.save();
+            ctx.translate(slime.x, slime.y);
+
+            const pulseScale = 1 + Math.sin(slime.pulse) * 0.08;
+            ctx.scale(pulseScale, 1 / pulseScale);
+
+            // Colored Slime Body
+            ctx.fillStyle = slime.color;
+            ctx.beginPath();
+            ctx.arc(0, 0, slime.radius, Math.PI, 0, false);
+            ctx.quadraticCurveTo(slime.radius, slime.radius, 0, slime.radius);
+            ctx.quadraticCurveTo(-slime.radius, slime.radius, -slime.radius, 0);
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(-4, -2, 2.5, 0, Math.PI * 2);
+            ctx.arc(4, -2, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(-3, -3, 1, 0, Math.PI * 2);
+            ctx.arc(5, -3, 1, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function draw() {
+            // Background
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Center Zone Safe & Recharge Circle
+            ctx.save();
+            ctx.strokeStyle = hasVisitedCenter ? 'rgba(255, 204, 0, 0.45)' : 'rgba(255, 255, 255, 0.18)';
+            ctx.fillStyle = 'rgba(255, 204, 0, 0.05)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, CENTER_ZONE_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+
+            // Draw Thin Maze Walls
+            ctx.fillStyle = '#ffffff';
+            for (let wall of walls) {
+                ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
+            }
+
+            // Draw Slimes
+            for (let slime of slimes) {
+                if (slime.alive) {
+                    drawSlime(slime);
+                }
+            }
+
+            // Draw Particles
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Draw Fireballs
+            for (let fb of fireballs) {
+                ctx.fillStyle = '#ffcc00';
+                ctx.beginPath();
+                ctx.arc(fb.x, fb.y, fb.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#ff3300';
+                ctx.beginPath();
+                ctx.arc(fb.x, fb.y, fb.radius * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Draw Stickman
+            drawStickman(player.x, player.y, player.facing, player.walkFrame);
+
+            // Level Completion Screen Overlay
+            if (levelCompleted) {
+                const nextSlimeColor = rainbowColors[level % rainbowColors.length];
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = '#00ff66';
+                ctx.font = 'bold 36px "Courier New", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(`LEVEL ${level} COMPLETE!`, canvas.width / 2, canvas.height / 2 - 30);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '15px "Courier New", monospace';
+                ctx.fillText(`Next Level: ${5 + level + 1} Slimes (+1) | ${13 + level + 1} Walls (+1)`, canvas.width / 2, canvas.height / 2 + 15);
+
+                ctx.fillStyle = nextSlimeColor;
+                ctx.fillText(`Next Slime Color:`, canvas.width / 2 - 20, canvas.height / 2 + 45);
+                ctx.beginPath();
+                ctx.arc(canvas.width / 2 + 85, canvas.height / 2 + 40, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#aaaaaa';
+                ctx.font = '13px "Courier New", monospace';
+                ctx.fillText('Press [SPACE] or Click Restart to Continue', canvas.width / 2, canvas.height / 2 + 85);
+            }
+        }
+
+        function animate(now) {
+            const dt = Math.min((now - lastTime) / 1000, 0.1);
+            lastTime = now;
+
+            updatePhysics(dt);
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            requestAnimationFrame((now) => {
+                lastTime = now;
+                animate(now);
+            });
+        };
+    </script>
+</body>
+</html>
