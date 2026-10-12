@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman Butterfly Catch</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+        }
+
+        body {
+            background-color: #111827;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            overflow: hidden;
+            padding: 16px;
+        }
+
+        /* Top Header Bar */
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1100px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ffffff;
+        }
+
+        h1 {
+            font-size: 18px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .score-display {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ff3399;
+            letter-spacing: 1px;
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            padding: 6px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .btn-reset:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        /* Main Canvas Container */
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 1100px;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            border: 1px solid #ffffff;
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        .instructions {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #aaaaaa;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div id="header">
+        <h1>Stickman Catch</h1>
+        <div id="score" class="score-display">Caught: 0 / 8</div>
+        <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvas-wrapper">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+    <div class="instructions">
+        [WASD / Arrow Keys] Move &nbsp;|&nbsp; [SPACE / Tap Canvas] Swipe Net
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // KEYBOARD & INPUT STATE
+        const keys = {};
+
+        // STICKMAN PLAYER STATE
+        const player = {
+            x: 0,
+            y: 0,
+            speed: 4.5,
+            facing: 1, // 1 = Right, -1 = Left
+            walkFrame: 0,
+            isSwiping: false,
+            swipeProgress: 0 // 0 to 1
+        };
+
+        // GAME & BUTTERFLY STATE
+        const TOTAL_BUTTERFLIES = 8;
+        let score = 0;
+        let butterflies = [];
+        let flowers = [];
+        let hasWon = false;
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            
+            if (player.x === 0 && player.y === 0) {
+                resetSimulation();
+            } else {
+                generateFlowers();
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // CONTROLS HANDLERS
+        window.addEventListener('keydown', (e) => {
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+                e.preventDefault();
+            }
+            keys[e.code] = true;
+
+            if (e.code === 'Space' && !player.isSwiping) {
+                triggerSwipe();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        canvas.addEventListener('pointerdown', (e) => {
+            if (!player.isSwiping) {
+                triggerSwipe();
+            }
+        });
+
+        function triggerSwipe() {
+            player.isSwiping = true;
+            player.swipeProgress = 0;
+        }
+
+        function generateFlowers() {
+            flowers = [];
+            const flowerColors = ['#ff4d4d', '#ff66cc', '#ffff4d', '#9933ff', '#33ccff', '#ff9933'];
+            const groundStartY = canvas.height * 0.45;
+
+            for (let i = 0; i < 45; i++) {
+                flowers.push({
+                    x: Math.random() * canvas.width,
+                    y: groundStartY + Math.random() * (canvas.height - groundStartY - 20),
+                    color: flowerColors[Math.floor(Math.random() * flowerColors.length)],
+                    size: 3 + Math.random() * 4
+                });
+            }
+        }
+
+        function spawnButterflies() {
+            butterflies = [];
+            const colors = ['#FF1493', '#00FFFF', '#FFD700', '#FF4500', '#9370DB', '#00FF7F', '#FF69B4'];
+
+            for (let i = 0; i < TOTAL_BUTTERFLIES; i++) {
+                butterflies.push({
+                    id: i,
+                    x: Math.random() * (canvas.width - 100) + 50,
+                    y: canvas.height * 0.15 + Math.random() * (canvas.height * 0.55),
+                    vx: (Math.random() > 0.5 ? 1 : -1) * (1.2 + Math.random() * 1.5),
+                    vy: (Math.random() - 0.5) * 0.8,
+                    color: colors[i % colors.length],
+                    wingAngle: Math.random() * Math.PI * 2,
+                    wingSpeed: 0.15 + Math.random() * 0.1,
+                    baseY: 0,
+                    sineOffset: Math.random() * Math.PI * 2,
+                    captured: false
+                });
+                butterflies[i].baseY = butterflies[i].y;
+            }
+        }
+
+        function resetSimulation() {
+            player.x = canvas.width / 2;
+            player.y = canvas.height * 0.65;
+            player.facing = 1;
+            player.walkFrame = 0;
+            player.isSwiping = false;
+            player.swipeProgress = 0;
+            score = 0;
+            hasWon = false;
+            
+            updateScoreUI();
+            generateFlowers();
+            spawnButterflies();
+        }
+
+        function updateScoreUI() {
+            document.getElementById('score').textContent = `Caught: ${score} / ${TOTAL_BUTTERFLIES}`;
+        }
+
+        function updatePhysics() {
+            // Movement Direction Calculation
+            let dx = 0;
+            let dy = 0;
+
+            if (keys['KeyW'] || keys['Keyw'] || keys['ArrowUp']) dy -= 1;
+            if (keys['KeyS'] || keys['Keys'] || keys['ArrowDown']) dy += 1;
+            if (keys['KeyA'] || keys['Keya'] || keys['ArrowLeft']) { dx -= 1; player.facing = -1; }
+            if (keys['KeyD'] || keys['Keyd'] || keys['ArrowRight']) { dx += 1; player.facing = 1; }
+
+            // Normalize diagonal movement
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.7071;
+                dy *= 0.7071;
+            }
+
+            // Update stickman position
+            player.x += dx * player.speed;
+            player.y += dy * player.speed;
+
+            // Keep stickman inside canvas boundaries
+            const margin = 15;
+            const minY = canvas.height * 0.40;
+            player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
+            player.y = Math.max(minY, Math.min(canvas.height - margin - 15, player.y));
+
+            // Walk animation cycle updates
+            if (dx !== 0 || dy !== 0) {
+                player.walkFrame += 0.25;
+            } else {
+                player.walkFrame = 0;
+            }
+
+            // Handle Net Swipe Animation
+            if (player.isSwiping) {
+                player.swipeProgress += 0.08;
+                if (player.swipeProgress >= 1) {
+                    player.isSwiping = false;
+                    player.swipeProgress = 0;
+                }
+            }
+
+            // Update Butterflies Position
+            butterflies.forEach(b => {
+                if (b.captured) return;
+
+                b.x += b.vx;
+                b.sineOffset += 0.05;
+                b.y = b.baseY + Math.sin(b.sineOffset) * 18;
+                b.wingAngle += b.wingSpeed;
+
+                // Bounce off canvas side walls
+                if (b.x < 20 || b.x > canvas.width - 20) {
+                    b.vx *= -1;
+                }
+            });
+
+            // Collision Check during Net Swipe
+            if (player.isSwiping && player.swipeProgress > 0.2 && player.swipeProgress < 0.8) {
+                checkNetCollisions();
+            }
+        }
+
+        function getNetPosition() {
+            const bodyLength = 15;
+            const neckY = player.y - bodyLength;
+            const shoulderY = neckY + 4;
+            const armLength = 14;
+
+            // Compute current net swipe angle
+            const startAngle = -Math.PI / 3; // Upward angle
+            const endAngle = Math.PI / 2;    // Downward angle
+            const currentAngle = startAngle + (endAngle - startAngle) * Math.sin(player.swipeProgress * Math.PI);
+
+            const netArmX = player.x + player.facing * Math.cos(currentAngle) * armLength;
+            const netArmY = shoulderY + Math.sin(currentAngle) * armLength;
+
+            // Net ring tip center offset
+            const poleLength = 22;
+            const netCenterX = netArmX + player.facing * Math.cos(currentAngle) * poleLength;
+            const netCenterY = netArmY + Math.sin(currentAngle) * poleLength;
+
+            return { x: netCenterX, y: netCenterY, armX: netArmX, armY: netArmY, angle: currentAngle };
+        }
+
+        function checkNetCollisions() {
+            const netPos = getNetPosition();
+            const netRadius = 18; // Catch radius
+
+            butterflies.forEach(b => {
+                if (b.captured) return;
+
+                const dist = Math.hypot(b.x - netPos.x, b.y - netPos.y);
+                if (dist < netRadius + 10) {
+                    b.captured = true;
+                    score++;
+                    updateScoreUI();
+
+                    if (score === TOTAL_BUTTERFLIES) {
+                        hasWon = true;
+                    }
+                }
+            });
+        }
+
+        function drawBackground() {
+            // 1. Sky Gradient
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.6);
+            skyGradient.addColorStop(0, '#3a88e9');
+            skyGradient.addColorStop(0.6, '#7ec0ee');
+            skyGradient.addColorStop(1, '#cbe5ff');
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 2. Sun
+            ctx.fillStyle = '#FFF79A';
+            ctx.beginPath();
+            ctx.arc(canvas.width * 0.88, canvas.height * 0.15, 36, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sun glow ring
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(canvas.width * 0.88, canvas.height * 0.15, 46, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 3. Background Hills
+            ctx.fillStyle = '#61b15a';
+            ctx.beginPath();
+            ctx.ellipse(canvas.width * 0.25, canvas.height * 0.55, canvas.width * 0.35, canvas.height * 0.2, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#52a447';
+            ctx.beginPath();
+            ctx.ellipse(canvas.width * 0.75, canvas.height * 0.58, canvas.width * 0.45, canvas.height * 0.22, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 4. Main Foreground Grass Field
+            const grassGradient = ctx.createLinearGradient(0, canvas.height * 0.42, 0, canvas.height);
+            grassGradient.addColorStop(0, '#78c850');
+            grassGradient.addColorStop(1, '#388e3c');
+            ctx.fillStyle = grassGradient;
+            ctx.fillRect(0, canvas.height * 0.42, canvas.width, canvas.height * 0.58);
+
+            // 5. Colorful Field Flowers
+            flowers.forEach(f => {
+                ctx.fillStyle = f.color;
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Flower center dot
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.size * 0.35, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawButterflies() {
+            butterflies.forEach(b => {
+                if (b.captured) return;
+
+                ctx.save();
+                ctx.translate(b.x, b.y);
+
+                const wingWidth = Math.abs(Math.sin(b.wingAngle)) * 10 + 2;
+
+                // Left Wing
+                ctx.fillStyle = b.color;
+                ctx.beginPath();
+                ctx.ellipse(-wingWidth / 2, -2, wingWidth / 2, 7, -0.2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Right Wing
+                ctx.beginPath();
+                ctx.ellipse(wingWidth / 2, -2, wingWidth / 2, 7, 0.2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Butterfly Body
+                ctx.fillStyle = '#222222';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 1.5, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            });
+        }
+
+        function drawPinkHat(headX, headY, headRadius, facing) {
+            ctx.fillStyle = '#FF69B4'; // Bright Pink
+            ctx.strokeStyle = '#D10068';
+            ctx.lineWidth = 1.2;
+
+            // Cap Brim
+            ctx.beginPath();
+            ctx.ellipse(headX + facing * 2, headY - headRadius + 1, headRadius + 3, 2.5, facing * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Cap Dome
+            ctx.beginPath();
+            ctx.arc(headX, headY - headRadius, headRadius, Math.PI, 0);
+            ctx.fill();
+            ctx.stroke();
+
+            // Cute Top Button
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(headX, headY - headRadius - headRadius + 0.5, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawStickman(x, y, facing, walkFrame) {
+            ctx.strokeStyle = '#000000';
+            ctx.fillStyle = '#000000';
+            ctx.lineWidth = 2.2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Character dimensions
+            const headRadius = 5;
+            const bodyLength = 15;
+            const legLength = 11;
+            const neckY = y - bodyLength;
+            const headY = neckY - headRadius;
+            const shoulderY = neckY + 4;
+
+            // 1. Head
+            ctx.beginPath();
+            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Eye direction indicator
+            ctx.beginPath();
+            ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Pink Hat
+            drawPinkHat(x, headY, headRadius, facing);
+
+            // 3. Torso
+            ctx.strokeStyle = '#000000';
+            ctx.beginPath();
+            ctx.moveTo(x, neckY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            // 4. Legs
+            const legSwing = Math.sin(walkFrame) * 6;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - legSwing, y + legLength);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + legSwing, y + legLength);
+            ctx.stroke();
+
+            // 5. Back Arm
+            const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+            ctx.stroke();
+
+            // 6. Front Arm & Butterfly Net (Swiping or Holding)
+            let handX, handY;
+            
+            if (player.isSwiping) {
+                const netPos = getNetPosition();
+                handX = netPos.armX;
+                handY = netPos.armY;
+
+                // Draw arm extending to net handle
+                ctx.beginPath();
+                ctx.moveTo(x, shoulderY);
+                ctx.lineTo(handX, handY);
+                ctx.stroke();
+
+                // Draw Butterfly Net in Swipe Motion
+                drawNet(handX, handY, netPos.angle, facing);
+            } else {
+                handX = x + facing * 4 + armSwing;
+                handY = shoulderY + 6;
+
+                // Resting arm position
+                ctx.beginPath();
+                ctx.moveTo(x, shoulderY);
+                ctx.lineTo(handX, handY);
+                ctx.stroke();
+
+                // Resting net position (pointing upward diagonally)
+                const restAngle = -Math.PI / 3;
+                drawNet(handX, handY, restAngle, facing);
+            }
+        }
+
+        function drawNet(handX, handY, angle, facing) {
+            ctx.save();
+            ctx.translate(handX, handY);
+
+            // Stick Pole
+            const poleLength = 22;
+            const tipX = facing * Math.cos(angle) * poleLength;
+            const tipY = Math.sin(angle) * poleLength;
+
+            ctx.strokeStyle = '#8B4513'; // Wooden Handle
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(tipX, tipY);
+            ctx.stroke();
+
+            // Net Hoop / Rim
+            ctx.strokeStyle = '#D3D3D3';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(tipX + facing * 6, tipY, 10, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Net Mesh Pouch
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.strokeStyle = 'rgba(200, 200, 200, 0.7)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(tipX + facing * 6, tipY + 4, 9, 0, Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawWinOverlay() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Glow effect behind text
+            ctx.font = '900 42px "Courier New", Courier, monospace';
+            ctx.fillStyle = '#FFD700';
+            ctx.shadowColor = '#FF1493';
+            ctx.shadowBlur = 15;
+            ctx.fillText('YOU WIN!', canvas.width / 2, canvas.height * 0.42);
+
+            ctx.shadowBlur = 0;
+            ctx.font = 'bold 16px "Courier New", Courier, monospace';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText('You caught all the butterflies!', canvas.width / 2, canvas.height * 0.52);
+
+            ctx.font = '13px "Courier New", Courier, monospace';
+            ctx.fillStyle = '#FFD700';
+            ctx.fillText('Click [Reset] to play again', canvas.width / 2, canvas.height * 0.60);
+
+            ctx.restore();
+        }
+
+        function draw() {
+            // Draw background field scene
+            drawBackground();
+
+            // Draw Butterflies
+            drawButterflies();
+
+            // Draw Stickman character
+            drawStickman(player.x, player.y, player.facing, player.walkFrame);
+
+            // Draw Win overlay banner if completed
+            if (hasWon) {
+                drawWinOverlay();
+            }
+        }
+
+        function animate() {
+            if (!hasWon) {
+                updatePhysics();
+            }
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            animate();
+        };
+    </script>
+</body>
+</html>
