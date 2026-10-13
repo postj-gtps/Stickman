@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman Starter Canvas</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            overflow: hidden;
+            padding: 16px;
+        }
+
+        /* Top Header Bar */
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1100px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ffffff;
+        }
+
+        h1 {
+            font-size: 18px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            padding: 6px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .btn-reset:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        /* Main Canvas Container */
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 1100px;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #000000;
+            border: 1px solid #ffffff;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .instructions {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #888888;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div id="header">
+        <h1>Stickman Engine</h1>
+        <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvas-wrapper">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+    <div class="instructions">
+        [WASD] Move | Cross the Road & Avoid Cars!
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // KEYBOARD INPUT STATE
+        const keys = {};
+
+        // STICKMAN PLAYER STATE
+        const player = {
+            x: 0,
+            y: 0,
+            speed: 4.5,
+            facing: 1, // 1 = Right, -1 = Left
+            walkFrame: 0
+        };
+
+        // VEHICLE TYPES DEFINITIONS
+        const VEHICLE_TYPES = {
+            regular: { width: 46, height: 18, color: '#3b82f6' },
+            pickup: { width: 56, height: 20, color: '#f59e0b' },
+            truck: { width: 110, height: 24, color: '#ef4444' },
+            sports: { width: 44, height: 15, color: '#ec4899' },
+            motorcycle: { width: 26, height: 12, color: '#06b6d4' }
+        };
+
+        // LANE CONFIGURATIONS (Slower outside lanes, faster inside lanes)
+        const laneConfigs = [
+            { dir: -1, speed: 2.4, allowedTypes: ['truck', 'pickup', 'regular'] },     // Lane 0: Top Outer (Slower)
+            { dir: -1, speed: 5.2, allowedTypes: ['sports', 'motorcycle', 'regular'] },// Lane 1: Top Inner (Faster)
+            { dir: 1,  speed: 4.8, allowedTypes: ['sports', 'motorcycle', 'regular'] },// Lane 2: Bottom Inner (Faster)
+            { dir: 1,  speed: 2.6, allowedTypes: ['truck', 'pickup', 'regular'] }      // Lane 3: Bottom Outer (Slower)
+        ];
+
+        let vehicles = [];
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            
+            // Set initial position & initialize traffic on load
+            if (player.x === 0 && player.y === 0) {
+                resetSimulation();
+                initVehicles();
+            } else {
+                updateVehiclePositions();
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // CONTROLS HANDLERS
+        window.addEventListener('keydown', (e) => {
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+                e.preventDefault();
+            }
+            keys[e.code] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        function resetSimulation() {
+            // Start Stickman safely on the bottom grass strip
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 30;
+            player.facing = 1;
+            player.walkFrame = 0;
+        }
+
+        function initVehicles() {
+            vehicles = [];
+            if (!canvas.width) return;
+
+            // Populate each lane with evenly spaced vehicles across canvas width
+            for (let laneIdx = 0; laneIdx < 4; laneIdx++) {
+                const lane = laneConfigs[laneIdx];
+                const count = 2;
+                const spacing = 240;
+
+                for (let j = 0; j < count; j++) {
+                    const startX = lane.dir === 1 
+                        ? j * spacing + 60 
+                        : canvas.width - (j * spacing + 60);
+                    spawnVehicle(laneIdx, startX);
+                }
+            }
+        }
+
+        function spawnVehicle(laneIdx, overrideX = null) {
+            const lane = laneConfigs[laneIdx];
+            const type = lane.allowedTypes[Math.floor(Math.random() * lane.allowedTypes.length)];
+            const config = VEHICLE_TYPES[type];
+
+            const roadHeight = Math.min(canvas.height * 0.55, 240);
+            const roadY = (canvas.height - roadHeight) / 2;
+            const laneHeight = roadHeight / 4;
+            const y = roadY + laneHeight * (laneIdx + 0.5);
+
+            let x;
+            if (overrideX !== null) {
+                x = overrideX;
+            } else {
+                x = lane.dir === 1 ? -config.width - 20 : canvas.width + config.width + 20;
+            }
+
+            vehicles.push({
+                x: x,
+                y: y,
+                lane: laneIdx,
+                dir: lane.dir,
+                type: type,
+                width: config.width,
+                height: config.height,
+                color: config.color,
+                speed: lane.speed // Uniform speed per lane prevents overtaking collisions
+            });
+        }
+
+        function updateVehiclePositions() {
+            const roadHeight = Math.min(canvas.height * 0.55, 240);
+            const roadY = (canvas.height - roadHeight) / 2;
+            const laneHeight = roadHeight / 4;
+
+            vehicles.forEach(v => {
+                v.y = roadY + laneHeight * (v.lane + 0.5);
+            });
+        }
+
+        function updateVehicles() {
+            for (let i = vehicles.length - 1; i >= 0; i--) {
+                const v = vehicles[i];
+                v.x += v.dir * v.speed;
+
+                // Collision detection with Stickman
+                if (checkCollision(player, v)) {
+                    resetSimulation(); // Teleport back to start on hit
+                    return;
+                }
+
+                // Remove vehicles off-screen
+                if ((v.dir === 1 && v.x > canvas.width + v.width + 100) ||
+                    (v.dir === -1 && v.x < -v.width - 100)) {
+                    vehicles.splice(i, 1);
+                }
+            }
+
+            // Spawn new vehicles only when guaranteed safe spacing is open
+            for (let laneIdx = 0; laneIdx < 4; laneIdx++) {
+                const lane = laneConfigs[laneIdx];
+                const laneVehicles = vehicles.filter(v => v.lane === laneIdx);
+                const safeGap = 220; // Distance buffer to prevent overlapping spawns
+
+                if (lane.dir === 1) {
+                    let minX = canvas.width;
+                    laneVehicles.forEach(v => { if (v.x < minX) minX = v.x; });
+                    if (minX > safeGap) {
+                        spawnVehicle(laneIdx);
+                    }
+                } else {
+                    let maxX = 0;
+                    laneVehicles.forEach(v => { if (v.x > maxX) maxX = v.x; });
+                    if (maxX < canvas.width - safeGap) {
+                        spawnVehicle(laneIdx);
+                    }
+                }
+            }
+        }
+
+        function checkCollision(p, v) {
+            // Stickman Bounding Box
+            const pLeft = p.x - 6;
+            const pRight = p.x + 6;
+            const pTop = p.y - 25;
+            const pBottom = p.y + 11;
+
+            // Vehicle Bounding Box
+            const vLeft = v.x - v.width / 2;
+            const vRight = v.x + v.width / 2;
+            const vTop = v.y - v.height / 2;
+            const vBottom = v.y + v.height / 2;
+
+            return !(pRight < vLeft || pLeft > vRight || pBottom < vTop || pTop > vBottom);
+        }
+
+        function updatePhysics() {
+            // Movement Direction Calculation
+            let dx = 0;
+            let dy = 0;
+
+            if (keys['KeyW'] || keys['Keyw']) dy -= 1;
+            if (keys['KeyS'] || keys['Keys']) dy += 1;
+            if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
+            if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+
+            // Normalize diagonal movement vector speed
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.7071;
+                dy *= 0.7071;
+            }
+
+            // Update stickman position
+            player.x += dx * player.speed;
+            player.y += dy * player.speed;
+
+            // Keep stickman inside canvas boundaries
+            const margin = 15;
+            player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
+            player.y = Math.max(margin + 15, Math.min(canvas.height - margin - 10, player.y));
+
+            // Walk animation cycle updates
+            if (dx !== 0 || dy !== 0) {
+                player.walkFrame += 0.25;
+            } else {
+                player.walkFrame = 0;
+            }
+
+            updateVehicles();
+        }
+
+        function drawEnvironment() {
+            const roadHeight = Math.min(canvas.height * 0.55, 240);
+            const roadY = (canvas.height - roadHeight) / 2;
+            const laneHeight = roadHeight / 4;
+
+            // 1. Top Grass
+            ctx.fillStyle = '#2d6a4f';
+            ctx.fillRect(0, 0, canvas.width, roadY);
+
+            // 2. Bottom Grass
+            ctx.fillRect(0, roadY + roadHeight, canvas.width, canvas.height - (roadY + roadHeight));
+
+            // 3. Road Surface
+            ctx.fillStyle = '#2b2b2b';
+            ctx.fillRect(0, roadY, canvas.width, roadHeight);
+
+            ctx.save();
+
+            // 4. White Solid Edge Lines
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([]);
+
+            ctx.beginPath();
+            ctx.moveTo(0, roadY + 3);
+            ctx.lineTo(canvas.width, roadY + 3);
+            ctx.moveTo(0, roadY + roadHeight - 3);
+            ctx.lineTo(canvas.width, roadY + roadHeight - 3);
+            ctx.stroke();
+
+            // 5. Center Double Yellow Line
+            ctx.strokeStyle = '#ffb703';
+            ctx.lineWidth = 2;
+            const centerY = roadY + laneHeight * 2;
+
+            ctx.beginPath();
+            ctx.moveTo(0, centerY - 3);
+            ctx.lineTo(canvas.width, centerY - 3);
+            ctx.moveTo(0, centerY + 3);
+            ctx.lineTo(canvas.width, centerY + 3);
+            ctx.stroke();
+
+            // 6. Dashed White Inner Lane Dividers
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([20, 15]);
+
+            // Lane 1 & 2 Divider
+            ctx.beginPath();
+            ctx.moveTo(0, roadY + laneHeight);
+            ctx.lineTo(canvas.width, roadY + laneHeight);
+            ctx.stroke();
+
+            // Lane 3 & 4 Divider
+            ctx.beginPath();
+            ctx.moveTo(0, roadY + laneHeight * 3);
+            ctx.lineTo(canvas.width, roadY + laneHeight * 3);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawVehicle(v) {
+            ctx.save();
+            ctx.translate(v.x, v.y);
+            if (v.dir === -1) {
+                ctx.scale(-1, 1);
+            }
+
+            const w = v.width;
+            const h = v.height;
+            const hw = w / 2;
+            const hh = h / 2;
+
+            if (v.type === 'regular') {
+                // Wheels
+                ctx.fillStyle = '#111111';
+                ctx.fillRect(-hw + 6, hh - 3, 8, 4);
+                ctx.fillRect(hw - 14, hh - 3, 8, 4);
+                ctx.fillRect(-hw + 6, -hh - 1, 8, 4);
+                ctx.fillRect(hw - 14, -hh - 1, 8, 4);
+
+                // Body & Roof
+                ctx.fillStyle = v.color;
+                ctx.fillRect(-hw, -hh, w, h);
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(-hw + 10, -hh + 2, w - 20, h - 4);
+                ctx.fillStyle = v.color;
+                ctx.fillRect(-hw + 15, -hh + 3, w - 28, h - 6);
+
+                // Lights
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(hw - 2, -hh + 2, 2, 3);
+                ctx.fillRect(hw - 2, hh - 5, 2, 3);
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(-hw, -hh + 2, 2, 3);
+                ctx.fillRect(-hw, hh - 5, 2, 3);
+
+            } else if (v.type === 'pickup') {
+                // Wheels
+                ctx.fillStyle = '#111111';
+                ctx.fillRect(-hw + 8, hh - 3, 10, 4);
+                ctx.fillRect(hw - 16, hh - 3, 10, 4);
+                ctx.fillRect(-hw + 8, -hh - 1, 10, 4);
+                ctx.fillRect(hw - 16, -hh - 1, 10, 4);
+
+                // Truck Bed Interior
+                ctx.fillStyle = '#374151';
+                ctx.fillRect(-hw, -hh, w * 0.45, h);
+                ctx.fillStyle = v.color;
+                ctx.fillRect(-hw, -hh, 3, h);
+                ctx.fillRect(-hw, -hh, w * 0.45, 2);
+                ctx.fillRect(-hw, hh - 2, w * 0.45, 2);
+
+                // Front Cab
+                ctx.fillRect(-hw + w * 0.45, -hh, w * 0.55, h);
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(-hw + w * 0.45 + 4, -hh + 2, w * 0.32, h - 4);
+
+                // Lights
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(hw - 2, -hh + 2, 2, 3);
+                ctx.fillRect(hw - 2, hh - 5, 2, 3);
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(-hw, -hh + 1, 2, 3);
+                ctx.fillRect(-hw, hh - 4, 2, 3);
+
+            } else if (v.type === 'truck') { // Tractor-Trailer
+                const trailerW = w * 0.68;
+                const cabW = w * 0.28;
+                const gap = w * 0.04;
+
+                // Trailer Body
+                ctx.fillStyle = '#f3f4f6';
+                ctx.fillRect(-hw, -hh + 1, trailerW, h - 2);
+                ctx.strokeStyle = '#9ca3af';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(-hw, -hh + 1, trailerW, h - 2);
+
+                // Hitch
+                ctx.fillStyle = '#1f2937';
+                ctx.fillRect(-hw + trailerW, -2, gap + 2, 4);
+
+                // Cab Body
+                const cabX = -hw + trailerW + gap;
+                ctx.fillStyle = v.color;
+                ctx.fillRect(cabX, -hh, cabW, h);
+                ctx.fillStyle = '#111827';
+                ctx.fillRect(cabX + cabW * 0.4, -hh + 2, cabW * 0.4, h - 4);
+
+                // Wheels
+                ctx.fillStyle = '#111111';
+                ctx.fillRect(-hw + 8, hh - 2, 12, 3);
+                ctx.fillRect(-hw + 24, hh - 2, 12, 3);
+                ctx.fillRect(-hw + 8, -hh - 1, 12, 3);
+                ctx.fillRect(-hw + 24, -hh - 1, 12, 3);
+                ctx.fillRect(cabX + cabW - 12, hh - 2, 8, 3);
+                ctx.fillRect(cabX + cabW - 12, -hh - 1, 8, 3);
+
+                // Lights
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(hw - 2, -hh + 2, 2, 3);
+                ctx.fillRect(hw - 2, hh - 5, 2, 3);
+
+            } else if (v.type === 'sports') {
+                // Wheels
+                ctx.fillStyle = '#111111';
+                ctx.fillRect(-hw + 6, hh - 3, 9, 4);
+                ctx.fillRect(hw - 14, hh - 3, 9, 4);
+                ctx.fillRect(-hw + 6, -hh - 1, 9, 4);
+                ctx.fillRect(hw - 14, -hh - 1, 9, 4);
+
+                // Sleek Body Shape
+                ctx.fillStyle = v.color;
+                ctx.beginPath();
+                ctx.moveTo(-hw + 4, -hh);
+                ctx.lineTo(hw - 8, -hh);
+                ctx.lineTo(hw, -hh + 3);
+                ctx.lineTo(hw, hh - 3);
+                ctx.lineTo(hw - 8, hh);
+                ctx.lineTo(-hw + 4, hh);
+                ctx.lineTo(-hw, hh - 3);
+                ctx.lineTo(-hw, -hh + 3);
+                ctx.closePath();
+                ctx.fill();
+
+                // Rear Spoiler
+                ctx.fillStyle = '#111827';
+                ctx.fillRect(-hw, -hh - 1, 3, h + 2);
+
+                // Slanted Windshield
+                ctx.fillStyle = '#0284c7';
+                ctx.beginPath();
+                ctx.moveTo(-hw + 14, -hh + 3);
+                ctx.lineTo(hw - 12, -hh + 3);
+                ctx.lineTo(hw - 8, hh - 3);
+                ctx.lineTo(-hw + 14, hh - 3);
+                ctx.closePath();
+                ctx.fill();
+
+                // Racing Stripe
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-hw + 4, -1, w - 6, 2);
+
+                // Headlights
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(hw - 4, -hh + 1, 3, 2);
+                ctx.fillRect(hw - 4, hh - 3, 3, 2);
+
+            } else if (v.type === 'motorcycle') {
+                // Wheels
+                ctx.fillStyle = '#111111';
+                ctx.fillRect(-hw + 2, -hh - 1, 7, 3);
+                ctx.fillRect(-hw + 2, hh - 2, 7, 3);
+                ctx.fillRect(hw - 9, -hh - 1, 7, 3);
+                ctx.fillRect(hw - 9, hh - 2, 7, 3);
+
+                // Bike Frame
+                ctx.fillStyle = v.color;
+                ctx.fillRect(-hw + 6, -hh + 2, w - 12, h - 4);
+
+                // Rider Body & Helmet
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.arc(-hw + 10, 0, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#e2e8f0';
+                ctx.beginPath();
+                ctx.arc(-hw + 14, 0, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Handlebars & Headlight
+                ctx.fillStyle = '#64748b';
+                ctx.fillRect(hw - 10, -hh, 2, h);
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(hw - 3, -2, 3, 4);
+            }
+
+            ctx.restore();
+        }
+
+        function drawStickman(x, y, facing, walkFrame) {
+            ctx.strokeStyle = '#ffffff';
+            ctx.fillStyle = '#ffffff';
+            ctx.lineWidth = 1.8;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Halved character dimensions
+            const headRadius = 5;
+            const bodyLength = 15;
+            const legLength = 11;
+            const neckY = y - bodyLength;
+            const headY = neckY - headRadius;
+            const shoulderY = neckY + 4;
+
+            // 1. Head
+            ctx.beginPath();
+            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Eye direction indicator
+            ctx.beginPath();
+            ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Torso
+            ctx.beginPath();
+            ctx.moveTo(x, neckY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            // 3. Legs
+            const legSwing = Math.sin(walkFrame) * 6;
+
+            // Left / Right Legs
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - legSwing, y + legLength);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + legSwing, y + legLength);
+            ctx.stroke();
+
+            // 4. Back Arm
+            const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+            ctx.stroke();
+
+            // 5. Front Arm
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
+            ctx.stroke();
+        }
+
+        function draw() {
+            // Draw Environment (Grass & 4-Lane Road)
+            drawEnvironment();
+
+            // Draw All Vehicles
+            vehicles.forEach(v => drawVehicle(v));
+
+            // Draw Stickman
+            drawStickman(player.x, player.y, player.facing, player.walkFrame);
+        }
+
+        function animate() {
+            updatePhysics();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            animate();
+        };
+    </script>
+</body>
+</html>
