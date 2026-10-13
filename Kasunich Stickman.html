@@ -131,13 +131,16 @@
         <h1>Stickman Engine</h1>
         <div class="status-container">
             <div class="status-item">
+                LEVEL: <span id="level-status" class="status-badge">1</span>
+            </div>
+            <div class="status-item">
                 BLUEBERRY: <span id="berry-status" class="status-badge">NONE</span>
             </div>
             <div class="status-item">
                 EXIT: <span id="exit-status" class="status-badge">LOCKED</span>
             </div>
         </div>
-        <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+        <button class="btn-reset" onclick="fullReset()">Reset</button>
     </div>
 
     <!-- Canvas Container -->
@@ -164,6 +167,7 @@
         const keys = {};
 
         // GAME STATE
+        let level = 1;
         let gameState = 'PLAYING'; // 'PLAYING', 'WON', 'GAME_OVER'
         let statusMessage = '';
         let messageTimer = 0;
@@ -186,15 +190,23 @@
         const exitGrid = { col: COLS - 2, row: 1 };  // Top-Right Corner
         const bushGrid = { col: Math.floor(COLS / 2), row: Math.floor(ROWS / 2) }; // Center Bush
 
+        // 4 CORNER SPAWN LOCATIONS
+        const cornerGrids = [
+            { col: 1, row: 1 },                   // Top-Left
+            { col: COLS - 2, row: 1 },            // Top-Right
+            { col: 1, row: ROWS - 2 },            // Bottom-Left
+            { col: COLS - 2, row: ROWS - 2 }     // Bottom-Right
+        ];
+
         // ENTITIES & TIMERS
         let slimes = [];
         let projectiles = [];
         let particles = [];
         let slimeSpawnTimer = 0;
+        let slimesSpawned = false;
         const INITIAL_SPAWN_DELAY = 300; // 5 seconds @ 60 FPS
-        const REPEAT_SPAWN_INTERVAL = 360; // 6 seconds @ 60 FPS
 
-        // MAZE GENERATION (Recursive Backtracker)
+        // RANDOM MAZE GENERATION (Recursive Backtracker)
         function generateMaze() {
             map = Array(ROWS).fill().map(() => Array(COLS).fill(1));
 
@@ -220,6 +232,7 @@
                 }
 
                 if (neighbors.length > 0) {
+                    // Random choice generates a brand-new maze layout every time
                     const [dc, dr, nc, nr] = neighbors[Math.floor(Math.random() * neighbors.length)];
                     map[currR + dr / 2][currC + dc / 2] = 0;
                     map[nr][nc] = 0;
@@ -238,8 +251,10 @@
             map[br][bc - 1] = 0;
             map[br][bc + 1] = 0;
 
-            // Ensure Start and Exit nodes are open
-            map[startGrid.row][startGrid.col] = 0;
+            // Ensure all 4 corner spawn tiles and exit are open paths
+            for (let corner of cornerGrids) {
+                map[corner.row][corner.col] = 0;
+            }
             map[exitGrid.row][exitGrid.col] = 0;
         }
 
@@ -255,7 +270,6 @@
             if (map.length === 0) {
                 resetSimulation();
             } else {
-                // Adjust positions proportionally on window resize
                 player.x = (startGrid.col + 0.5) * tileW;
                 player.y = (startGrid.row + 0.5) * tileH;
             }
@@ -270,7 +284,10 @@
             }
 
             if (e.code === 'Space' && !keys['Space']) {
-                if (gameState !== 'PLAYING') {
+                if (gameState === 'WON') {
+                    level++;
+                    resetSimulation();
+                } else if (gameState === 'GAME_OVER') {
                     resetSimulation();
                 } else {
                     handleSpacebar();
@@ -304,7 +321,6 @@
             if (player.hasBlueberry) {
                 player.hasBlueberry = false;
                 
-                // Determine throw direction vector
                 let vx = player.lastDirX;
                 let vy = player.lastDirY;
                 if (vx === 0 && vy === 0) vx = player.facing;
@@ -330,22 +346,30 @@
             messageTimer = 120; // ~2 seconds display
         }
 
-        function spawnSlime() {
-            const startX = (startGrid.col + 0.5) * tileW;
-            const startY = (startGrid.row + 0.5) * tileH;
-            slimes.push({
-                x: startX,
-                y: startY,
-                dirX: 0,
-                dirY: -1,
-                speed: 1.8 + Math.random() * 0.4,
-                radius: Math.min(tileW, tileH) * 0.28,
-                animPhase: Math.random() * Math.PI * 2
-            });
+        function spawn4CornerSlimes() {
+            for (let corner of cornerGrids) {
+                const startX = (corner.col + 0.5) * tileW;
+                const startY = (corner.row + 0.5) * tileH;
+                slimes.push({
+                    x: startX,
+                    y: startY,
+                    dirX: 0,
+                    dirY: 0,
+                    speed: 1.7 + Math.random() * 0.5,
+                    radius: Math.min(tileW, tileH) * 0.28,
+                    animPhase: Math.random() * Math.PI * 2
+                });
+            }
+            showNotification("4 SLIMES SPAWNED AT THE CORNERS!");
+        }
+
+        function fullReset() {
+            level = 1;
+            resetSimulation();
         }
 
         function resetSimulation() {
-            generateMaze();
+            generateMaze(); // Generates fresh randomized layout
             tileW = canvas.width / COLS;
             tileH = canvas.height / ROWS;
 
@@ -361,7 +385,8 @@
             slimes = [];
             projectiles = [];
             particles = [];
-            slimeSpawnTimer = 0; // Reset spawn timer to 0 (gives 5 second grace period)
+            slimeSpawnTimer = 0;
+            slimesSpawned = false;
             gameState = 'PLAYING';
             statusMessage = '';
         }
@@ -416,7 +441,6 @@
                 player.walkFrame = 0;
             }
 
-            // Smooth Wall Sliding Collision
             const moveX = dx * player.speed;
             const moveY = dy * player.speed;
 
@@ -438,19 +462,12 @@
                 }
             }
 
-            // --- 2. SLIME SPAWNING WITH 5-SECOND START DELAY ---
+            // --- 2. 4-CORNER SLIME SPAWNING AFTER 5 SECONDS ---
             slimeSpawnTimer++;
 
-            if (slimes.length === 0) {
-                // First slime spawns after 5 seconds (300 frames)
-                if (slimeSpawnTimer >= INITIAL_SPAWN_DELAY) {
-                    spawnSlime();
-                    slimeSpawnTimer = 0;
-                }
-            } else if (slimeSpawnTimer >= REPEAT_SPAWN_INTERVAL && slimes.length < 4) {
-                // Subsequent slimes spawn every 6 seconds
-                spawnSlime();
-                slimeSpawnTimer = 0;
+            if (!slimesSpawned && slimeSpawnTimer >= INITIAL_SPAWN_DELAY) {
+                slimesSpawned = true;
+                spawn4CornerSlimes();
             }
 
             for (let s of slimes) {
@@ -460,7 +477,7 @@
                 const centerX = (c + 0.5) * tileW;
                 const centerY = (r + 0.5) * tileH;
 
-                // When near cell center, decide next random direction at intersection
+                // When near cell center, pick direction at intersection
                 if (Math.abs(s.x - centerX) < s.speed && Math.abs(s.y - centerY) < s.speed) {
                     s.x = centerX;
                     s.y = centerY;
@@ -493,7 +510,7 @@
                 s.x += s.dirX * s.speed;
                 s.y += s.dirY * s.speed;
 
-                // Player Caught by Slime Check
+                // Collision with Player
                 if (Math.hypot(player.x - s.x, player.y - s.y) < player.radius + s.radius * 0.7) {
                     gameState = 'GAME_OVER';
                     createParticles(player.x, player.y, '#ff4d4d', 20);
@@ -562,6 +579,7 @@
         }
 
         function updateUI() {
+            document.getElementById('level-status').textContent = level;
             const berryEl = document.getElementById('berry-status');
             const exitEl = document.getElementById('exit-status');
 
@@ -643,7 +661,7 @@
             ctx.arc(cx, cy, r * 0.6, 0, Math.PI * 2);
             ctx.fill();
 
-            // Blueberries on Bush
+            // Blueberries
             ctx.fillStyle = '#2b52ff';
             const berryOffsets = [
                 { x: -r * 0.3, y: -r * 0.2 },
@@ -659,7 +677,7 @@
                 ctx.fill();
             }
 
-            // Proximity Highlight
+            // Proximity Prompt
             const dist = Math.hypot(player.x - cx, player.y - cy);
             if (dist < tileW * 0.9) {
                 ctx.strokeStyle = '#4f73ff';
@@ -684,7 +702,7 @@
                 const rx = s.radius * (1 + squash);
                 const ry = s.radius * (1 - squash);
 
-                // Slime Body
+                // Body
                 ctx.fillStyle = 'rgba(50, 205, 50, 0.85)';
                 ctx.strokeStyle = '#00ff00';
                 ctx.lineWidth = 1.5;
@@ -804,22 +822,22 @@
 
         function drawOverlay() {
             // Spawn Warning / Countdown Display
-            if (slimes.length === 0 && gameState === 'PLAYING') {
+            if (!slimesSpawned && gameState === 'PLAYING') {
                 const secondsLeft = Math.ceil((INITIAL_SPAWN_DELAY - slimeSpawnTimer) / 60);
                 if (secondsLeft > 0) {
                     ctx.fillStyle = '#ff4d4d';
                     ctx.font = 'bold 12px monospace';
                     ctx.textAlign = 'left';
-                    ctx.fillText(`⚠️ SLIME SPAWNING IN: ${secondsLeft}s (RUN!)`, 15, canvas.height - 15);
+                    ctx.fillText(`⚠️ 4 SLIMES SPAWNING IN ALL 4 CORNERS IN: ${secondsLeft}s (RUN!)`, 15, canvas.height - 15);
                 }
             }
 
             // Notifications
             if (messageTimer > 0 && statusMessage) {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-                ctx.fillRect(canvas.width / 2 - 180, 10, 360, 26);
+                ctx.fillRect(canvas.width / 2 - 200, 10, 400, 26);
                 ctx.strokeStyle = '#ffffff';
-                ctx.strokeRect(canvas.width / 2 - 180, 10, 360, 26);
+                ctx.strokeRect(canvas.width / 2 - 200, 10, 400, 26);
 
                 ctx.fillStyle = '#ffff55';
                 ctx.font = 'bold 11px monospace';
@@ -836,11 +854,15 @@
                 if (gameState === 'WON') {
                     ctx.fillStyle = '#34ce57';
                     ctx.font = 'bold 24px monospace';
-                    ctx.fillText('LEVEL CLEARED!', canvas.width / 2, canvas.height / 2 - 15);
+                    ctx.fillText(`LEVEL ${level} CLEARED!`, canvas.width / 2, canvas.height / 2 - 15);
 
                     ctx.fillStyle = '#ffffff';
                     ctx.font = '13px monospace';
-                    ctx.fillText('You escaped the maze with the blueberry!', canvas.width / 2, canvas.height / 2 + 15);
+                    ctx.fillText('You escaped with the blueberry!', canvas.width / 2, canvas.height / 2 + 15);
+
+                    ctx.fillStyle = '#aaa';
+                    ctx.font = '11px monospace';
+                    ctx.fillText(`Press [SPACEBAR] to play Level ${level + 1}`, canvas.width / 2, canvas.height / 2 + 50);
                 } else {
                     ctx.fillStyle = '#ff4d4d';
                     ctx.font = 'bold 24px monospace';
@@ -849,11 +871,11 @@
                     ctx.fillStyle = '#ffffff';
                     ctx.font = '13px monospace';
                     ctx.fillText('You were caught by a slime!', canvas.width / 2, canvas.height / 2 + 15);
-                }
 
-                ctx.fillStyle = '#aaa';
-                ctx.font = '11px monospace';
-                ctx.fillText('Press [SPACEBAR] or click RESET to try again', canvas.width / 2, canvas.height / 2 + 50);
+                    ctx.fillStyle = '#aaa';
+                    ctx.font = '11px monospace';
+                    ctx.fillText('Press [SPACEBAR] or click RESET to retry this level', canvas.width / 2, canvas.height / 2 + 50);
+                }
             }
         }
 
