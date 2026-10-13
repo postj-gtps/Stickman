@@ -186,11 +186,13 @@
         const exitGrid = { col: COLS - 2, row: 1 };  // Top-Right Corner
         const bushGrid = { col: Math.floor(COLS / 2), row: Math.floor(ROWS / 2) }; // Center Bush
 
-        // ENTITIES
+        // ENTITIES & TIMERS
         let slimes = [];
         let projectiles = [];
         let particles = [];
         let slimeSpawnTimer = 0;
+        const INITIAL_SPAWN_DELAY = 300; // 5 seconds @ 60 FPS
+        const REPEAT_SPAWN_INTERVAL = 360; // 6 seconds @ 60 FPS
 
         // MAZE GENERATION (Recursive Backtracker)
         function generateMaze() {
@@ -359,12 +361,9 @@
             slimes = [];
             projectiles = [];
             particles = [];
-            slimeSpawnTimer = 0;
+            slimeSpawnTimer = 0; // Reset spawn timer to 0 (gives 5 second grace period)
             gameState = 'PLAYING';
             statusMessage = '';
-
-            // Spawn initial slime at bottom-left corner
-            spawnSlime();
         }
 
         // CIRCLE-TO-WALL COLLISION DETECTION
@@ -439,9 +438,17 @@
                 }
             }
 
-            // --- 2. SLIME SPAWNING & MOVEMENT ---
+            // --- 2. SLIME SPAWNING WITH 5-SECOND START DELAY ---
             slimeSpawnTimer++;
-            if (slimeSpawnTimer > 360 && slimes.length < 4) { // Periodically spawn slimes at bottom-left
+
+            if (slimes.length === 0) {
+                // First slime spawns after 5 seconds (300 frames)
+                if (slimeSpawnTimer >= INITIAL_SPAWN_DELAY) {
+                    spawnSlime();
+                    slimeSpawnTimer = 0;
+                }
+            } else if (slimeSpawnTimer >= REPEAT_SPAWN_INTERVAL && slimes.length < 4) {
+                // Subsequent slimes spawn every 6 seconds
                 spawnSlime();
                 slimeSpawnTimer = 0;
             }
@@ -796,6 +803,17 @@
         }
 
         function drawOverlay() {
+            // Spawn Warning / Countdown Display
+            if (slimes.length === 0 && gameState === 'PLAYING') {
+                const secondsLeft = Math.ceil((INITIAL_SPAWN_DELAY - slimeSpawnTimer) / 60);
+                if (secondsLeft > 0) {
+                    ctx.fillStyle = '#ff4d4d';
+                    ctx.font = 'bold 12px monospace';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(`⚠️ SLIME SPAWNING IN: ${secondsLeft}s (RUN!)`, 15, canvas.height - 15);
+                }
+            }
+
             // Notifications
             if (messageTimer > 0 && statusMessage) {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
