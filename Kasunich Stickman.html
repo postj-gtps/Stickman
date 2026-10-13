@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman Maze Escape</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            overflow: hidden;
+            padding: 16px;
+        }
+
+        /* Top Header Bar */
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1100px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ffffff;
+        }
+
+        h1 {
+            font-size: 18px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .status-container {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge {
+            padding: 2px 8px;
+            border: 1px solid #ffffff;
+            font-weight: bold;
+        }
+
+        .status-badge.has-item {
+            background-color: #2b52ff;
+            color: #ffffff;
+            border-color: #4f73ff;
+        }
+
+        .status-badge.unlocked {
+            background-color: #28a745;
+            color: #ffffff;
+            border-color: #34ce57;
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            padding: 6px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .btn-reset:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        /* Main Canvas Container */
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 1100px;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #000000;
+            border: 1px solid #ffffff;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .instructions {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #aaa;
+            text-align: center;
+        }
+
+        .key-prompt {
+            color: #4f73ff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div id="header">
+        <h1>Stickman Engine</h1>
+        <div class="status-container">
+            <div class="status-item">
+                BLUEBERRY: <span id="berry-status" class="status-badge">NONE</span>
+            </div>
+            <div class="status-item">
+                EXIT: <span id="exit-status" class="status-badge">LOCKED</span>
+            </div>
+        </div>
+        <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvas-wrapper">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+    <div class="instructions">
+        [WASD / ARROWS] Move &nbsp;|&nbsp; <span class="key-prompt">[SPACEBAR]</span> Pick Blueberry at Bush / Throw Blueberry at Slime
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // MAZE DEFINITIONS (Odd dimensions guarantee wall boundaries)
+        const COLS = 19;
+        const ROWS = 13;
+        let map = []; // 1 = Wall, 0 = Path
+        let tileW = 0;
+        let tileH = 0;
+
+        // KEYBOARD INPUT STATE
+        const keys = {};
+
+        // GAME STATE
+        let gameState = 'PLAYING'; // 'PLAYING', 'WON', 'GAME_OVER'
+        let statusMessage = '';
+        let messageTimer = 0;
+
+        // STICKMAN PLAYER STATE
+        const player = {
+            x: 0,
+            y: 0,
+            radius: 8,
+            speed: 3.2,
+            facing: 1, // 1 = Right, -1 = Left
+            lastDirX: 1,
+            lastDirY: 0,
+            walkFrame: 0,
+            hasBlueberry: false
+        };
+
+        // SPECIAL LOCATIONS (Grid Indices)
+        const startGrid = { col: 1, row: ROWS - 2 }; // Bottom-Left Corner
+        const exitGrid = { col: COLS - 2, row: 1 };  // Top-Right Corner
+        const bushGrid = { col: Math.floor(COLS / 2), row: Math.floor(ROWS / 2) }; // Center Bush
+
+        // ENTITIES
+        let slimes = [];
+        let projectiles = [];
+        let particles = [];
+        let slimeSpawnTimer = 0;
+
+        // MAZE GENERATION (Recursive Backtracker)
+        function generateMaze() {
+            map = Array(ROWS).fill().map(() => Array(COLS).fill(1));
+
+            const stack = [[startGrid.col, startGrid.row]];
+            map[startGrid.row][startGrid.col] = 0;
+
+            const dirs = [
+                [0, -2], [0, 2], [-2, 0], [2, 0]
+            ];
+
+            while (stack.length > 0) {
+                const [currC, currR] = stack[stack.length - 1];
+                const neighbors = [];
+
+                for (const [dc, dr] of dirs) {
+                    const nc = currC + dc;
+                    const nr = currR + dr;
+                    if (nc > 0 && nc < COLS - 1 && nr > 0 && nr < ROWS - 1) {
+                        if (map[nr][nc] === 1) {
+                            neighbors.push([dc, dr, nc, nr]);
+                        }
+                    }
+                }
+
+                if (neighbors.length > 0) {
+                    const [dc, dr, nc, nr] = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    map[currR + dr / 2][currC + dc / 2] = 0;
+                    map[nr][nc] = 0;
+                    stack.push([nc, nr]);
+                } else {
+                    stack.pop();
+                }
+            }
+
+            // Ensure Center Bush area is carved and connected
+            const bc = bushGrid.col;
+            const br = bushGrid.row;
+            map[br][bc] = 0;
+            map[br - 1][bc] = 0;
+            map[br + 1][bc] = 0;
+            map[br][bc - 1] = 0;
+            map[br][bc + 1] = 0;
+
+            // Ensure Start and Exit nodes are open
+            map[startGrid.row][startGrid.col] = 0;
+            map[exitGrid.row][exitGrid.col] = 0;
+        }
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            
+            tileW = canvas.width / COLS;
+            tileH = canvas.height / ROWS;
+            player.radius = Math.min(tileW, tileH) * 0.22;
+
+            if (map.length === 0) {
+                resetSimulation();
+            } else {
+                // Adjust positions proportionally on window resize
+                player.x = (startGrid.col + 0.5) * tileW;
+                player.y = (startGrid.row + 0.5) * tileH;
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // CONTROLS HANDLERS
+        window.addEventListener('keydown', (e) => {
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+                e.preventDefault();
+            }
+
+            if (e.code === 'Space' && !keys['Space']) {
+                if (gameState !== 'PLAYING') {
+                    resetSimulation();
+                } else {
+                    handleSpacebar();
+                }
+            }
+            keys[e.code] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        function handleSpacebar() {
+            const bushX = (bushGrid.col + 0.5) * tileW;
+            const bushY = (bushGrid.row + 0.5) * tileH;
+            const distToBush = Math.hypot(player.x - bushX, player.y - bushY);
+
+            // 1. Pick up Blueberry if at Bush
+            if (distToBush < tileW * 0.8) {
+                if (!player.hasBlueberry) {
+                    player.hasBlueberry = true;
+                    showNotification("GOT A BLUEBERRY!");
+                    createParticles(bushX, bushY, '#4f73ff', 15);
+                } else {
+                    showNotification("ALREADY HOLDING A BLUEBERRY!");
+                }
+                return;
+            }
+
+            // 2. Throw Blueberry if Player has one
+            if (player.hasBlueberry) {
+                player.hasBlueberry = false;
+                
+                // Determine throw direction vector
+                let vx = player.lastDirX;
+                let vy = player.lastDirY;
+                if (vx === 0 && vy === 0) vx = player.facing;
+
+                const len = Math.hypot(vx, vy) || 1;
+                vx = (vx / len) * 7.5;
+                vy = (vy / len) * 7.5;
+
+                projectiles.push({
+                    x: player.x,
+                    y: player.y,
+                    vx: vx,
+                    vy: vy,
+                    radius: 5
+                });
+
+                showNotification("BLUEBERRY THROWN!");
+            }
+        }
+
+        function showNotification(msg) {
+            statusMessage = msg;
+            messageTimer = 120; // ~2 seconds display
+        }
+
+        function spawnSlime() {
+            const startX = (startGrid.col + 0.5) * tileW;
+            const startY = (startGrid.row + 0.5) * tileH;
+            slimes.push({
+                x: startX,
+                y: startY,
+                dirX: 0,
+                dirY: -1,
+                speed: 1.8 + Math.random() * 0.4,
+                radius: Math.min(tileW, tileH) * 0.28,
+                animPhase: Math.random() * Math.PI * 2
+            });
+        }
+
+        function resetSimulation() {
+            generateMaze();
+            tileW = canvas.width / COLS;
+            tileH = canvas.height / ROWS;
+
+            // Stickman starts in bottom-left corner
+            player.x = (startGrid.col + 0.5) * tileW;
+            player.y = (startGrid.row + 0.5) * tileH;
+            player.facing = 1;
+            player.lastDirX = 1;
+            player.lastDirY = 0;
+            player.walkFrame = 0;
+            player.hasBlueberry = false;
+
+            slimes = [];
+            projectiles = [];
+            particles = [];
+            slimeSpawnTimer = 0;
+            gameState = 'PLAYING';
+            statusMessage = '';
+
+            // Spawn initial slime at bottom-left corner
+            spawnSlime();
+        }
+
+        // CIRCLE-TO-WALL COLLISION DETECTION
+        function canMoveTo(x, y, radius) {
+            const minC = Math.floor((x - radius) / tileW);
+            const maxC = Math.floor((x + radius) / tileW);
+            const minR = Math.floor((y - radius) / tileH);
+            const maxR = Math.floor((y + radius) / tileH);
+
+            for (let r = minR; r <= maxR; r++) {
+                for (let c = minC; c <= maxC; c++) {
+                    if (r < 0 || r >= ROWS || c < 0 || c >= COLS || map[r][c] === 1) {
+                        const rectX = c * tileW;
+                        const rectY = r * tileH;
+                        const closestX = Math.max(rectX, Math.min(x, rectX + tileW));
+                        const closestY = Math.max(rectY, Math.min(y, rectY + tileH));
+                        const distX = x - closestX;
+                        const distY = y - closestY;
+                        if ((distX * distX + distY * distY) < radius * radius) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+        function updatePhysics() {
+            if (gameState !== 'PLAYING') return;
+
+            // --- 1. PLAYER MOVEMENT ---
+            let dx = 0;
+            let dy = 0;
+
+            if (keys['KeyW'] || keys['Keyw'] || keys['ArrowUp']) dy -= 1;
+            if (keys['KeyS'] || keys['Keys'] || keys['ArrowDown']) dy += 1;
+            if (keys['KeyA'] || keys['Keya'] || keys['ArrowLeft']) { dx -= 1; player.facing = -1; }
+            if (keys['KeyD'] || keys['Keyd'] || keys['ArrowRight']) { dx += 1; player.facing = 1; }
+
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.7071;
+                dy *= 0.7071;
+            }
+
+            if (dx !== 0 || dy !== 0) {
+                player.lastDirX = dx;
+                player.lastDirY = dy;
+                player.walkFrame += 0.25;
+            } else {
+                player.walkFrame = 0;
+            }
+
+            // Smooth Wall Sliding Collision
+            const moveX = dx * player.speed;
+            const moveY = dy * player.speed;
+
+            if (canMoveTo(player.x + moveX, player.y, player.radius)) {
+                player.x += moveX;
+            }
+            if (canMoveTo(player.x, player.y + moveY, player.radius)) {
+                player.y += moveY;
+            }
+
+            // Check Exit Reached (Top-Right)
+            const exitX = (exitGrid.col + 0.5) * tileW;
+            const exitY = (exitGrid.row + 0.5) * tileH;
+            if (Math.hypot(player.x - exitX, player.y - exitY) < tileW * 0.5) {
+                if (player.hasBlueberry) {
+                    gameState = 'WON';
+                } else {
+                    showNotification("DOOR LOCKED! BRING A BLUEBERRY FROM CENTER BUSH");
+                }
+            }
+
+            // --- 2. SLIME SPAWNING & MOVEMENT ---
+            slimeSpawnTimer++;
+            if (slimeSpawnTimer > 360 && slimes.length < 4) { // Periodically spawn slimes at bottom-left
+                spawnSlime();
+                slimeSpawnTimer = 0;
+            }
+
+            for (let s of slimes) {
+                s.animPhase += 0.1;
+                const c = Math.floor(s.x / tileW);
+                const r = Math.floor(s.y / tileH);
+                const centerX = (c + 0.5) * tileW;
+                const centerY = (r + 0.5) * tileH;
+
+                // When near cell center, decide next random direction at intersection
+                if (Math.abs(s.x - centerX) < s.speed && Math.abs(s.y - centerY) < s.speed) {
+                    s.x = centerX;
+                    s.y = centerY;
+
+                    const validDirs = [];
+                    const candidates = [
+                        { dc: 0, dr: -1 }, { dc: 0, dr: 1 },
+                        { dc: -1, dr: 0 }, { dc: 1, dr: 0 }
+                    ];
+
+                    for (let cand of candidates) {
+                        const nc = c + cand.dc;
+                        const nr = r + cand.dr;
+                        if (nc >= 0 && nc < COLS && nr >= 0 && nr < ROWS && map[nr][nc] === 0) {
+                            validDirs.push(cand);
+                        }
+                    }
+
+                    // Avoid turning back directly unless dead-end
+                    const forwardDirs = validDirs.filter(d => !(d.dc === -s.dirX && d.dr === -s.dirY));
+                    const chosenPool = forwardDirs.length > 0 ? forwardDirs : validDirs;
+
+                    if (chosenPool.length > 0) {
+                        const choice = chosenPool[Math.floor(Math.random() * chosenPool.length)];
+                        s.dirX = choice.dc;
+                        s.dirY = choice.dr;
+                    }
+                }
+
+                s.x += s.dirX * s.speed;
+                s.y += s.dirY * s.speed;
+
+                // Player Caught by Slime Check
+                if (Math.hypot(player.x - s.x, player.y - s.y) < player.radius + s.radius * 0.7) {
+                    gameState = 'GAME_OVER';
+                    createParticles(player.x, player.y, '#ff4d4d', 20);
+                }
+            }
+
+            // --- 3. PROJECTILE PHYSICS & COLLISION ---
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const p = projectiles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Wall impact
+                const pc = Math.floor(p.x / tileW);
+                const pr = Math.floor(p.y / tileH);
+                if (pc < 0 || pc >= COLS || pr < 0 || pr >= ROWS || map[pr][pc] === 1) {
+                    createParticles(p.x, p.y, '#2b52ff', 8);
+                    projectiles.splice(i, 1);
+                    continue;
+                }
+
+                // Slime impact
+                let hitSlime = false;
+                for (let j = slimes.length - 1; j >= 0; j--) {
+                    const s = slimes[j];
+                    if (Math.hypot(p.x - s.x, p.y - s.y) < p.radius + s.radius) {
+                        createParticles(s.x, s.y, '#32cd32', 25);
+                        slimes.splice(j, 1);
+                        hitSlime = true;
+                        showNotification("SLIME DEFEATED!");
+                        break;
+                    }
+                }
+
+                if (hitSlime) {
+                    projectiles.splice(i, 1);
+                }
+            }
+
+            // --- 4. PARTICLES UPDATE ---
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const pt = particles[i];
+                pt.x += pt.vx;
+                pt.y += pt.vy;
+                pt.life -= 0.04;
+                if (pt.life <= 0) particles.splice(i, 1);
+            }
+
+            if (messageTimer > 0) messageTimer--;
+            updateUI();
+        }
+
+        function createParticles(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const spd = 1 + Math.random() * 3;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * spd,
+                    vy: Math.sin(angle) * spd,
+                    color: color,
+                    life: 1.0
+                });
+            }
+        }
+
+        function updateUI() {
+            const berryEl = document.getElementById('berry-status');
+            const exitEl = document.getElementById('exit-status');
+
+            if (player.hasBlueberry) {
+                berryEl.textContent = 'HELD 🫐';
+                berryEl.classList.add('has-item');
+                exitEl.textContent = 'UNLOCKED';
+                exitEl.classList.add('unlocked');
+            } else {
+                berryEl.textContent = 'NONE';
+                berryEl.classList.remove('has-item');
+                exitEl.textContent = 'LOCKED';
+                exitEl.classList.remove('unlocked');
+            }
+        }
+
+        // --- DRAWING FUNCTIONS ---
+
+        function drawMaze() {
+            ctx.fillStyle = '#0a0a12';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#1e1e2e';
+            ctx.strokeStyle = '#3d3d5c';
+            ctx.lineWidth = 1;
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (map[r][c] === 1) {
+                        ctx.fillRect(c * tileW, r * tileH, tileW, tileH);
+                        ctx.strokeRect(c * tileW, r * tileH, tileW, tileH);
+                    }
+                }
+            }
+        }
+
+        function drawExitDoor() {
+            const x = exitGrid.col * tileW;
+            const y = exitGrid.row * tileH;
+            const unlocked = player.hasBlueberry;
+
+            // Door Background
+            ctx.fillStyle = unlocked ? '#1b4332' : '#2b1b1b';
+            ctx.fillRect(x + tileW * 0.2, y + tileH * 0.1, tileW * 0.6, tileH * 0.8);
+
+            // Door Frame
+            ctx.strokeStyle = unlocked ? '#52b788' : '#d90429';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x + tileW * 0.2, y + tileH * 0.1, tileW * 0.6, tileH * 0.8);
+
+            // Door Knob
+            ctx.fillStyle = '#ffb703';
+            ctx.beginPath();
+            ctx.arc(x + tileW * 0.3, y + tileH * 0.55, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Label
+            ctx.fillStyle = unlocked ? '#74c69d' : '#ef233c';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(unlocked ? 'EXIT' : 'LOCKED', x + tileW * 0.5, y - 3);
+        }
+
+        function drawBlueberryBush() {
+            const cx = (bushGrid.col + 0.5) * tileW;
+            const cy = (bushGrid.row + 0.5) * tileH;
+            const r = Math.min(tileW, tileH) * 0.35;
+
+            // Bush Foliage
+            ctx.fillStyle = '#1b4332';
+            ctx.beginPath();
+            ctx.arc(cx - r * 0.3, cy, r * 0.7, 0, Math.PI * 2);
+            ctx.arc(cx + r * 0.3, cy, r * 0.7, 0, Math.PI * 2);
+            ctx.arc(cx, cy - r * 0.3, r * 0.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#2d6a4f';
+            ctx.beginPath();
+            ctx.arc(cx, cy, r * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Blueberries on Bush
+            ctx.fillStyle = '#2b52ff';
+            const berryOffsets = [
+                { x: -r * 0.3, y: -r * 0.2 },
+                { x: r * 0.3, y: -r * 0.1 },
+                { x: 0, y: r * 0.3 },
+                { x: -r * 0.1, y: -r * 0.4 },
+                { x: r * 0.2, y: r * 0.2 }
+            ];
+
+            for (let b of berryOffsets) {
+                ctx.beginPath();
+                ctx.arc(cx + b.x, cy + b.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Proximity Highlight
+            const dist = Math.hypot(player.x - cx, player.y - cy);
+            if (dist < tileW * 0.9) {
+                ctx.strokeStyle = '#4f73ff';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r * 1.3, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 10px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('[SPACE] PICK', cx, cy - r * 1.5);
+            }
+        }
+
+        function drawSlimes() {
+            for (let s of slimes) {
+                ctx.save();
+                ctx.translate(s.x, s.y);
+
+                const squash = Math.sin(s.animPhase) * 0.15;
+                const rx = s.radius * (1 + squash);
+                const ry = s.radius * (1 - squash);
+
+                // Slime Body
+                ctx.fillStyle = 'rgba(50, 205, 50, 0.85)';
+                ctx.strokeStyle = '#00ff00';
+                ctx.lineWidth = 1.5;
+
+                ctx.beginPath();
+                ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Eyes
+                const eyeOffset = s.dirX * 3;
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(-4 + eyeOffset, -2, 2.5, 0, Math.PI * 2);
+                ctx.arc(4 + eyeOffset, -2, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(-4 + eyeOffset * 1.2, -2, 1, 0, Math.PI * 2);
+                ctx.arc(4 + eyeOffset * 1.2, -2, 1, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        function drawProjectiles() {
+            for (let p of projectiles) {
+                ctx.fillStyle = '#2b52ff';
+                ctx.strokeStyle = '#99b3ff';
+                ctx.lineWidth = 1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+
+        function drawParticles() {
+            for (let pt of particles) {
+                ctx.fillStyle = pt.color;
+                ctx.globalAlpha = pt.life;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function drawStickman(x, y, facing, walkFrame) {
+            ctx.strokeStyle = '#ffffff';
+            ctx.fillStyle = '#ffffff';
+            ctx.lineWidth = 1.8;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const headRadius = 5;
+            const bodyLength = 15;
+            const legLength = 11;
+            const neckY = y - bodyLength;
+            const headY = neckY - headRadius;
+            const shoulderY = neckY + 4;
+
+            // 1. Head
+            ctx.beginPath();
+            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Eye direction indicator
+            ctx.beginPath();
+            ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Torso
+            ctx.beginPath();
+            ctx.moveTo(x, neckY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            // 3. Legs
+            const legSwing = Math.sin(walkFrame) * 6;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - legSwing, y + legLength);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + legSwing, y + legLength);
+            ctx.stroke();
+
+            // 4. Arms
+            const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
+            ctx.stroke();
+
+            // 5. Held Blueberry Indicator
+            if (player.hasBlueberry) {
+                ctx.fillStyle = '#2b52ff';
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(x + facing * 8, shoulderY, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+
+        function drawOverlay() {
+            // Notifications
+            if (messageTimer > 0 && statusMessage) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+                ctx.fillRect(canvas.width / 2 - 180, 10, 360, 26);
+                ctx.strokeStyle = '#ffffff';
+                ctx.strokeRect(canvas.width / 2 - 180, 10, 360, 26);
+
+                ctx.fillStyle = '#ffff55';
+                ctx.font = 'bold 11px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(statusMessage, canvas.width / 2, 27);
+            }
+
+            // Game End Screens
+            if (gameState === 'WON' || gameState === 'GAME_OVER') {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.textAlign = 'center';
+                if (gameState === 'WON') {
+                    ctx.fillStyle = '#34ce57';
+                    ctx.font = 'bold 24px monospace';
+                    ctx.fillText('LEVEL CLEARED!', canvas.width / 2, canvas.height / 2 - 15);
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '13px monospace';
+                    ctx.fillText('You escaped the maze with the blueberry!', canvas.width / 2, canvas.height / 2 + 15);
+                } else {
+                    ctx.fillStyle = '#ff4d4d';
+                    ctx.font = 'bold 24px monospace';
+                    ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 15);
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '13px monospace';
+                    ctx.fillText('You were caught by a slime!', canvas.width / 2, canvas.height / 2 + 15);
+                }
+
+                ctx.fillStyle = '#aaa';
+                ctx.font = '11px monospace';
+                ctx.fillText('Press [SPACEBAR] or click RESET to try again', canvas.width / 2, canvas.height / 2 + 50);
+            }
+        }
+
+        function draw() {
+            drawMaze();
+            drawExitDoor();
+            drawBlueberryBush();
+            drawSlimes();
+            drawProjectiles();
+            drawParticles();
+            drawStickman(player.x, player.y, player.facing, player.walkFrame);
+            drawOverlay();
+        }
+
+        function animate() {
+            updatePhysics();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            animate();
+        };
+    </script>
+</body>
+</html>
