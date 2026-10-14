@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman Maze Adventure</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            overflow: hidden;
+            padding: 16px;
+        }
+
+        /* Top Header Bar */
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1100px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ffffff;
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .stat-box {
+            color: #00ffcc;
+        }
+
+        .money-box {
+            color: #ffd700;
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            padding: 6px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .btn-reset:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        /* Main Canvas Container */
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 1100px;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #050508;
+            border: 1px solid #ffffff;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .instructions {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #aaaaaa;
+            text-align: center;
+        }
+
+        .highlight {
+            color: #00e5ff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div id="header">
+        <div class="stats-container">
+            <span class="stat-box" id="level-display">Level: 1 / 10</span>
+            <span class="money-box" id="money-display">Money: $0</span>
+        </div>
+        <button class="btn-reset" onclick="resetFullGame()">Reset Game</button>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvas-wrapper">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+    <div class="instructions">
+        [WASD / Arrow Keys] Move &nbsp;|&nbsp; [Left Click / Space] Throw Water Balloon &nbsp;|&nbsp; Reach <span class="highlight">EXIT</span> to Next Level
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // GAME CONFIG & STATE
+        const TOTAL_LEVELS = 10;
+        let currentLevel = 1;
+        let totalMoney = 0;
+        let gameState = 'PLAYING'; // 'PLAYING', 'VICTORY'
+
+        // GRID MAZE CONFIG
+        const COLS = 19;
+        const ROWS = 13;
+        let tileSize = 40;
+        let offsetX = 0;
+        let offsetY = 0;
+        let grid = []; // 1 = Wall, 0 = Path
+
+        // COLOR PALETTES FOR MAZE WALLS
+        const MAZE_THEMES = [
+            '#ff0055', '#00f0ff', '#39ff14', '#ff9900', '#b500ff',
+            '#ff00aa', '#00ffaa', '#ffff00', '#ff3300', '#0099ff'
+        ];
+
+        // INPUT STATE
+        const keys = {};
+        const mouse = { x: 0, y: 0, down: false };
+
+        // PLAYER STATE
+        const player = {
+            x: 0,
+            y: 0,
+            radius: 12,
+            speed: 3.2,
+            facing: 1, // 1 = Right, -1 = Left
+            walkFrame: 0,
+            aimAngle: 0,
+            throwCooldown: 0
+        };
+
+        // GAME ENTITIES
+        let coins = [];
+        let enemies = [];
+        let balloons = [];
+        let fireballs = [];
+        let particles = [];
+        let exitTile = { col: COLS - 2, row: ROWS - 2 };
+
+        // WATERSLIDE ANIMATION STATE
+        let slideTime = 0;
+
+        // INITIALIZATION & RESIZE
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            
+            tileSize = Math.floor(Math.min(canvas.width / COLS, canvas.height / ROWS));
+            offsetX = Math.floor((canvas.width - COLS * tileSize) / 2);
+            offsetY = Math.floor((canvas.height - ROWS * tileSize) / 2);
+
+            if (grid.length === 0) {
+                initLevel(currentLevel);
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // CONTROLS HANDLERS
+        window.addEventListener('keydown', (e) => {
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+                e.preventDefault();
+            }
+            keys[e.code] = true;
+
+            if (e.code === 'Space' && gameState === 'PLAYING') {
+                throwWaterBalloon();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 0 && gameState === 'PLAYING') {
+                throwWaterBalloon();
+            }
+        });
+
+        // MAZE GENERATOR (Recursive Backtracking)
+        function generateMaze() {
+            grid = Array.from({ length: ROWS }, () => Array(COLS).fill(1));
+
+            function carve(r, c) {
+                grid[r][c] = 0;
+                const dirs = [
+                    [-2, 0], [2, 0], [0, -2], [0, 2]
+                ].sort(() => Math.random() - 0.5);
+
+                for (let [dr, dc] of dirs) {
+                    const nr = r + dr;
+                    const nc = c + dc;
+                    if (nr > 0 && nr < ROWS - 1 && nc > 0 && nc < COLS - 1 && grid[nr][nc] === 1) {
+                        grid[r + dr / 2][c + dc / 2] = 0;
+                        carve(nr, nc);
+                    }
+                }
+            }
+
+            carve(1, 1);
+            grid[1][1] = 0;
+            grid[1][2] = 0;
+            grid[2][1] = 0;
+            grid[ROWS - 2][COLS - 2] = 0;
+            grid[ROWS - 2][COLS - 3] = 0;
+            grid[ROWS - 3][COLS - 2] = 0;
+        }
+
+        function getOpenTiles() {
+            const open = [];
+            for (let r = 1; r < ROWS - 1; r++) {
+                for (let c = 1; c < COLS - 1; c++) {
+                    if (grid[r][c] === 0) {
+                        // Exclude start and exit tiles
+                        if ((r <= 2 && c <= 2) || (r >= ROWS - 3 && c >= COLS - 3)) continue;
+                        open.push({ col: c, row: r });
+                    }
+                }
+            }
+            return open;
+        }
+
+        // LEVEL INITIALIZATION
+        function initLevel(lvl) {
+            generateMaze();
+
+            // Set player position at start (1,1)
+            player.x = offsetX + 1.5 * tileSize;
+            player.y = offsetY + 1.5 * tileSize;
+
+            balloons = [];
+            fireballs = [];
+            particles = [];
+
+            // Spawn 10 Coins scattered in open spaces
+            coins = [];
+            const openTiles = getOpenTiles().sort(() => Math.random() - 0.5);
+
+            for (let i = 0; i < 10 && i < openTiles.length; i++) {
+                const t = openTiles.pop();
+                coins.push({
+                    x: offsetX + (t.col + 0.5) * tileSize,
+                    y: offsetY + (t.row + 0.5) * tileSize,
+                    radius: 7,
+                    collected: false
+                });
+            }
+
+            // Spawn Enemies
+            enemies = [];
+            const enemyCount = 3 + Math.floor(lvl * 0.8);
+
+            for (let i = 0; i < enemyCount && openTiles.length > 0; i++) {
+                const t = openTiles.pop();
+                const enemyTypes = ['teal_slime'];
+                if (lvl >= 2) enemyTypes.push('red_slime');
+                if (lvl >= 3) enemyTypes.push('yellow_slime');
+                if (lvl >= 3) enemyTypes.push('snake_dragon');
+
+                const chosenType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+                spawnEnemy(chosenType, offsetX + (t.col + 0.5) * tileSize, offsetY + (t.row + 0.5) * tileSize);
+            }
+
+            updateUI();
+        }
+
+        function spawnEnemy(type, x, y) {
+            const baseSpeed = 1.0 + currentLevel * 0.12;
+            let enemy = {
+                type: type,
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * baseSpeed,
+                vy: (Math.random() - 0.5) * baseSpeed,
+                radius: 13,
+                shootTimer: Math.random() * 100,
+                animFrame: Math.random() * 10
+            };
+
+            if (type === 'teal_slime') {
+                enemy.color = '#00f0ff';
+                enemy.speed = baseSpeed * 0.9;
+                enemy.radius = 12;
+            } else if (type === 'red_slime') {
+                enemy.color = '#ff2255';
+                enemy.speed = baseSpeed * 1.05;
+                enemy.radius = 14;
+            } else if (type === 'yellow_slime') {
+                enemy.color = '#ffea00';
+                enemy.speed = baseSpeed * 1.2;
+                enemy.radius = 16;
+            } else if (type === 'snake_dragon') {
+                enemy.color = '#22cc44';
+                enemy.speed = baseSpeed * 0.8;
+                enemy.radius = 15;
+            }
+
+            enemies.push(enemy);
+        }
+
+        function resetFullGame() {
+            currentLevel = 1;
+            totalMoney = 0;
+            gameState = 'PLAYING';
+            initLevel(currentLevel);
+        }
+
+        function restartCurrentLevel() {
+            totalMoney = 0; // Lose all money on defeat!
+            initLevel(currentLevel);
+        }
+
+        function updateUI() {
+            document.getElementById('level-display').innerText = `Level: ${currentLevel} / ${TOTAL_LEVELS}`;
+            document.getElementById('money-display').innerText = `Money: $${totalMoney}`;
+        }
+
+        // WATER BALLOON THROWING
+        function throwWaterBalloon() {
+            if (player.throwCooldown > 0) return;
+
+            // Aim towards mouse cursor or facing direction
+            let angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+            if (mouse.x === 0 && mouse.y === 0) {
+                angle = player.facing === 1 ? 0 : Math.PI;
+            }
+
+            balloons.push({
+                x: player.x,
+                y: player.y,
+                vx: Math.cos(angle) * 7.5,
+                vy: Math.sin(angle) * 7.5,
+                radius: 6,
+                life: 90
+            });
+
+            player.throwCooldown = 12; // Cooldown frames
+        }
+
+        // COLLISION HELPERS
+        function isWall(x, y, margin = 0) {
+            const checkPoints = [
+                { x: x - margin, y: y - margin },
+                { x: x + margin, y: y - margin },
+                { x: x - margin, y: y + margin },
+                { x: x + margin, y: y + margin }
+            ];
+
+            for (let p of checkPoints) {
+                const c = Math.floor((p.x - offsetX) / tileSize);
+                const r = Math.floor((p.y - offsetY) / tileSize);
+                if (r < 0 || r >= ROWS || c < 0 || c >= COLS || grid[r][c] === 1) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // PHYSICS & GAME UPDATES
+        function updatePhysics() {
+            if (gameState === 'VICTORY') {
+                slideTime += 0.03;
+                return;
+            }
+
+            if (player.throwCooldown > 0) player.throwCooldown--;
+
+            // Player movement calculation
+            let dx = 0;
+            let dy = 0;
+
+            if (keys['KeyW'] || keys['ArrowUp']) dy -= 1;
+            if (keys['KeyS'] || keys['ArrowDown']) dy += 1;
+            if (keys['KeyA'] || keys['ArrowLeft']) { dx -= 1; player.facing = -1; }
+            if (keys['KeyD'] || keys['ArrowRight']) { dx += 1; player.facing = 1; }
+
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.7071;
+                dy *= 0.7071;
+            }
+
+            // Move with smooth wall collisions
+            let nextX = player.x + dx * player.speed;
+            let nextY = player.y + dy * player.speed;
+
+            if (!isWall(nextX, player.y, player.radius)) {
+                player.x = nextX;
+            }
+            if (!isWall(player.x, nextY, player.radius)) {
+                player.y = nextY;
+            }
+
+            if (dx !== 0 || dy !== 0) {
+                player.walkFrame += 0.25;
+            } else {
+                player.walkFrame = 0;
+            }
+
+            // Coin Collection
+            coins.forEach(coin => {
+                if (!coin.collected) {
+                    const dist = Math.hypot(player.x - coin.x, player.y - coin.y);
+                    if (dist < player.radius + coin.radius) {
+                        coin.collected = true;
+                        totalMoney += 10;
+                        updateUI();
+                        createParticles(coin.x, coin.y, '#ffd700', 8);
+                    }
+                }
+            });
+
+            // Water Balloons Update
+            for (let i = balloons.length - 1; i >= 0; i--) {
+                const b = balloons[i];
+                b.x += b.vx;
+                b.y += b.vy;
+                b.life--;
+
+                if (isWall(b.x, b.y, b.radius) || b.life <= 0) {
+                    createParticles(b.x, b.y, '#00aaff', 10);
+                    balloons.splice(i, 1);
+                    continue;
+                }
+
+                // Check balloon collision with enemies
+                let balloonHit = false;
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const e = enemies[j];
+                    const dist = Math.hypot(b.x - e.x, b.y - e.y);
+                    if (dist < b.radius + e.radius) {
+                        balloonHit = true;
+                        createParticles(e.x, e.y, e.color, 14);
+
+                        // Splitting Slime logic
+                        if (e.type === 'yellow_slime') {
+                            // Yellow spawns 3 Red slimes
+                            for (let k = 0; k < 3; k++) {
+                                spawnEnemy('red_slime', e.x + (Math.random() - 0.5) * 15, e.y + (Math.random() - 0.5) * 15);
+                            }
+                        } else if (e.type === 'red_slime') {
+                            // Red spawns 3 Teal slimes
+                            for (let k = 0; k < 3; k++) {
+                                spawnEnemy('teal_slime', e.x + (Math.random() - 0.5) * 15, e.y + (Math.random() - 0.5) * 15);
+                            }
+                        }
+
+                        enemies.splice(j, 1);
+                        break;
+                    }
+                }
+
+                if (balloonHit) {
+                    balloons.splice(i, 1);
+                }
+            }
+
+            // Fireballs Update
+            for (let i = fireballs.length - 1; i >= 0; i--) {
+                const f = fireballs[i];
+                f.x += f.vx;
+                f.y += f.vy;
+
+                if (isWall(f.x, f.y, 4)) {
+                    createParticles(f.x, f.y, '#ff4400', 6);
+                    fireballs.splice(i, 1);
+                    continue;
+                }
+
+                // Fireball hits player
+                if (Math.hypot(f.x - player.x, f.y - player.y) < player.radius + 4) {
+                    restartCurrentLevel();
+                    return;
+                }
+            }
+
+            // Enemy Movement & Logic
+            enemies.forEach(e => {
+                e.animFrame += 0.1;
+
+                // Simple AI movement
+                let nextX = e.x + e.vx;
+                let nextY = e.y + e.vy;
+
+                if (isWall(nextX, e.y, e.radius)) e.vx *= -1;
+                else e.x = nextX;
+
+                if (isWall(e.x, nextY, e.radius)) e.vy *= -1;
+                else e.y = nextY;
+
+                // Slightly bias direction toward player
+                if (Math.random() < 0.02) {
+                    const angle = Math.atan2(player.y - e.y, player.x - e.x);
+                    e.vx = Math.cos(angle) * e.speed;
+                    e.vy = Math.sin(angle) * e.speed;
+                }
+
+                // Snake Dragon Fireball Shooting
+                if (e.type === 'snake_dragon') {
+                    e.shootTimer += 1;
+                    if (e.shootTimer > 90) {
+                        e.shootTimer = 0;
+                        const angle = Math.atan2(player.y - e.y, player.x - e.x);
+                        fireballs.push({
+                            x: e.x,
+                            y: e.y,
+                            vx: Math.cos(angle) * 3.5,
+                            vy: Math.sin(angle) * 3.5
+                        });
+                    }
+                }
+
+                // Enemy touches player -> Reset level & lose all money!
+                if (Math.hypot(e.x - player.x, e.y - player.y) < e.radius + player.radius - 2) {
+                    restartCurrentLevel();
+                    return;
+                }
+            });
+
+            // Particles Update
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.03;
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+
+            // Exit Level Check
+            const exitX = offsetX + (COLS - 1.5) * tileSize;
+            const exitY = offsetY + (ROWS - 1.5) * tileSize;
+            if (Math.hypot(player.x - exitX, player.y - exitY) < tileSize * 0.6) {
+                if (currentLevel < TOTAL_LEVELS) {
+                    currentLevel++;
+                    initLevel(currentLevel);
+                } else {
+                    gameState = 'VICTORY';
+                }
+            }
+        }
+
+        function createParticles(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1 + Math.random() * 3;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    color: color,
+                    alpha: 1.0,
+                    size: 2 + Math.random() * 3
+                });
+            }
+        }
+
+        // RENDER FUNCTIONS
+        function drawMaze() {
+            const wallColor = MAZE_THEMES[(currentLevel - 1) % MAZE_THEMES.length];
+            
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = wallColor;
+            ctx.fillStyle = wallColor;
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (grid[r][c] === 1) {
+                        ctx.fillRect(offsetX + c * tileSize, offsetY + r * tileSize, tileSize, tileSize);
+                    }
+                }
+            }
+            ctx.shadowBlur = 0;
+
+            // Draw Exit Zone
+            const ex = offsetX + (COLS - 2) * tileSize;
+            const ey = offsetY + (ROWS - 2) * tileSize;
+            ctx.fillStyle = '#00ff66';
+            ctx.fillRect(ex, ey, tileSize, tileSize);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 12px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText('EXIT', ex + tileSize / 2, ey + tileSize / 2 + 4);
+        }
+
+        function drawCoins() {
+            coins.forEach(c => {
+                if (!c.collected) {
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath();
+                    ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#000000';
+                    ctx.font = 'bold 9px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('$', c.x, c.y + 3);
+                }
+            });
+        }
+
+        function drawStickman(x, y, facing, walkFrame) {
+            ctx.strokeStyle = '#ffffff';
+            ctx.fillStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const headRadius = 5;
+            const bodyLength = 15;
+            const legLength = 11;
+            const neckY = y - bodyLength;
+            const headY = neckY - headRadius;
+            const shoulderY = neckY + 4;
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Eye
+            ctx.beginPath();
+            ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Torso
+            ctx.beginPath();
+            ctx.moveTo(x, neckY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            // Legs
+            const legSwing = Math.sin(walkFrame) * 6;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - legSwing, y + legLength);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + legSwing, y + legLength);
+            ctx.stroke();
+
+            // Arms
+            const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
+            ctx.stroke();
+        }
+
+        function drawEnemies() {
+            enemies.forEach(e => {
+                const bounce = Math.sin(e.animFrame) * 2;
+
+                if (e.type.includes('slime')) {
+                    // Draw Slime Body
+                    ctx.fillStyle = e.color;
+                    ctx.beginPath();
+                    ctx.ellipse(e.x, e.y + bounce, e.radius, e.radius - 3 + bounce, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Slime Eyes
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(e.x - 4, e.y - 2 + bounce, 3, 0, Math.PI * 2);
+                    ctx.arc(e.x + 4, e.y - 2 + bounce, 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(e.x - 3, e.y - 2 + bounce, 1.5, 0, Math.PI * 2);
+                    ctx.arc(e.x + 5, e.y - 2 + bounce, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (e.type === 'snake_dragon') {
+                    // Snake Dragon (Green with Wings)
+                    ctx.fillStyle = '#22cc44';
+                    ctx.beginPath();
+                    ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Tiny Wings flapping
+                    const wingFlap = Math.sin(e.animFrame * 2) * 6;
+                    ctx.fillStyle = '#88ffaa';
+                    // Left wing
+                    ctx.beginPath();
+                    ctx.moveTo(e.x - 8, e.y - 4);
+                    ctx.lineTo(e.x - 20, e.y - 12 + wingFlap);
+                    ctx.lineTo(e.x - 10, e.y + 4);
+                    ctx.fill();
+                    // Right wing
+                    ctx.beginPath();
+                    ctx.moveTo(e.x + 8, e.y - 4);
+                    ctx.lineTo(e.x + 20, e.y - 12 + wingFlap);
+                    ctx.lineTo(e.x + 10, e.y + 4);
+                    ctx.fill();
+
+                    // Eyes
+                    ctx.fillStyle = '#ffcc00';
+                    ctx.beginPath();
+                    ctx.arc(e.x - 4, e.y - 3, 3, 0, Math.PI * 2);
+                    ctx.arc(e.x + 4, e.y - 3, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+
+        function drawProjectiles() {
+            // Water Balloons
+            balloons.forEach(b => {
+                ctx.fillStyle = '#00aaff';
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+
+            // Fireballs
+            fireballs.forEach(f => {
+                ctx.fillStyle = '#ff4400';
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Particles
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.alpha;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+        }
+
+        // ENDING ANIMATION: WATERSLIDE SCENE
+        function drawWaterslideEnding() {
+            // Background Sky
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            skyGradient.addColorStop(0, '#87ceeb');
+            skyGradient.addColorStop(1, '#e0f7fa');
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Sun
+            ctx.fillStyle = '#ffeb3b';
+            ctx.beginPath();
+            ctx.arc(canvas.width - 80, 80, 40, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pool at Bottom
+            ctx.fillStyle = '#00b4d8';
+            ctx.fillRect(0, canvas.height - 120, canvas.width, 120);
+
+            // Water Ripple Effect
+            ctx.fillStyle = '#90e0ef';
+            for (let i = 0; i < canvas.width; i += 40) {
+                const wave = Math.sin(slideTime * 3 + i) * 5;
+                ctx.beginPath();
+                ctx.arc(i + 20, canvas.height - 110 + wave, 15, 0, Math.PI);
+                ctx.fill();
+            }
+
+            // Tube / Slide Structure (S-Curve path)
+            ctx.strokeStyle = '#ff0055';
+            ctx.lineWidth = 28;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(100, 80);
+            ctx.bezierCurveTo(canvas.width - 100, 150, 50, 300, canvas.width - 200, canvas.height - 120);
+            ctx.stroke();
+
+            // Slide Water Flow (Inner bright blue line)
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 16;
+            ctx.stroke();
+
+            // Stickman Slide Progress (Cyclic animation)
+            const progress = (slideTime * 0.35) % 1.2; // 0 to 1 sliding, 1.0 - 1.2 splashing
+
+            let sx, sy;
+            if (progress <= 1.0) {
+                // Bezier Point Calculation
+                const t = progress;
+                const p0 = { x: 100, y: 80 };
+                const p1 = { x: canvas.width - 100, y: 150 };
+                const p2 = { x: 50, y: 300 };
+                const p3 = { x: canvas.width - 200, y: canvas.height - 120 };
+
+                sx = Math.pow(1 - t, 3) * p0.x + 3 * Math.pow(1 - t, 2) * t * p1.x + 3 * (1 - t) * Math.pow(t, 2) * p2.x + Math.pow(t, 3) * p3.x;
+                sy = Math.pow(1 - t, 3) * p0.y + 3 * Math.pow(1 - t, 2) * t * p1.y + 3 * (1 - t) * Math.pow(t, 2) * p2.y + Math.pow(t, 3) * p3.y - 12;
+
+                // Draw Sliding Stickman with hands up
+                drawStickmanJoy(sx, sy);
+            } else {
+                // Splash down in pool!
+                sx = canvas.width - 200;
+                sy = canvas.height - 100;
+                createParticles(sx + (Math.random() - 0.5) * 40, sy, '#00f0ff', 4);
+                drawStickmanJoy(sx, sy);
+            }
+
+            // Draw Victory Banner
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 28px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText('CONGRATULATIONS! YOU BEAT ALL 10 LEVELS!', canvas.width / 2, 45);
+
+            ctx.fillStyle = '#d4af37';
+            ctx.font = 'bold 22px Courier New';
+            ctx.fillText(`TOTAL SCORE: $${totalMoney}`, canvas.width / 2, 80);
+        }
+
+        function drawStickmanJoy(x, y) {
+            ctx.strokeStyle = '#000000';
+            ctx.fillStyle = '#000000';
+            ctx.lineWidth = 2.5;
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(x, y - 12, 6, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Body
+            ctx.beginPath();
+            ctx.moveTo(x, y - 6);
+            ctx.lineTo(x, y + 8);
+            ctx.stroke();
+
+            // Arms Up (Woohoo!)
+            ctx.beginPath();
+            ctx.moveTo(x, y - 2);
+            ctx.lineTo(x - 10, y - 16);
+            ctx.moveTo(x, y - 2);
+            ctx.lineTo(x + 10, y - 16);
+            ctx.stroke();
+
+            // Legs
+            ctx.beginPath();
+            ctx.moveTo(x, y + 8);
+            ctx.lineTo(x - 8, y + 18);
+            ctx.moveTo(x, y + 8);
+            ctx.lineTo(x + 8, y + 18);
+            ctx.stroke();
+        }
+
+        // MAIN GAME LOOP
+        function draw() {
+            ctx.fillStyle = '#050508';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (gameState === 'PLAYING') {
+                drawMaze();
+                drawCoins();
+                drawEnemies();
+                drawStickman(player.x, player.y, player.facing, player.walkFrame);
+                drawProjectiles();
+            } else if (gameState === 'VICTORY') {
+                drawWaterslideEnding();
+            }
+        }
+
+        function animate() {
+            updatePhysics();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            animate();
+        };
+    </script>
+</body>
+</html>
