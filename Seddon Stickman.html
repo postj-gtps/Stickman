@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman: Robot Escape</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+        }
+
+        body {
+            background-color: #0a0a0c;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            overflow: hidden;
+            padding: 12px;
+        }
+
+        /* Top Header Bar */
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1100px;
+            margin-bottom: 8px;
+            padding: 6px 12px;
+            border: 1px solid #33333e;
+            background-color: #121218;
+            border-radius: 4px;
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 20px;
+            font-size: 15px;
+            font-weight: bold;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-value {
+            color: #4da6ff;
+        }
+
+        .lives-value {
+            color: #ff4d4d;
+            letter-spacing: 2px;
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid #555566;
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 3px;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .btn-reset:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        /* Main Canvas Container */
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 1100px;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #0f130f;
+            border: 1px solid #333344;
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .instructions {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #aaaaaa;
+            text-align: center;
+        }
+
+        /* Overlay Messages */
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.82);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 4px;
+        }
+
+        #overlay.hidden {
+            display: none;
+        }
+
+        #overlay h2 {
+            font-size: 32px;
+            margin-bottom: 12px;
+            letter-spacing: 2px;
+        }
+
+        #overlay p {
+            font-size: 16px;
+            color: #cccccc;
+            margin-bottom: 24px;
+            text-align: center;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+
+        #overlay button {
+            background: #ff4d4d;
+            color: #ffffff;
+            border: none;
+            padding: 12px 28px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 4px;
+        }
+
+        #overlay button:hover {
+            background: #ff6666;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div id="header">
+        <div class="stats-container">
+            <div class="stat-item">LEVEL: <span id="ui-level" class="stat-value">1</span></div>
+            <div class="stat-item">LIVES: <span id="ui-lives" class="lives-value">❤️❤️❤️</span></div>
+            <div class="stat-item">STICKS: <span id="ui-sticks" class="stat-value">0 / 1</span></div>
+        </div>
+        <button class="btn-reset" onclick="restartGame()">Restart Game</button>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvas-wrapper">
+        <canvas id="simCanvas"></canvas>
+        <div id="overlay" class="hidden">
+            <h2 id="overlay-title">GAME OVER</h2>
+            <p id="overlay-desc">The robots caught stickman!</p>
+            <button id="overlay-btn" onclick="handleOverlayClick()">Try Again</button>
+        </div>
+    </div>
+
+    <div class="instructions">
+        [WASD / Arrow Keys] Move | Collect sticks near trees | Walk to river bank to build bridge [SPACE / E] | Reach Friend's House!
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // GAME & PLAYER STATE
+        let level = 1;
+        let lives = 3;
+        let sticksCollected = 0;
+        let sticksRequired = 1;
+        let isGameOver = false;
+        let isLevelCleared = false;
+        let messageTimer = 0;
+        let currentMessage = '';
+
+        const keys = {};
+
+        const player = {
+            x: 0,
+            y: 0,
+            radius: 10,
+            speed: 4.2,
+            facing: 1, // 1 = Right, -1 = Left
+            walkFrame: 0
+        };
+
+        // WORLD OBJECTS
+        let obstacles = []; // {x, y, r, type: 'tree'|'rock'}
+        let sticks = [];    // {x, y, collected: false}
+        let robots = [];    // {x, y, speed, vx, vy, animFrame}
+        let bridges = [];   // {y, height}
+        let house = { x: 0, y: 0, width: 60, height: 50 };
+
+        // RIVER GENERATION PARAMETERS
+        let riverWidth = 50;
+        let riverMidX = 0;
+        let riverAmp1 = 0;
+        let riverFreq1 = 0;
+        let riverPhase1 = 0;
+        let riverAmp2 = 0;
+        let riverFreq2 = 0;
+        let riverPhase2 = 0;
+
+        // AUDIO SYNTHESIZER FOR GAME SFX
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function playSound(type) {
+            try {
+                if (!audioCtx) audioCtx = new AudioCtx();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+                if (type === 'stick') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'bridge') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.exponentialRampToValueAtTime(440, now + 0.25);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'hit') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.exponentialRampToValueAtTime(60, now + 0.3);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'win') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(554.37, now + 0.1);
+                    osc.frequency.setValueAtTime(659.25, now + 0.2);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                }
+            } catch (e) { /* Audio context restricted or unsupported */ }
+        }
+
+        // Calculate river centerline X coordinate for any Y
+        function getRiverX(y) {
+            return riverMidX + 
+                   Math.sin(y * riverFreq1 + riverPhase1) * riverAmp1 + 
+                   Math.sin(y * riverFreq2 + riverPhase2) * riverAmp2;
+        }
+
+        function calculateRequiredSticks(lvl) {
+            // Level 1 = 1 stick. Subsequent levels = previous + 2 (1, 3, 5, 7, ...)
+            return lvl === 1 ? 1 : 1 + (lvl - 1) * 2;
+        }
+
+        function updateUI() {
+            document.getElementById('ui-level').innerText = level;
+            document.getElementById('ui-lives').innerText = '❤️'.repeat(Math.max(0, lives));
+            document.getElementById('ui-sticks').innerText = `${sticksCollected} / ${sticksRequired}`;
+        }
+
+        function showMessage(msg, duration = 120) {
+            currentMessage = msg;
+            messageTimer = duration;
+        }
+
+        function initLevel() {
+            sticksRequired = calculateRequiredSticks(level);
+            sticksCollected = 0;
+            bridges = [];
+            isLevelCleared = false;
+            updateUI();
+
+            const W = canvas.width;
+            const H = canvas.height;
+
+            // 1. River generation
+            riverWidth = 45 + (level - 1) * 20; // River gets wider each level
+            riverMidX = W * (0.42 + Math.random() * 0.16);
+            riverAmp1 = 30 + Math.random() * 40;
+            riverFreq1 = 0.003 + Math.random() * 0.003;
+            riverPhase1 = Math.random() * Math.PI * 2;
+            riverAmp2 = 15 + Math.random() * 25;
+            riverFreq2 = 0.008 + Math.random() * 0.005;
+            riverPhase2 = Math.random() * Math.PI * 2;
+
+            // 2. Start position & Friend's House
+            player.x = 60;
+            player.y = H - 60;
+            player.facing = 1;
+            player.walkFrame = 0;
+
+            house = {
+                x: W - 90,
+                y: 50,
+                width: 60,
+                height: 50
+            };
+
+            // 3. Generate Trees and Rocks
+            obstacles = [];
+            sticks = [];
+
+            const numTrees = 7 + Math.floor(Math.random() * 4);
+            const numRocks = 6 + Math.floor(Math.random() * 4);
+
+            // Helper to check valid obstacle placement
+            function isValidPlacement(x, y, r) {
+                // Keep clear of player start
+                if (Math.hypot(x - player.x, y - player.y) < 110) return false;
+                // Keep clear of friend's house
+                if (Math.hypot(x - (house.x + house.width/2), y - (house.y + house.height/2)) < 120) return false;
+                // Keep clear of river
+                const rx = getRiverX(y);
+                if (Math.abs(x - rx) < riverWidth / 2 + r + 25) return false;
+                // Keep clear of screen edges
+                if (x < r + 20 || x > W - r - 20 || y < r + 30 || y > H - r - 30) return false;
+                // Keep clear of existing obstacles
+                for (let obs of obstacles) {
+                    if (Math.hypot(x - obs.x, y - obs.y) < obs.r + r + 25) return false;
+                }
+                return true;
+            }
+
+            // Spawn Trees & Sticks
+            let attempts = 0;
+            let treesSpawned = 0;
+            while (treesSpawned < numTrees && attempts < 300) {
+                attempts++;
+                const r = 22 + Math.random() * 6;
+                const x = Math.random() * W;
+                const y = Math.random() * H;
+
+                if (isValidPlacement(x, y, r)) {
+                    obstacles.push({ x, y, r, type: 'tree' });
+                    treesSpawned++;
+
+                    // Trees drop 1-2 sticks near them
+                    const numSticksForTree = Math.random() < 0.6 ? 2 : 1;
+                    for (let s = 0; s < numSticksForTree; s++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = r + 12 + Math.random() * 18;
+                        const sx = x + Math.cos(angle) * dist;
+                        const sy = y + Math.sin(angle) * dist;
+
+                        // Check stick stays in bounds and outside river
+                        const sRx = getRiverX(sy);
+                        if (Math.abs(sx - sRx) > riverWidth / 2 + 15 && sx > 20 && sx < W - 20 && sy > 20 && sy < H - 20) {
+                            sticks.push({ x: sx, y: sy, collected: false });
+                        }
+                    }
+                }
+            }
+
+            // Ensure we have at least requiredSticks + 2 available sticks
+            let totalSticksNeeded = sticksRequired + 2;
+            attempts = 0;
+            while (sticks.length < totalSticksNeeded && attempts < 200) {
+                attempts++;
+                const sx = Math.random() * (W - 80) + 40;
+                const sy = Math.random() * (H - 80) + 40;
+                const sRx = getRiverX(sy);
+                if (Math.abs(sx - sRx) > riverWidth / 2 + 20 && Math.hypot(sx - player.x, sy - player.y) > 80) {
+                    sticks.push({ x: sx, y: sy, collected: false });
+                }
+            }
+
+            // Spawn Rocks
+            attempts = 0;
+            let rocksSpawned = 0;
+            while (rocksSpawned < numRocks && attempts < 300) {
+                attempts++;
+                const r = 16 + Math.random() * 12;
+                const x = Math.random() * W;
+                const y = Math.random() * H;
+
+                if (isValidPlacement(x, y, r)) {
+                    obstacles.push({ x, y, r, type: 'rock' });
+                    rocksSpawned++;
+                }
+            }
+
+            // 4. Generate Robots (angry, treaded pursuit enemies)
+            robots = [];
+            const numRobots = Math.min(1 + Math.floor(level / 1), 4);
+            for (let i = 0; i < numRobots; i++) {
+                // Spawn robots away from player (mostly upper / right half)
+                let rx, ry;
+                let rAttempts = 0;
+                do {
+                    rx = W * 0.5 + Math.random() * (W * 0.45);
+                    ry = Math.random() * (H * 0.7);
+                    rAttempts++;
+                } while (Math.hypot(rx - player.x, ry - player.y) < 250 && rAttempts < 100);
+
+                robots.push({
+                    x: rx,
+                    y: ry,
+                    speed: 1.6 + level * 0.25, // Speed increases with level
+                    vx: 0,
+                    vy: 0,
+                    animFrame: Math.random() * 10
+                });
+            }
+
+            hideOverlay();
+        }
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            initLevel();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // CONTROLS HANDLERS
+        window.addEventListener('keydown', (e) => {
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyE'].includes(e.code)) {
+                e.preventDefault();
+            }
+            keys[e.code] = true;
+
+            // Build bridge hotkey [SPACE / E]
+            if (e.code === 'Space' || e.code === 'KeyE') {
+                tryBuildBridge();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        function tryBuildBridge() {
+            if (sticksCollected < sticksRequired) return;
+
+            const rx = getRiverX(player.y);
+            const distToRiver = Math.abs(player.x - rx);
+
+            // Check if player is near the river bank
+            if (distToRiver <= riverWidth / 2 + 40) {
+                // Build bridge spanning across the river at player's Y level
+                bridges.push({
+                    y: player.y,
+                    height: 55
+                });
+                sticksCollected -= sticksRequired;
+                sticksRequired = calculateRequiredSticks(level); // Keep formula requirement intact
+                updateUI();
+                playSound('bridge');
+                showMessage("BRIDGE BUILT! CROSS SAFELY!", 90);
+            }
+        }
+
+        function isPointOnBridge(x, y) {
+            const rx = getRiverX(y);
+            // Check if point is inside river width
+            if (Math.abs(x - rx) <= riverWidth / 2 - 2) {
+                for (let b of bridges) {
+                    if (Math.abs(y - b.y) <= b.height / 2) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return true; // Not in river, so valid ground
+        }
+
+        function handlePlayerHit() {
+            lives--;
+            updateUI();
+            playSound('hit');
+
+            if (lives <= 0) {
+                isGameOver = true;
+                showOverlay("GAME OVER", "The angry robots caught stickman! Restarting game...", "Restart Game");
+            } else {
+                showMessage(`OUCH! LIVES LEFT: ${lives}`, 100);
+                // Teleport back to start
+                player.x = 60;
+                player.y = canvas.height - 60;
+            }
+        }
+
+        function updatePhysics() {
+            if (isGameOver || isLevelCleared) return;
+
+            // 1. Player Movement Calculation
+            let dx = 0;
+            let dy = 0;
+
+            if (keys['KeyW'] || keys['Keyw'] || keys['ArrowUp']) dy -= 1;
+            if (keys['KeyS'] || keys['Keys'] || keys['ArrowDown']) dy += 1;
+            if (keys['KeyA'] || keys['Keya'] || keys['ArrowLeft']) { dx -= 1; player.facing = -1; }
+            if (keys['KeyD'] || keys['Keyd'] || keys['ArrowRight']) { dx += 1; player.facing = 1; }
+
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.7071;
+                dy *= 0.7071;
+            }
+
+            let nextX = player.x + dx * player.speed;
+            let nextY = player.y + dy * player.speed;
+
+            // Screen boundary clamping
+            const margin = 15;
+            nextX = Math.max(margin, Math.min(canvas.width - margin, nextX));
+            nextY = Math.max(margin + 15, Math.min(canvas.height - margin - 10, nextY));
+
+            // Obstacle collisions (Trees & Rocks)
+            for (let obs of obstacles) {
+                const dist = Math.hypot(nextX - obs.x, nextY - obs.y);
+                const minDist = obs.r + player.radius;
+                if (dist < minDist) {
+                    // Push player out of obstacle
+                    const angle = Math.atan2(nextY - obs.y, nextX - obs.x);
+                    nextX = obs.x + Math.cos(angle) * minDist;
+                    nextY = obs.y + Math.sin(angle) * minDist;
+                }
+            }
+
+            // River Collision Check
+            if (!isPointOnBridge(nextX, nextY)) {
+                const rx = getRiverX(nextY);
+                // Auto-build bridge if walking directly into river bank with enough sticks
+                if (sticksCollected >= sticksRequired && Math.abs(player.x - rx) <= riverWidth / 2 + 25) {
+                    tryBuildBridge();
+                } else {
+                    // Block player from entering water
+                    if (player.x < rx) {
+                        nextX = Math.min(nextX, rx - riverWidth / 2 - 2);
+                    } else {
+                        nextX = Math.max(nextX, rx + riverWidth / 2 + 2);
+                    }
+                }
+            }
+
+            player.x = nextX;
+            player.y = nextY;
+
+            // Walk animation frame update
+            if (dx !== 0 || dy !== 0) {
+                player.walkFrame += 0.25;
+            } else {
+                player.walkFrame = 0;
+            }
+
+            // 2. Stick Collection Check
+            for (let s of sticks) {
+                if (!s.collected && Math.hypot(player.x - s.x, player.y - s.y) < 22) {
+                    s.collected = true;
+                    sticksCollected++;
+                    updateUI();
+                    playSound('stick');
+                    if (sticksCollected >= sticksRequired) {
+                        showMessage("STICK COLLECTED! READY TO BUILD BRIDGE!", 90);
+                    } else {
+                        showMessage(`STICK COLLECTED! (${sticksCollected}/${sticksRequired})`, 60);
+                    }
+                }
+            }
+
+            // 3. Robot AI Pursuit
+            for (let bot of robots) {
+                bot.animFrame += 0.2;
+                
+                // Vector towards player
+                let rdx = player.x - bot.x;
+                let rdy = player.y - bot.y;
+                let distToPlayer = Math.hypot(rdx, rdy);
+
+                if (distToPlayer > 0) {
+                    rdx /= distToPlayer;
+                    rdy /= distToPlayer;
+                }
+
+                let botNextX = bot.x + rdx * bot.speed;
+                let botNextY = bot.y + rdy * bot.speed;
+
+                // Robots avoid obstacles
+                for (let obs of obstacles) {
+                    const dist = Math.hypot(botNextX - obs.x, botNextY - obs.y);
+                    if (dist < obs.r + 14) {
+                        const angle = Math.atan2(botNextY - obs.y, botNextX - obs.x);
+                        botNextX = obs.x + Math.cos(angle) * (obs.r + 14);
+                        botNextY = obs.y + Math.sin(angle) * (obs.r + 14);
+                    }
+                }
+
+                // Robots river constraint (robots can only cross if on bridge)
+                if (!isPointOnBridge(botNextX, botNextY)) {
+                    const rx = getRiverX(botNextY);
+                    if (bot.x < rx) {
+                        botNextX = Math.min(botNextX, rx - riverWidth / 2 - 4);
+                    } else {
+                        botNextX = Math.max(botNextX, rx + riverWidth / 2 + 4);
+                    }
+                }
+
+                bot.x = botNextX;
+                bot.y = botNextY;
+
+                // Check collision with stickman
+                if (Math.hypot(bot.x - player.x, bot.y - player.y) < 20) {
+                    handlePlayerHit();
+                    break;
+                }
+            }
+
+            // 4. Friend's House Goal Check
+            const houseCenterX = house.x + house.width / 2;
+            const houseCenterY = house.y + house.height / 2;
+            if (Math.hypot(player.x - houseCenterX, player.y - houseCenterY) < 38) {
+                isLevelCleared = true;
+                playSound('win');
+                showOverlay("LEVEL COMPLETED!", `Great job! Advancing to Level ${level + 1}`, "Next Level");
+            }
+        }
+
+        // DRAWING FUNCTIONS
+        function drawRiver() {
+            const H = canvas.height;
+            
+            // Draw main water body
+            ctx.fillStyle = '#1e3d59';
+            ctx.beginPath();
+            ctx.moveTo(getRiverX(0) - riverWidth / 2, 0);
+
+            for (let y = 0; y <= H; y += 10) {
+                ctx.lineTo(getRiverX(y) - riverWidth / 2, y);
+            }
+            for (let y = H; y >= 0; y -= 10) {
+                ctx.lineTo(getRiverX(y) + riverWidth / 2, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // River inner foam edges & ripples
+            ctx.strokeStyle = '#438a5e';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Water ripple lines inside river
+            ctx.strokeStyle = '#2b580c33';
+            ctx.lineWidth = 1.5;
+            const time = Date.now() * 0.002;
+            for (let y = 20; y < H; y += 40) {
+                const rx = getRiverX(y);
+                const offset = Math.sin(time + y) * 8;
+                ctx.beginPath();
+                ctx.moveTo(rx - riverWidth * 0.3 + offset, y);
+                ctx.lineTo(rx + riverWidth * 0.3 + offset, y);
+                ctx.stroke();
+            }
+        }
+
+        function drawBridges() {
+            for (let b of bridges) {
+                const rx = getRiverX(b.y);
+                const x1 = rx - riverWidth / 2 - 8;
+                const x2 = rx + riverWidth / 2 + 8;
+                const width = x2 - x1;
+
+                // Wooden structure base
+                ctx.fillStyle = '#5c3a21';
+                ctx.fillRect(x1, b.y - b.height / 2, width, b.height);
+
+                // Wooden planks
+                ctx.strokeStyle = '#3d2314';
+                ctx.lineWidth = 2;
+                for (let px = x1 + 4; px <= x2 - 4; px += 8) {
+                    ctx.beginPath();
+                    ctx.moveTo(px, b.y - b.height / 2);
+                    ctx.lineTo(px, b.y + b.height / 2);
+                    ctx.stroke();
+                }
+
+                // Side ropes / railings
+                ctx.strokeStyle = '#c29b38';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(x1, b.y - b.height / 2 + 3);
+                ctx.lineTo(x2, b.y - b.height / 2 + 3);
+                ctx.moveTo(x1, b.y + b.height / 2 - 3);
+                ctx.lineTo(x2, b.y + b.height / 2 - 3);
+                ctx.stroke();
+            }
+        }
+
+        function drawObstacles() {
+            for (let obs of obstacles) {
+                if (obs.type === 'tree') {
+                    // Tree Trunk
+                    ctx.fillStyle = '#4a2e18';
+                    ctx.fillRect(obs.x - 4, obs.y, 8, obs.r);
+
+                    // Foliage (Multiple overlapping green circles)
+                    ctx.fillStyle = '#2e5a1c';
+                    ctx.beginPath();
+                    ctx.arc(obs.x, obs.y - 6, obs.r, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#3d7826';
+                    ctx.beginPath();
+                    ctx.arc(obs.x - 5, obs.y - 10, obs.r * 0.7, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#4e9331';
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 4, obs.y - 8, obs.r * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (obs.type === 'rock') {
+                    // Rock Body
+                    ctx.fillStyle = '#555566';
+                    ctx.beginPath();
+                    ctx.arc(obs.x, obs.y, obs.r, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Rock Highlight / Texture
+                    ctx.strokeStyle = '#888899';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(obs.x - obs.r * 0.3, obs.y - obs.r * 0.3, obs.r * 0.5, Math.PI, Math.PI * 1.5);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawSticks() {
+            ctx.strokeStyle = '#c29b38';
+            ctx.lineWidth = 2.5;
+
+            for (let s of sticks) {
+                if (!s.collected) {
+                    // Draw stick graphic with little twig angle
+                    ctx.beginPath();
+                    ctx.moveTo(s.x - 7, s.y + 4);
+                    ctx.lineTo(s.x + 7, s.y - 4);
+                    ctx.moveTo(s.x + 1, s.y - 1);
+                    ctx.lineTo(s.x + 4, s.y - 7);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawFriendHouse() {
+            // House Base
+            ctx.fillStyle = '#7a4a21';
+            ctx.fillRect(house.x, house.y, house.width, house.height);
+
+            // Roof
+            ctx.fillStyle = '#aa3333';
+            ctx.beginPath();
+            ctx.moveTo(house.x - 6, house.y);
+            ctx.lineTo(house.x + house.width / 2, house.y - 25);
+            ctx.lineTo(house.x + house.width + 6, house.y);
+            ctx.closePath();
+            ctx.fill();
+
+            // Door
+            ctx.fillStyle = '#3d2314';
+            ctx.fillRect(house.x + 22, house.y + 22, 16, 28);
+
+            // Window with warm light glow
+            ctx.fillStyle = '#ffe066';
+            ctx.fillRect(house.x + 8, house.y + 12, 12, 12);
+
+            // Friend Stickman standing outside house waving
+            const fx = house.x - 18;
+            const fy = house.y + house.height - 10;
+            const waveArm = Math.sin(Date.now() * 0.008) * 6;
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            // Friend Head
+            ctx.beginPath();
+            ctx.arc(fx, fy - 22, 4, 0, Math.PI * 2);
+            ctx.stroke();
+            // Friend Body
+            ctx.beginPath();
+            ctx.moveTo(fx, fy - 18);
+            ctx.lineTo(fx, fy - 8);
+            ctx.stroke();
+            // Friend Legs
+            ctx.beginPath();
+            ctx.moveTo(fx, fy - 8); ctx.lineTo(fx - 4, fy);
+            ctx.moveTo(fx, fy - 8); ctx.lineTo(fx + 4, fy);
+            ctx.stroke();
+            // Friend Waving Arm
+            ctx.beginPath();
+            ctx.moveTo(fx, fy - 15);
+            ctx.lineTo(fx - 10, fy - 22 + waveArm);
+            ctx.stroke();
+        }
+
+        function drawRobots() {
+            for (let bot of robots) {
+                const size = 22;
+                const x = bot.x;
+                const y = bot.y;
+
+                // Treads
+                ctx.fillStyle = '#22222b';
+                ctx.fillRect(x - size / 2 - 3, y + 4, size + 6, 6);
+                ctx.fillStyle = '#444455';
+                for (let tx = x - size / 2 - 2; tx <= x + size / 2; tx += 5) {
+                    ctx.fillRect(tx, y + 5, 3, 4);
+                }
+
+                // Boxy Body
+                ctx.fillStyle = '#777788';
+                ctx.fillRect(x - size / 2, y - size / 2 - 2, size, size);
+
+                // Body Rivets/Details
+                ctx.strokeStyle = '#444455';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x - size / 2, y - size / 2 - 2, size, size);
+
+                // Angry Glowing Red Eyes & Eyebrows
+                ctx.fillStyle = '#ff0033';
+                ctx.fillRect(x - 6, y - 5, 4, 4);
+                ctx.fillRect(x + 2, y - 5, 4, 4);
+
+                // Angry Eyebrows (\ /)
+                ctx.strokeStyle = '#ff0033';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.moveTo(x - 7, y - 8); ctx.lineTo(x - 2, y - 5);
+                ctx.moveTo(x + 7, y - 8); ctx.lineTo(x + 2, y - 5);
+                ctx.stroke();
+
+                // Top Antenna
+                ctx.strokeStyle = '#888899';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(x, y - size / 2 - 2);
+                ctx.lineTo(x, y - size / 2 - 8);
+                ctx.stroke();
+
+                // Antenna Tip Light
+                ctx.fillStyle = (Math.floor(bot.animFrame) % 2 === 0) ? '#ff3333' : '#ffff00';
+                ctx.beginPath();
+                ctx.arc(x, y - size / 2 - 9, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawStickman(x, y, facing, walkFrame) {
+            ctx.strokeStyle = '#ffffff';
+            ctx.fillStyle = '#ffffff';
+            ctx.lineWidth = 1.8;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const headRadius = 5;
+            const bodyLength = 15;
+            const legLength = 11;
+            const neckY = y - bodyLength;
+            const headY = neckY - headRadius;
+            const shoulderY = neckY + 4;
+
+            // 1. Head
+            ctx.beginPath();
+            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Eye direction indicator
+            ctx.beginPath();
+            ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Torso
+            ctx.beginPath();
+            ctx.moveTo(x, neckY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            // 3. Legs
+            const legSwing = Math.sin(walkFrame) * 6;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - legSwing, y + legLength);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + legSwing, y + legLength);
+            ctx.stroke();
+
+            // 4. Arms
+            const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
+            ctx.stroke();
+
+            // Carried Sticks Visual on Back
+            if (sticksCollected > 0) {
+                ctx.strokeStyle = '#c29b38';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(x - facing * 5, neckY);
+                ctx.lineTo(x - facing * 9, neckY + 12);
+                ctx.stroke();
+            }
+        }
+
+        function drawMessageBanner() {
+            if (messageTimer > 0) {
+                messageTimer--;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(canvas.width / 2 - 200, 15, 400, 32);
+                ctx.strokeStyle = '#4da6ff';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(canvas.width / 2 - 200, 15, 400, 32);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 12px "Courier New", Courier, monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(currentMessage, canvas.width / 2, 36);
+                ctx.textAlign = 'left'; // Reset
+            }
+        }
+
+        function draw() {
+            // Grass / Background terrain
+            ctx.fillStyle = '#0f140f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Subtle terrain dots
+            ctx.fillStyle = '#172217';
+            for (let x = 20; x < canvas.width; x += 40) {
+                for (let y = 20; y < canvas.height; y += 40) {
+                    ctx.fillRect(x, y, 2, 2);
+                }
+            }
+
+            // Draw World Layer
+            drawRiver();
+            drawBridges();
+            drawFriendHouse();
+            drawObstacles();
+            drawSticks();
+            drawRobots();
+
+            // Draw Stickman
+            drawStickman(player.x, player.y, player.facing, player.walkFrame);
+
+            // Draw Active Messages
+            drawMessageBanner();
+        }
+
+        function animate() {
+            updatePhysics();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        // OVERLAY / MODAL SYSTEM
+        function showOverlay(title, desc, btnText) {
+            document.getElementById('overlay-title').innerText = title;
+            document.getElementById('overlay-desc').innerText = desc;
+            document.getElementById('overlay-btn').innerText = btnText;
+            document.getElementById('overlay').classList.remove('hidden');
+        }
+
+        function hideOverlay() {
+            document.getElementById('overlay').classList.add('hidden');
+        }
+
+        function handleOverlayClick() {
+            if (isGameOver) {
+                restartGame();
+            } else if (isLevelCleared) {
+                level++;
+                initLevel();
+            }
+        }
+
+        function restartGame() {
+            level = 1;
+            lives = 3;
+            isGameOver = false;
+            initLevel();
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            animate();
+        };
+    </script>
+</body>
+</html>
