@@ -119,7 +119,7 @@
     </div>
 
     <div class="instructions">
-        [WASD / Arrow Keys] Move &nbsp;|&nbsp; [Left Click / Space] Throw Water Balloon &nbsp;|&nbsp; Reach <span class="highlight">EXIT</span> to Next Level
+        [WASD] Move &nbsp;|&nbsp; [Left Click / Space] Throw Auto-Aim Water Balloon &nbsp;|&nbsp; Reach <span class="highlight">EXIT</span> to Next Level
     </div>
 
     <script>
@@ -148,7 +148,6 @@
 
         // INPUT STATE
         const keys = {};
-        const mouse = { x: 0, y: 0, down: false };
 
         // PLAYER STATE
         const player = {
@@ -158,7 +157,6 @@
             speed: 3.2,
             facing: 1, // 1 = Right, -1 = Left
             walkFrame: 0,
-            aimAngle: 0,
             throwCooldown: 0
         };
 
@@ -190,12 +188,16 @@
 
         window.addEventListener('resize', resizeCanvas);
 
-        // CONTROLS HANDLERS
+        // CONTROLS HANDLERS - STRICTLY WASD AND SPACE/CLICK
         window.addEventListener('keydown', (e) => {
-            if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) {
                 e.preventDefault();
             }
-            keys[e.code] = true;
+            
+            // Only allow W, A, S, D, and Space
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) {
+                keys[e.code] = true;
+            }
 
             if (e.code === 'Space' && gameState === 'PLAYING') {
                 throwWaterBalloon();
@@ -203,13 +205,9 @@
         });
 
         window.addEventListener('keyup', (e) => {
-            keys[e.code] = false;
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            mouse.x = e.clientX - rect.left;
-            mouse.y = e.clientY - rect.top;
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) {
+                keys[e.code] = false;
+            }
         });
 
         canvas.addEventListener('mousedown', (e) => {
@@ -252,7 +250,6 @@
             for (let r = 1; r < ROWS - 1; r++) {
                 for (let c = 1; c < COLS - 1; c++) {
                     if (grid[r][c] === 0) {
-                        // Exclude start and exit tiles
                         if ((r <= 2 && c <= 2) || (r >= ROWS - 3 && c >= COLS - 3)) continue;
                         open.push({ col: c, row: r });
                     }
@@ -265,7 +262,6 @@
         function initLevel(lvl) {
             generateMaze();
 
-            // Set player position at start (1,1)
             player.x = offsetX + 1.5 * tileSize;
             player.y = offsetY + 1.5 * tileSize;
 
@@ -273,7 +269,7 @@
             fireballs = [];
             particles = [];
 
-            // Spawn 10 Coins scattered in open spaces
+            // Spawn 10 Coins
             coins = [];
             const openTiles = getOpenTiles().sort(() => Math.random() - 0.5);
 
@@ -347,7 +343,7 @@
         }
 
         function restartCurrentLevel() {
-            totalMoney = 0; // Lose all money on defeat!
+            totalMoney = 0; // Lose all money on hit
             initLevel(currentLevel);
         }
 
@@ -356,26 +352,38 @@
             document.getElementById('money-display').innerText = `Money: $${totalMoney}`;
         }
 
-        // WATER BALLOON THROWING
+        // AUTO-DIRECTING WATER BALLOONS
         function throwWaterBalloon() {
             if (player.throwCooldown > 0) return;
 
-            // Aim towards mouse cursor or facing direction
-            let angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
-            if (mouse.x === 0 && mouse.y === 0) {
-                angle = player.facing === 1 ? 0 : Math.PI;
+            let targetAngle = player.facing === 1 ? 0 : Math.PI;
+            let closestEnemy = null;
+            let minDist = Infinity;
+
+            // Find nearest active enemy to auto-target
+            enemies.forEach(e => {
+                const dist = Math.hypot(e.x - player.x, e.y - player.y);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestEnemy = e;
+                }
+            });
+
+            if (closestEnemy) {
+                targetAngle = Math.atan2(closestEnemy.y - player.y, closestEnemy.x - player.x);
+                player.facing = Math.cos(targetAngle) >= 0 ? 1 : -1;
             }
 
             balloons.push({
                 x: player.x,
                 y: player.y,
-                vx: Math.cos(angle) * 7.5,
-                vy: Math.sin(angle) * 7.5,
+                vx: Math.cos(targetAngle) * 7.5,
+                vy: Math.sin(targetAngle) * 7.5,
                 radius: 6,
                 life: 90
             });
 
-            player.throwCooldown = 12; // Cooldown frames
+            player.throwCooldown = 12;
         }
 
         // COLLISION HELPERS
@@ -406,21 +414,20 @@
 
             if (player.throwCooldown > 0) player.throwCooldown--;
 
-            // Player movement calculation
+            // Player movement calculation - strictly WASD
             let dx = 0;
             let dy = 0;
 
-            if (keys['KeyW'] || keys['ArrowUp']) dy -= 1;
-            if (keys['KeyS'] || keys['ArrowDown']) dy += 1;
-            if (keys['KeyA'] || keys['ArrowLeft']) { dx -= 1; player.facing = -1; }
-            if (keys['KeyD'] || keys['ArrowRight']) { dx += 1; player.facing = 1; }
+            if (keys['KeyW']) dy -= 1;
+            if (keys['KeyS']) dy += 1;
+            if (keys['KeyA']) { dx -= 1; player.facing = -1; }
+            if (keys['KeyD']) { dx += 1; player.facing = 1; }
 
             if (dx !== 0 && dy !== 0) {
                 dx *= 0.7071;
                 dy *= 0.7071;
             }
 
-            // Move with smooth wall collisions
             let nextX = player.x + dx * player.speed;
             let nextY = player.y + dy * player.speed;
 
@@ -463,7 +470,6 @@
                     continue;
                 }
 
-                // Check balloon collision with enemies
                 let balloonHit = false;
                 for (let j = enemies.length - 1; j >= 0; j--) {
                     const e = enemies[j];
@@ -472,14 +478,11 @@
                         balloonHit = true;
                         createParticles(e.x, e.y, e.color, 14);
 
-                        // Splitting Slime logic
                         if (e.type === 'yellow_slime') {
-                            // Yellow spawns 3 Red slimes
                             for (let k = 0; k < 3; k++) {
                                 spawnEnemy('red_slime', e.x + (Math.random() - 0.5) * 15, e.y + (Math.random() - 0.5) * 15);
                             }
                         } else if (e.type === 'red_slime') {
-                            // Red spawns 3 Teal slimes
                             for (let k = 0; k < 3; k++) {
                                 spawnEnemy('teal_slime', e.x + (Math.random() - 0.5) * 15, e.y + (Math.random() - 0.5) * 15);
                             }
@@ -507,7 +510,6 @@
                     continue;
                 }
 
-                // Fireball hits player
                 if (Math.hypot(f.x - player.x, f.y - player.y) < player.radius + 4) {
                     restartCurrentLevel();
                     return;
@@ -518,7 +520,6 @@
             enemies.forEach(e => {
                 e.animFrame += 0.1;
 
-                // Simple AI movement
                 let nextX = e.x + e.vx;
                 let nextY = e.y + e.vy;
 
@@ -528,14 +529,12 @@
                 if (isWall(e.x, nextY, e.radius)) e.vy *= -1;
                 else e.y = nextY;
 
-                // Slightly bias direction toward player
                 if (Math.random() < 0.02) {
                     const angle = Math.atan2(player.y - e.y, player.x - e.x);
                     e.vx = Math.cos(angle) * e.speed;
                     e.vy = Math.sin(angle) * e.speed;
                 }
 
-                // Snake Dragon Fireball Shooting
                 if (e.type === 'snake_dragon') {
                     e.shootTimer += 1;
                     if (e.shootTimer > 90) {
@@ -550,7 +549,6 @@
                     }
                 }
 
-                // Enemy touches player -> Reset level & lose all money!
                 if (Math.hypot(e.x - player.x, e.y - player.y) < e.radius + player.radius - 2) {
                     restartCurrentLevel();
                     return;
@@ -612,7 +610,6 @@
             }
             ctx.shadowBlur = 0;
 
-            // Draw Exit Zone
             const ex = offsetX + (COLS - 2) * tileSize;
             const ey = offsetY + (ROWS - 2) * tileSize;
             ctx.fillStyle = '#00ff66';
@@ -657,23 +654,19 @@
             const headY = neckY - headRadius;
             const shoulderY = neckY + 4;
 
-            // Head
             ctx.beginPath();
             ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
             ctx.stroke();
 
-            // Eye
             ctx.beginPath();
             ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
             ctx.fill();
 
-            // Torso
             ctx.beginPath();
             ctx.moveTo(x, neckY);
             ctx.lineTo(x, y);
             ctx.stroke();
 
-            // Legs
             const legSwing = Math.sin(walkFrame) * 6;
             ctx.beginPath();
             ctx.moveTo(x, y);
@@ -685,7 +678,6 @@
             ctx.lineTo(x + legSwing, y + legLength);
             ctx.stroke();
 
-            // Arms
             const armSwing = Math.sin(walkFrame + Math.PI) * 4;
             ctx.beginPath();
             ctx.moveTo(x, shoulderY);
@@ -703,13 +695,11 @@
                 const bounce = Math.sin(e.animFrame) * 2;
 
                 if (e.type.includes('slime')) {
-                    // Draw Slime Body
                     ctx.fillStyle = e.color;
                     ctx.beginPath();
                     ctx.ellipse(e.x, e.y + bounce, e.radius, e.radius - 3 + bounce, 0, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // Slime Eyes
                     ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
                     ctx.arc(e.x - 4, e.y - 2 + bounce, 3, 0, Math.PI * 2);
@@ -722,29 +712,25 @@
                     ctx.arc(e.x + 5, e.y - 2 + bounce, 1.5, 0, Math.PI * 2);
                     ctx.fill();
                 } else if (e.type === 'snake_dragon') {
-                    // Snake Dragon (Green with Wings)
                     ctx.fillStyle = '#22cc44';
                     ctx.beginPath();
                     ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // Tiny Wings flapping
                     const wingFlap = Math.sin(e.animFrame * 2) * 6;
                     ctx.fillStyle = '#88ffaa';
-                    // Left wing
                     ctx.beginPath();
                     ctx.moveTo(e.x - 8, e.y - 4);
                     ctx.lineTo(e.x - 20, e.y - 12 + wingFlap);
                     ctx.lineTo(e.x - 10, e.y + 4);
                     ctx.fill();
-                    // Right wing
+
                     ctx.beginPath();
                     ctx.moveTo(e.x + 8, e.y - 4);
                     ctx.lineTo(e.x + 20, e.y - 12 + wingFlap);
                     ctx.lineTo(e.x + 10, e.y + 4);
                     ctx.fill();
 
-                    // Eyes
                     ctx.fillStyle = '#ffcc00';
                     ctx.beginPath();
                     ctx.arc(e.x - 4, e.y - 3, 3, 0, Math.PI * 2);
@@ -755,7 +741,6 @@
         }
 
         function drawProjectiles() {
-            // Water Balloons
             balloons.forEach(b => {
                 ctx.fillStyle = '#00aaff';
                 ctx.beginPath();
@@ -766,7 +751,6 @@
                 ctx.stroke();
             });
 
-            // Fireballs
             fireballs.forEach(f => {
                 ctx.fillStyle = '#ff4400';
                 ctx.beginPath();
@@ -774,7 +758,6 @@
                 ctx.fill();
             });
 
-            // Particles
             particles.forEach(p => {
                 ctx.fillStyle = p.color;
                 ctx.globalAlpha = p.alpha;
@@ -787,24 +770,20 @@
 
         // ENDING ANIMATION: WATERSLIDE SCENE
         function drawWaterslideEnding() {
-            // Background Sky
             const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
             skyGradient.addColorStop(0, '#87ceeb');
             skyGradient.addColorStop(1, '#e0f7fa');
             ctx.fillStyle = skyGradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Sun
             ctx.fillStyle = '#ffeb3b';
             ctx.beginPath();
             ctx.arc(canvas.width - 80, 80, 40, 0, Math.PI * 2);
             ctx.fill();
 
-            // Pool at Bottom
             ctx.fillStyle = '#00b4d8';
             ctx.fillRect(0, canvas.height - 120, canvas.width, 120);
 
-            // Water Ripple Effect
             ctx.fillStyle = '#90e0ef';
             for (let i = 0; i < canvas.width; i += 40) {
                 const wave = Math.sin(slideTime * 3 + i) * 5;
@@ -813,7 +792,6 @@
                 ctx.fill();
             }
 
-            // Tube / Slide Structure (S-Curve path)
             ctx.strokeStyle = '#ff0055';
             ctx.lineWidth = 28;
             ctx.lineCap = 'round';
@@ -822,17 +800,14 @@
             ctx.bezierCurveTo(canvas.width - 100, 150, 50, 300, canvas.width - 200, canvas.height - 120);
             ctx.stroke();
 
-            // Slide Water Flow (Inner bright blue line)
             ctx.strokeStyle = '#00f0ff';
             ctx.lineWidth = 16;
             ctx.stroke();
 
-            // Stickman Slide Progress (Cyclic animation)
-            const progress = (slideTime * 0.35) % 1.2; // 0 to 1 sliding, 1.0 - 1.2 splashing
+            const progress = (slideTime * 0.35) % 1.2;
 
             let sx, sy;
             if (progress <= 1.0) {
-                // Bezier Point Calculation
                 const t = progress;
                 const p0 = { x: 100, y: 80 };
                 const p1 = { x: canvas.width - 100, y: 150 };
@@ -842,17 +817,14 @@
                 sx = Math.pow(1 - t, 3) * p0.x + 3 * Math.pow(1 - t, 2) * t * p1.x + 3 * (1 - t) * Math.pow(t, 2) * p2.x + Math.pow(t, 3) * p3.x;
                 sy = Math.pow(1 - t, 3) * p0.y + 3 * Math.pow(1 - t, 2) * t * p1.y + 3 * (1 - t) * Math.pow(t, 2) * p2.y + Math.pow(t, 3) * p3.y - 12;
 
-                // Draw Sliding Stickman with hands up
                 drawStickmanJoy(sx, sy);
             } else {
-                // Splash down in pool!
                 sx = canvas.width - 200;
                 sy = canvas.height - 100;
                 createParticles(sx + (Math.random() - 0.5) * 40, sy, '#00f0ff', 4);
                 drawStickmanJoy(sx, sy);
             }
 
-            // Draw Victory Banner
             ctx.fillStyle = '#000000';
             ctx.font = 'bold 28px Courier New';
             ctx.textAlign = 'center';
@@ -868,18 +840,15 @@
             ctx.fillStyle = '#000000';
             ctx.lineWidth = 2.5;
 
-            // Head
             ctx.beginPath();
             ctx.arc(x, y - 12, 6, 0, Math.PI * 2);
             ctx.stroke();
 
-            // Body
             ctx.beginPath();
             ctx.moveTo(x, y - 6);
             ctx.lineTo(x, y + 8);
             ctx.stroke();
 
-            // Arms Up (Woohoo!)
             ctx.beginPath();
             ctx.moveTo(x, y - 2);
             ctx.lineTo(x - 10, y - 16);
@@ -887,7 +856,6 @@
             ctx.lineTo(x + 10, y - 16);
             ctx.stroke();
 
-            // Legs
             ctx.beginPath();
             ctx.moveTo(x, y + 8);
             ctx.lineTo(x - 8, y + 18);
