@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman Meadow Adventure</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+        }
+
+        body {
+            background-color: #1a2f1a;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            overflow: hidden;
+            padding: 16px;
+        }
+
+        /* Top Header Bar */
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1100px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #5AAB51;
+        }
+
+        h1 {
+            font-size: 18px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: bold;
+            color: #a2f29b;
+        }
+
+        #hud {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .hearts-container {
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+
+        .score-container {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffeb3b;
+        }
+
+        .btn-reset {
+            background: #2e6930;
+            color: #ffffff;
+            border: 1px solid #a2f29b;
+            padding: 6px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 4px;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .btn-reset:hover {
+            background: #a2f29b;
+            color: #000000;
+        }
+
+        /* Main Canvas Container */
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 1100px;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #4CAF50;
+            border: 2px solid #2e6930;
+            border-radius: 8px;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .instructions {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #a2f29b;
+            text-align: center;
+        }
+
+        /* Game Over Overlay */
+        #game-over-modal {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 40, 20, 0.95);
+            border: 3px solid #ffeb3b;
+            padding: 30px 40px;
+            text-align: center;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.6);
+            z-index: 10;
+        }
+
+        #game-over-modal h2 {
+            font-size: 28px;
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+
+        #game-over-modal p {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #ffffff;
+        }
+
+        #game-over-modal button {
+            background: #ffeb3b;
+            color: #000000;
+            border: none;
+            padding: 10px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+
+        #game-over-modal button:hover {
+            background: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div id="header">
+        <h1>Meadow Stickman</h1>
+        <div id="hud">
+            <div class="hearts-container" id="heartsDisplay">❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️</div>
+            <div class="score-container">Time: <span id="scoreDisplay">0</span>s</div>
+        </div>
+        <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvas-wrapper">
+        <canvas id="simCanvas"></canvas>
+        <div id="game-over-modal">
+            <h2>KNOCKED OUT! 😵</h2>
+            <p>Stickman lasted for <span id="finalScore">0</span> seconds!</p>
+            <button onclick="resetSimulation()">Play Again</button>
+        </div>
+    </div>
+
+    <div class="instructions">
+        [WASD] Move &nbsp;|&nbsp; [SPACEBAR] Punch
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // KEYBOARD INPUT STATE
+        const keys = {};
+
+        // GAME STATE
+        let isGameOver = false;
+        let startTime = 0;
+        let survivalSeconds = 0;
+        let spawnTimer = null;
+
+        // STICKMAN PLAYER STATE
+        const player = {
+            x: 0,
+            y: 0,
+            speed: 4.5,
+            facing: 1, // 1 = Right, -1 = Left
+            walkFrame: 0,
+            punchTimer: 0,
+            punchDuration: 12,
+            hearts: 10,
+            maxHearts: 10,
+            proneTimer: 0,       // Seconds remaining prone
+            invulnerableTimer: 0 // Seconds remaining invulnerable
+        };
+
+        // BUTTERFLIES ARRAY
+        let butterflies = [];
+        const butterflyColors = ['#ff70a6', '#ff9770', '#ffd670', '#e9ff70', '#70d6ff', '#b5e2fa'];
+
+        // MEADOW DECORATION (Static flowers)
+        let flowers = [];
+
+        function generateMeadowDecorations() {
+            flowers = [];
+            const flowerColors = ['#ffffff', '#ffeb3b', '#ff4081', '#00e676', '#e040fb'];
+            for (let i = 0; i < 40; i++) {
+                flowers.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    color: flowerColors[Math.floor(Math.random() * flowerColors.length)],
+                    radius: 3 + Math.random() * 3
+                });
+            }
+        }
+
+        function spawnButterfly() {
+            if (isGameOver) return;
+            const radius = 10;
+            const speed = 2 + Math.random() * 2;
+            const angle = Math.random() * Math.PI * 2;
+
+            butterflies.push({
+                x: Math.random() * (canvas.width - 60) + 30,
+                y: Math.random() * (canvas.height - 60) + 30,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                radius: radius,
+                color: butterflyColors[Math.floor(Math.random() * butterflyColors.length)],
+                flapFrame: Math.random() * Math.PI * 2
+            });
+        }
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            generateMeadowDecorations();
+            
+            if (player.x === 0 && player.y === 0) {
+                resetSimulation();
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // CONTROLS HANDLERS
+        window.addEventListener('keydown', (e) => {
+            if (['Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+                e.preventDefault();
+            }
+            keys[e.code] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        function updateHUD() {
+            let heartsString = '';
+            for (let i = 0; i < player.maxHearts; i++) {
+                if (i < player.hearts) {
+                    heartsString += '❤️';
+                } else {
+                    heartsString += '🖤';
+                }
+            }
+            document.getElementById('heartsDisplay').textContent = heartsString;
+            document.getElementById('scoreDisplay').textContent = survivalSeconds;
+        }
+
+        function resetSimulation() {
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            player.facing = 1;
+            player.punchTimer = 0;
+            player.walkFrame = 0;
+            player.hearts = 10;
+            player.proneTimer = 0;
+            player.invulnerableTimer = 0;
+
+            butterflies = [];
+            isGameOver = false;
+            startTime = Date.now();
+            survivalSeconds = 0;
+
+            document.getElementById('game-over-modal').style.display = 'none';
+            updateHUD();
+
+            // Clear existing interval & spawn 1 butterfly immediately
+            if (spawnTimer) clearInterval(spawnTimer);
+            spawnButterfly();
+            spawnTimer = setInterval(spawnButterfly, 3000); // 1 butterfly every 3 seconds
+        }
+
+        function triggerPunch() {
+            if (player.punchTimer === 0 && player.proneTimer <= 0) {
+                player.punchTimer = player.punchDuration;
+            }
+        }
+
+        let lastTime = performance.now();
+
+        function updatePhysics(deltaTime) {
+            if (isGameOver) return;
+
+            // Update Survival Score Time
+            survivalSeconds = Math.floor((Date.now() - startTime) / 1000);
+
+            // Update Prone & Invulnerability Timers
+            if (player.proneTimer > 0) {
+                player.proneTimer -= deltaTime;
+                if (player.proneTimer < 0) player.proneTimer = 0;
+            }
+
+            if (player.invulnerableTimer > 0) {
+                player.invulnerableTimer -= deltaTime;
+                if (player.invulnerableTimer < 0) player.invulnerableTimer = 0;
+            }
+
+            // Movement Calculation (Only if NOT prone)
+            let dx = 0;
+            let dy = 0;
+
+            if (player.proneTimer <= 0) {
+                if (keys['KeyW'] || keys['Keyw']) dy -= 1;
+                if (keys['KeyS'] || keys['Keys']) dy += 1;
+                if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
+                if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+
+                if (dx !== 0 && dy !== 0) {
+                    dx *= 0.7071;
+                    dy *= 0.7071;
+                }
+
+                player.x += dx * player.speed;
+                player.y += dy * player.speed;
+            }
+
+            // Keep stickman inside canvas boundaries
+            const margin = 25;
+            player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
+            player.y = Math.max(margin + 30, Math.min(canvas.height - margin - 20, player.y));
+
+            // Walk animation cycle updates
+            if (dx !== 0 || dy !== 0) {
+                player.walkFrame += 0.25;
+            } else {
+                player.walkFrame = 0;
+            }
+
+            // Punch Trigger
+            if (keys['Space']) {
+                triggerPunch();
+            }
+
+            if (player.punchTimer > 0) {
+                player.punchTimer--;
+            }
+
+            // Update Butterflies Position & Bounce Off Walls
+            butterflies.forEach(b => {
+                b.x += b.vx;
+                b.y += b.vy;
+                b.flapFrame += 0.2;
+
+                // Wall Bouncing
+                if (b.x - b.radius < 0) {
+                    b.x = b.radius;
+                    b.vx *= -1;
+                } else if (b.x + b.radius > canvas.width) {
+                    b.x = canvas.width - b.radius;
+                    b.vx *= -1;
+                }
+
+                if (b.y - b.radius < 0) {
+                    b.y = b.radius;
+                    b.vy *= -1;
+                } else if (b.y + b.radius > canvas.height) {
+                    b.y = canvas.height - b.radius;
+                    b.vy *= -1;
+                }
+
+                // Random slight steering flutter
+                b.vx += (Math.random() - 0.5) * 0.3;
+                b.vy += (Math.random() - 0.5) * 0.3;
+                
+                // Clamp speed
+                const maxSpeed = 3.5;
+                const speed = Math.hypot(b.vx, b.vy);
+                if (speed > maxSpeed) {
+                    b.vx = (b.vx / speed) * maxSpeed;
+                    b.vy = (b.vy / speed) * maxSpeed;
+                }
+
+                // Check Collision with Stickman
+                if (player.invulnerableTimer <= 0) {
+                    const dist = Math.hypot(player.x - b.x, (player.y - 20) - b.y);
+                    if (dist < b.radius + 20) {
+                        // HIT BY BUTTERFLY!
+                        player.hearts--;
+                        player.proneTimer = 2.0;       // Falls prone for 2 seconds
+                        player.invulnerableTimer = 4.0; // Invulnerable for 4 seconds
+
+                        updateHUD();
+
+                        if (player.hearts <= 0) {
+                            endGame();
+                        }
+                    }
+                }
+            });
+
+            updateHUD();
+        }
+
+        function endGame() {
+            isGameOver = true;
+            if (spawnTimer) clearInterval(spawnTimer);
+            document.getElementById('finalScore').textContent = survivalSeconds;
+            document.getElementById('game-over-modal').style.display = 'block';
+        }
+
+        function drawMeadow() {
+            // Base Meadow Grass
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Subtle Grass Texture Patches
+            ctx.fillStyle = '#43A047';
+            for (let x = 0; x < canvas.width; x += 100) {
+                for (let y = 0; y < canvas.height; y += 100) {
+                    if ((x + y) % 200 === 0) {
+                        ctx.beginPath();
+                        ctx.arc(x + 40, y + 40, 35, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            // Draw Flowers
+            flowers.forEach(f => {
+                ctx.fillStyle = f.color;
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#ffeb3b';
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.radius * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawButterfly(b) {
+            ctx.save();
+            ctx.translate(b.x, b.y);
+
+            const flapScale = Math.sin(b.flapFrame);
+
+            // Wings
+            ctx.fillStyle = b.color;
+            
+            // Left Wing
+            ctx.beginPath();
+            ctx.ellipse(-6 * Math.abs(flapScale), 0, 8 * Math.abs(flapScale), 10, Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Right Wing
+            ctx.beginPath();
+            ctx.ellipse(6 * Math.abs(flapScale), 0, 8 * Math.abs(flapScale), 10, -Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body
+            ctx.fillStyle = '#222222';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 2, 7, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawStickman(x, y, facing, walkFrame, punchTimer) {
+            // Blink if invulnerable (and not prone)
+            if (player.invulnerableTimer > 0 && Math.floor(Date.now() / 150) % 2 === 0) {
+                ctx.globalAlpha = 0.4;
+            } else {
+                ctx.globalAlpha = 1.0;
+            }
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.fillStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // PRONE ANIMATION
+            if (player.proneTimer > 0) {
+                ctx.save();
+                ctx.translate(x, y);
+                
+                // Draw prone flat figure
+                // Head
+                ctx.beginPath();
+                ctx.arc(facing * 25, 10, 8, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Knocked out eyes (X X)
+                ctx.strokeStyle = '#ffeb3b';
+                ctx.beginPath();
+                ctx.moveTo(facing * 23, 8); ctx.lineTo(facing * 27, 12);
+                ctx.moveTo(facing * 27, 8); ctx.lineTo(facing * 23, 12);
+                ctx.stroke();
+
+                // Body laying down
+                ctx.strokeStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.moveTo(facing * 18, 10);
+                ctx.lineTo(-facing * 15, 10);
+                ctx.stroke();
+
+                // Legs sprawl
+                ctx.beginPath();
+                ctx.moveTo(-facing * 15, 10);
+                ctx.lineTo(-facing * 30, 5);
+                ctx.moveTo(-facing * 15, 10);
+                ctx.lineTo(-facing * 28, 16);
+                ctx.stroke();
+
+                // Arms sprawl
+                ctx.beginPath();
+                ctx.moveTo(0, 10);
+                ctx.lineTo(facing * 10, 2);
+                ctx.moveTo(0, 10);
+                ctx.lineTo(-facing * 5, 20);
+                ctx.stroke();
+
+                ctx.restore();
+                ctx.globalAlpha = 1.0;
+                return;
+            }
+
+            // REGULAR STANDING / WALKING ANIMATION
+            const headRadius = 10;
+            const bodyLength = 30;
+            const legLength = 22;
+            const neckY = y - bodyLength;
+            const headY = neckY - headRadius;
+            const shoulderY = neckY + 8;
+
+            // 1. Head
+            ctx.beginPath();
+            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Eye direction indicator
+            ctx.beginPath();
+            ctx.arc(x + facing * 4, headY - 1, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Torso
+            ctx.beginPath();
+            ctx.moveTo(x, neckY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            // 3. Legs
+            const legSwing = Math.sin(walkFrame) * 12;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - legSwing, y + legLength);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + legSwing, y + legLength);
+            ctx.stroke();
+
+            // 4. Back Arm
+            const armSwing = Math.sin(walkFrame + Math.PI) * 8;
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+            ctx.lineTo(x - facing * 8 - armSwing, shoulderY + 12);
+            ctx.stroke();
+
+            // 5. Front Arm (Punch / Walking Pose)
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY);
+
+            if (punchTimer > 0) {
+                const fistX = x + facing * 34;
+                const fistY = shoulderY - 2;
+
+                ctx.lineTo(fistX, fistY);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(fistX, fistY, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.lineTo(x + facing * 8 + armSwing, shoulderY + 12);
+                ctx.stroke();
+            }
+
+            ctx.globalAlpha = 1.0;
+        }
+
+        function draw() {
+            // Clear & Draw Meadow
+            drawMeadow();
+
+            // Draw Butterflies
+            butterflies.forEach(drawButterfly);
+
+            // Draw Stickman
+            drawStickman(player.x, player.y, player.facing, player.walkFrame, player.punchTimer);
+        }
+
+        function animate(now) {
+            const deltaTime = (now - lastTime) / 1000;
+            lastTime = now;
+
+            updatePhysics(deltaTime);
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>
