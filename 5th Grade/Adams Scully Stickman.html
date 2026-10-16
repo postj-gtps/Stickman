@@ -22,7 +22,7 @@
             justify-content: flex-start;
             height: 100vh;
             overflow: hidden;
-            padding: 12px;
+            padding: 10px;
         }
 
         /* Top Header Bar */
@@ -47,10 +47,14 @@
         /* HUD Display */
         #hud {
             display: flex;
-            gap: 16px;
-            font-size: 14px;
+            gap: 14px;
+            font-size: 13px;
             font-weight: bold;
             color: #00ffcc;
+        }
+
+        .hud-val {
+            color: #ffffff;
         }
 
         .btn-reset {
@@ -91,13 +95,6 @@
             border-radius: 4px;
         }
 
-        .instructions {
-            margin-top: 6px;
-            font-size: 11px;
-            color: #aaaaaa;
-            text-align: center;
-        }
-
         /* On-Screen Touch Controls for Chromebooks */
         #touch-controls {
             display: flex;
@@ -111,8 +108,8 @@
 
         .dpad {
             display: grid;
-            grid-template-columns: repeat(3, 40px);
-            grid-template-rows: repeat(2, 40px);
+            grid-template-columns: repeat(3, 42px);
+            grid-template-rows: repeat(2, 42px);
             gap: 4px;
         }
 
@@ -136,7 +133,7 @@
         }
 
         .btn-swing {
-            background: #228b22;
+            background: #1b631b;
             border: 2px solid #00ff66;
             color: #ffffff;
             padding: 12px 24px;
@@ -151,32 +148,124 @@
             background: #00ff66;
             color: #000000;
         }
+
+        /* Summary Modal Screen */
+        #summary-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.92);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            border-radius: 4px;
+        }
+
+        .modal-box {
+            background: #111111;
+            border: 2px solid #ff3366;
+            padding: 24px 32px;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.4);
+        }
+
+        .modal-title {
+            font-size: 24px;
+            color: #ff3366;
+            margin-bottom: 16px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .summary-list {
+            list-style: none;
+            margin: 16px 0;
+            text-align: left;
+            font-size: 15px;
+            line-height: 1.8;
+            border-top: 1px dashed #444;
+            border-bottom: 1px dashed #444;
+            padding: 12px 0;
+        }
+
+        .summary-list li {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .summary-total {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00ffcc;
+            margin-top: 8px;
+        }
+
+        .btn-modal-restart {
+            margin-top: 20px;
+            background: #00ffcc;
+            color: #000000;
+            border: none;
+            padding: 10px 24px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 1px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .btn-modal-restart:hover {
+            background: #ffffff;
+            box-shadow: 0 0 10px #ffffff;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Header & HUD Section -->
+    <!-- Header Section -->
     <div id="header">
         <h1>Stickman & The Cactus</h1>
         <div id="hud">
-            <span>LEVEL: <span id="hud-level">1</span></span>
-            <span>LIVES: <span id="hud-lives">❤️❤️❤️</span></span>
-            <span>KITTIES: <span id="hud-kitties">0</span></span>
-            <span>SCORE: <span id="hud-score">1</span></span>
+            <span>LVL: <span id="hud-level" class="hud-val">1</span></span>
+            <span>LIVES: <span id="hud-lives" class="hud-val">❤️❤️❤️</span></span>
+            <span>CATS: <span id="hud-kitties" class="hud-val">0</span></span>
+            <span>KILLS: <span id="hud-kills" class="hud-val">0</span></span>
+            <span>SCORE: <span id="hud-score" class="hud-val">1</span></span>
         </div>
-        <button class="btn-reset" onclick="restartGame()">Reset Game</button>
+        <button class="btn-reset" onclick="restartGame()">Reset</button>
     </div>
 
-    <!-- Canvas Container -->
+    <!-- Canvas & Modal Container -->
     <div id="canvas-wrapper">
         <canvas id="simCanvas"></canvas>
+
+        <!-- Summary Modal Screen -->
+        <div id="summary-modal">
+            <div class="modal-box">
+                <div class="modal-title">☠ GAME OVER ☠</div>
+                <p style="font-size: 13px; color: #aaa;">Stickman was defeated!</p>
+                
+                <ul class="summary-list">
+                    <li><span>Level Reached:</span> <strong id="summary-level" style="color:#00ffcc">1</strong></li>
+                    <li><span>Kitties Rescued:</span> <strong id="summary-kitties" style="color:#ff66cc">0</strong></li>
+                    <li><span>Enemies Defeated:</span> <strong id="summary-kills" style="color:#ff9900">0</strong></li>
+                    <li class="summary-total"><span>FINAL SCORE:</span> <strong id="summary-score" style="color:#00ffcc">1</strong></li>
+                </ul>
+
+                <button class="btn-modal-restart" onclick="restartGame()">Play Again 🔄</button>
+            </div>
+        </div>
     </div>
 
-    <div class="instructions">
-        [WASD / Arrows] Move | [SPACE] Swing Cactus | Touch Controls Below
-    </div>
-
-    <!-- Touchscreen Controls for Chromebook Users -->
+    <!-- On-Screen Touch Controls -->
     <div id="touch-controls">
         <div class="dpad">
             <div></div>
@@ -193,12 +282,22 @@
         const canvas = document.getElementById('simCanvas');
         const ctx = canvas.getContext('2d');
 
+        // PALETTE OF VIBRANT NEON WALL COLORS
+        const WALL_COLORS = [
+            '#00FFCC', '#FF007F', '#39FF14', '#FFD700', 
+            '#FF6600', '#00E5FF', '#B800FF', '#00FF66', 
+            '#FF3366', '#FF9900'
+        ];
+
         // GAME STATE
         let level = 1;
         let lives = 3;
         let kittiesRescued = 0;
+        let enemiesDefeated = 0;
         let score = 1;
         let gameOver = false;
+        let currentWallColor = WALL_COLORS[0];
+
         let bannerMessage = "";
         let bannerTimer = 0;
 
@@ -210,7 +309,7 @@
         let grid = [];
         let wallsList = [];
 
-        // KEYBOARD & TOUCH INPUT STATE
+        // INPUT STATE
         const keys = {};
 
         // PLAYER STATE
@@ -304,10 +403,10 @@
                     let y2 = (r + 1) * cellHeight;
 
                     let cell = grid[r][c];
-                    if (cell.walls.top) wallsList.push({ x1, y1, x2: x2, y2: y1 });
-                    if (cell.walls.bottom) wallsList.push({ x1, y1: y2, x2: x2, y2 });
-                    if (cell.walls.left) wallsList.push({ x1, y1, x2: x1, y2: y2 });
-                    if (cell.walls.right) wallsList.push({ x1: x2, y1, x2: x2, y2: y2 });
+                    if (cell.walls.top) wallsList.push({ x1, y1, x2, y2: y1 });
+                    if (cell.walls.bottom) wallsList.push({ x1, y1: y2, x2, y2 });
+                    if (cell.walls.left) wallsList.push({ x1, y1, x2: x1, y2 });
+                    if (cell.walls.right) wallsList.push({ x1: x2, y1, x2, y2 });
                 }
             }
         }
@@ -334,9 +433,13 @@
 
         // LEVEL INITIALIZATION
         function initLevel() {
+            // Pick a distinct random wall color for this level
+            let availableColors = WALL_COLORS.filter(c => c !== currentWallColor);
+            currentWallColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+
             createMaze();
 
-            // Set Stickman in Center of Start Cell (Lower-Left)
+            // Place Stickman in Center of Start Cell (Lower-Left)
             player.x = cellWidth * 0.5;
             player.y = (rows - 0.5) * cellHeight;
             player.isSwinging = false;
@@ -348,7 +451,6 @@
             for (let i = 0; i < kittyCount; i++) {
                 let r = Math.floor(Math.random() * rows);
                 let c = Math.floor(Math.random() * cols);
-                // Don't spawn on start cell or exit cell
                 if ((r === rows - 1 && c === 0) || (r === 0 && c === cols - 1)) continue;
                 kitties.push({
                     x: (c + 0.5) * cellWidth,
@@ -365,10 +467,10 @@
             for (let i = 0; i < enemyCount; i++) {
                 let r = Math.floor(Math.random() * rows);
                 let c = Math.floor(Math.random() * cols);
-                if ((r === rows - 1 && c === 0) || (r === rows - 1 && c === 1)) continue; // Keep start clear
+                if ((r === rows - 1 && c === 0) || (r === rows - 1 && c === 1)) continue;
 
                 let type = types[Math.floor(Math.random() * types.length)];
-                if (level === 1 && Math.random() > 0.4) type = 'slug'; // Easier on level 1
+                if (level === 1 && Math.random() > 0.4) type = 'slug';
 
                 let hp = type === 'toaster' ? 3 : (type === 'pumpkin' ? 2 : 1);
                 let maxHp = hp;
@@ -392,19 +494,33 @@
         }
 
         function updateHUD() {
-            score = level + kittiesRescued;
+            // Updated Formula: Level # + Kitties Rescued + Enemies Defeated
+            score = level + kittiesRescued + enemiesDefeated;
+            
             document.getElementById('hud-level').innerText = level;
             document.getElementById('hud-lives').innerText = '❤️'.repeat(Math.max(0, lives));
             document.getElementById('hud-kitties').innerText = kittiesRescued;
+            document.getElementById('hud-kills').innerText = enemiesDefeated;
             document.getElementById('hud-score').innerText = score;
         }
 
+        function showGameOverModal() {
+            document.getElementById('summary-level').innerText = level;
+            document.getElementById('summary-kitties').innerText = kittiesRescued;
+            document.getElementById('summary-kills').innerText = enemiesDefeated;
+            document.getElementById('summary-score').innerText = score;
+
+            document.getElementById('summary-modal').style.display = 'flex';
+        }
+
         function restartGame() {
+            document.getElementById('summary-modal').style.display = 'none';
             level = 1;
             lives = 3;
             kittiesRescued = 0;
+            enemiesDefeated = 0;
             gameOver = false;
-            bannerMessage = "GAME RESTARTED!";
+            bannerMessage = "NEW GAME STARTED!";
             bannerTimer = 60;
             initLevel();
         }
@@ -441,7 +557,7 @@
             keys[e.code] = false;
         });
 
-        // TOUCH BUTTON BINDINGS
+        // TOUCH CONTROLS BINDING
         function bindTouchBtn(btnId, keyName) {
             const btn = document.getElementById(btnId);
             btn.addEventListener('pointerdown', (e) => { e.preventDefault(); keys[keyName] = true; });
@@ -460,7 +576,7 @@
         });
 
         function triggerSwing() {
-            if (!player.isSwinging && player.swingCooldown <= 0) {
+            if (!player.isSwinging && player.swingCooldown <= 0 && !gameOver) {
                 player.isSwinging = true;
                 player.swingAngle = 0;
                 player.hitEnemiesThisSwing.clear();
@@ -485,7 +601,7 @@
                 dy *= 0.7071;
             }
 
-            // Smooth Axis-Independent Movement Collision
+            // Movement Collision
             let nextX = player.x + dx * player.speed;
             if (!checkWallCollision(nextX, player.y, player.radius)) {
                 player.x = nextX;
@@ -496,27 +612,22 @@
                 player.y = nextY;
             }
 
-            // Walk animation frame update
             if (dx !== 0 || dy !== 0) player.walkFrame += 0.25;
             else player.walkFrame = 0;
 
-            // Handle Cactus Swing Arc (360 degrees)
+            // Cactus 360 Sweep Arc
             if (player.isSwinging) {
-                player.swingAngle += 0.35; // Sweep speed
-                
-                // Swing hit radius
+                player.swingAngle += 0.35;
                 const swingRadius = 42;
 
-                // Check collision with enemies during swing
                 for (let enemy of enemies) {
                     if (!player.hitEnemiesThisSwing.has(enemy)) {
                         let dist = Math.hypot(enemy.x - player.x, enemy.y - player.y);
                         if (dist <= swingRadius + enemy.radius) {
-                            // Damage enemy
                             enemy.hp -= 1;
                             player.hitEnemiesThisSwing.add(enemy);
 
-                            // Knockback impulse away from Stickman
+                            // Knockback Impulse
                             let angle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
                             let knockDist = 35;
                             let targetKx = enemy.x + Math.cos(angle) * knockDist;
@@ -527,7 +638,7 @@
                                 enemy.y = targetKy;
                             }
 
-                            // Spawn hit particles
+                            // Hit Particles
                             for (let p = 0; p < 6; p++) {
                                 particles.push({
                                     x: enemy.x,
@@ -537,6 +648,12 @@
                                     life: 15,
                                     color: '#ffff00'
                                 });
+                            }
+
+                            // Check Enemy Defeated
+                            if (enemy.hp <= 0) {
+                                enemiesDefeated++;
+                                updateHUD();
                             }
                         }
                     }
@@ -550,10 +667,10 @@
                 player.swingCooldown--;
             }
 
-            // Remove Defeated Enemies
+            // Remove Slain Enemies
             enemies = enemies.filter(enemy => enemy.hp > 0);
 
-            // Enemy Roaming AI Logic
+            // Enemy Movement AI
             for (let enemy of enemies) {
                 let nextEX = enemy.x + enemy.vx;
                 let nextEY = enemy.y + enemy.vy;
@@ -562,7 +679,6 @@
                     enemy.x = nextEX;
                     enemy.y = nextEY;
                 } else {
-                    // Wall hit: pick random valid direction
                     let dirs = [
                         { vx: enemy.speed, vy: 0 },
                         { vx: -enemy.speed, vy: 0 },
@@ -580,7 +696,7 @@
                     }
                 }
 
-                // Check Enemy Touch Stickman Collision
+                // Enemy Collision with Stickman
                 let distToPlayer = Math.hypot(enemy.x - player.x, enemy.y - player.y);
                 if (distToPlayer < player.radius + enemy.radius) {
                     lives--;
@@ -588,19 +704,17 @@
 
                     if (lives <= 0) {
                         gameOver = true;
-                        bannerMessage = "GAME OVER! RESTARTING LEVEL 1...";
-                        setTimeout(restartGame, 2200);
+                        showGameOverModal();
                     } else {
                         bannerMessage = `OUCH! LIVES LEFT: ${lives}`;
                         bannerTimer = 60;
-                        // Send Stickman back to start position
                         player.x = cellWidth * 0.5;
                         player.y = (rows - 0.5) * cellHeight;
                     }
                 }
             }
 
-            // Kitties Rescue Collision Check
+            // Kitty Rescue
             for (let i = kitties.length - 1; i >= 0; i--) {
                 let k = kitties[i];
                 if (Math.hypot(player.x - k.x, player.y - k.y) < player.radius + k.radius) {
@@ -608,7 +722,6 @@
                     kittiesRescued++;
                     updateHUD();
 
-                    // Sparkle particles
                     for (let p = 0; p < 8; p++) {
                         particles.push({
                             x: k.x,
@@ -622,11 +735,9 @@
                 }
             }
 
-            // Check Maze Exit Reached (Upper Right Cell)
-            const exitCol = cols - 1;
-            const exitRow = 0;
-            const exitX = (exitCol + 0.5) * cellWidth;
-            const exitY = (exitRow + 0.5) * cellHeight;
+            // Check Exit Reached (Upper-Right)
+            const exitX = (cols - 0.5) * cellWidth;
+            const exitY = 0.5 * cellHeight;
 
             if (Math.hypot(player.x - exitX, player.y - exitY) < cellWidth * 0.4) {
                 level++;
@@ -635,7 +746,7 @@
                 initLevel();
             }
 
-            // Update particles
+            // Update Particles
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i];
                 p.x += p.vx;
@@ -649,8 +760,10 @@
 
         // DRAW FUNCTIONS
         function drawMaze() {
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 3;
+            ctx.strokeStyle = currentWallColor; // Random Level Wall Color
+            ctx.lineWidth = 3.5;
+            ctx.shadowColor = currentWallColor;
+            ctx.shadowBlur = 4;
 
             for (let w of wallsList) {
                 ctx.beginPath();
@@ -659,7 +772,9 @@
                 ctx.stroke();
             }
 
-            // Draw Exit Archway in Upper-Right
+            ctx.shadowBlur = 0; // Reset Shadow
+
+            // Exit Archway
             const exitX = (cols - 1) * cellWidth;
             const exitY = 0;
             ctx.fillStyle = 'rgba(0, 255, 102, 0.25)';
@@ -680,13 +795,13 @@
                 ctx.save();
                 ctx.translate(k.x, k.y);
 
-                // Cute Kitty Head
+                // Head
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
                 ctx.arc(0, 0, 7, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Pointy Cat Ears
+                // Pink Ears
                 ctx.fillStyle = '#ff99cc';
                 ctx.beginPath();
                 ctx.moveTo(-6, -4); ctx.lineTo(-9, -10); ctx.lineTo(-2, -6);
@@ -719,13 +834,11 @@
                 ctx.translate(e.x, e.y);
 
                 if (e.type === 'slug') {
-                    // Alien Slug
                     ctx.fillStyle = '#39FF14';
                     ctx.beginPath();
                     ctx.ellipse(0, 2, 10, 6, 0, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // Eyestalks
                     ctx.strokeStyle = '#39FF14';
                     ctx.lineWidth = 1.5;
                     ctx.beginPath();
@@ -740,24 +853,20 @@
                     ctx.fill();
 
                 } else if (e.type === 'pumpkin') {
-                    // Angry Pumpkin
                     ctx.fillStyle = '#FF6600';
                     ctx.beginPath();
                     ctx.arc(0, 0, 11, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // Stem
                     ctx.fillStyle = '#009933';
                     ctx.fillRect(-2, -14, 4, 4);
 
-                    // Evil Triangular Eyes
                     ctx.fillStyle = '#ffff00';
                     ctx.beginPath();
                     ctx.moveTo(-6, -4); ctx.lineTo(-2, -4); ctx.lineTo(-4, 0);
                     ctx.moveTo(6, -4); ctx.lineTo(2, -4); ctx.lineTo(4, 0);
                     ctx.fill();
 
-                    // Jagged Mouth
                     ctx.strokeStyle = '#000000';
                     ctx.lineWidth = 1.5;
                     ctx.beginPath();
@@ -765,25 +874,20 @@
                     ctx.stroke();
 
                 } else if (e.type === 'toaster') {
-                    // Evil Toaster
                     ctx.fillStyle = '#A0A0A0';
                     ctx.fillRect(-12, -9, 24, 18);
 
-                    // Red Slots
                     ctx.fillStyle = '#ff0000';
                     ctx.fillRect(-8, -12, 16, 3);
 
-                    // Evil Red Eyes
                     ctx.fillStyle = '#ff0033';
                     ctx.fillRect(-7, -4, 4, 4);
                     ctx.fillRect(3, -4, 4, 4);
 
-                    // Toast Handle
                     ctx.fillStyle = '#444444';
                     ctx.fillRect(12, -2, 4, 5);
                 }
 
-                // Enemy HP Bar Indicator
                 if (e.maxHp > 1) {
                     ctx.fillStyle = '#333333';
                     ctx.fillRect(-10, -18, 20, 3);
@@ -800,17 +904,12 @@
             ctx.translate(x, y);
             ctx.scale(scale, scale);
 
-            // Brown Pot
             ctx.fillStyle = '#8B4513';
             ctx.beginPath();
-            ctx.moveTo(-5, 0);
-            ctx.lineTo(5, 0);
-            ctx.lineTo(4, 8);
-            ctx.lineTo(-4, 8);
+            ctx.moveTo(-5, 0); ctx.lineTo(5, 0); ctx.lineTo(4, 8); ctx.lineTo(-4, 8);
             ctx.closePath();
             ctx.fill();
 
-            // Cactus Stem & Arms
             ctx.fillStyle = '#00CC44';
             ctx.fillRect(-2, -10, 4, 10);
             ctx.fillRect(-6, -7, 4, 3);
@@ -818,7 +917,6 @@
             ctx.fillRect(2, -5, 4, 3);
             ctx.fillRect(3, -8, 3, 3);
 
-            // Prickly Needle Details
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 0.8;
             ctx.beginPath();
@@ -843,12 +941,10 @@
             const headY = neckY - headRadius;
             const shoulderY = neckY + 4;
 
-            // Head
+            // Head & Eye
             ctx.beginPath();
             ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
             ctx.stroke();
-
-            // Eye direction indicator
             ctx.beginPath();
             ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
             ctx.fill();
@@ -873,7 +969,7 @@
             ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
             ctx.stroke();
 
-            // Front Arm holding Potted Cactus (When not swinging)
+            // Front Arm & Potted Cactus
             if (!player.isSwinging) {
                 const handX = x + facing * 8;
                 const handY = shoulderY + 2;
@@ -884,27 +980,24 @@
 
                 drawPottedCactus(handX + facing * 2, handY - 4, 0.8);
             } else {
-                // Front Arm raised during swing
                 ctx.beginPath();
                 ctx.moveTo(x, shoulderY);
                 ctx.lineTo(x + facing * 6, shoulderY - 4);
                 ctx.stroke();
             }
 
-            // 360-degree Swinging Cactus Arc Render
+            // 360 Swinging Cactus Arc
             if (player.isSwinging) {
                 const swingRadius = 32;
                 const cactusX = x + Math.cos(player.swingAngle) * swingRadius;
                 const cactusY = y - 6 + Math.sin(player.swingAngle) * swingRadius;
 
-                // Glowing Trail Arc
                 ctx.strokeStyle = 'rgba(0, 255, 102, 0.4)';
                 ctx.lineWidth = 6;
                 ctx.beginPath();
                 ctx.arc(x, y - 6, swingRadius, player.swingAngle - 0.8, player.swingAngle);
                 ctx.stroke();
 
-                // Potted Cactus Spinning in Arc
                 drawPottedCactus(cactusX, cactusY, 1.1);
             }
         }
@@ -917,7 +1010,6 @@
         }
 
         function draw() {
-            // Background Clear
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -927,15 +1019,15 @@
             drawParticles();
             drawStickman(player.x, player.y, player.facing, player.walkFrame);
 
-            // Banner Notifications
-            if (bannerTimer > 0 || gameOver) {
+            // Banner Overlay
+            if (bannerTimer > 0 && !gameOver) {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-                ctx.fillRect(0, canvas.height / 2 - 30, canvas.width, 60);
+                ctx.fillRect(0, canvas.height / 2 - 25, canvas.width, 50);
 
-                ctx.fillStyle = gameOver ? '#ff3333' : '#00ffcc';
-                ctx.font = 'bold 20px Courier New';
+                ctx.fillStyle = '#00ffcc';
+                ctx.font = 'bold 18px Courier New';
                 ctx.textAlign = 'center';
-                ctx.fillText(bannerMessage, canvas.width / 2, canvas.height / 2 + 6);
+                ctx.fillText(bannerMessage, canvas.width / 2, canvas.height / 2 + 5);
             }
         }
 
