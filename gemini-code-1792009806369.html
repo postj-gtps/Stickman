@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman Project Lab 📐</title>
+    <!-- Google Fonts: Space Grotesk & Nunito for Blueprint / Technical Studio theme -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@700;800;900&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        tech: ['Space Grotesk', 'sans-serif'],
+                        fredoka: ['Fredoka', 'sans-serif'],
+                        nunito: ['Nunito', 'sans-serif'],
+                    },
+                    colors: {
+                        blueprint: {
+                            bg: '#0b1329',
+                            card: '#132042',
+                            grid: '#1e305e',
+                            amber: '#f59e0b',
+                            emerald: '#10b981',
+                            cyan: '#06b6d4',
+                            magenta: '#ec4899',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Technical Blueprint Grid Pattern Background */
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #0b1329;
+            background-image: 
+                linear-gradient(rgba(30, 48, 94, 0.4) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30, 48, 94, 0.4) 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: #f1f5f9;
+        }
+
+        /* Technical Blueprint Border Accents */
+        .blueprint-card {
+            background: #132042;
+            border: 2px solid #2a437e;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .blueprint-card:hover {
+            transform: translateY(-4px);
+            border-color: #3b82f6;
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.7), 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+
+        /* 3D Touch-Friendly Chromebook Buttons */
+        .btn-touch {
+            transition: all 0.12s ease-in-out;
+            box-shadow: 0 6px 0 0 rgba(0, 0, 0, 0.4);
+        }
+        .btn-touch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 0 0 rgba(0, 0, 0, 0.4);
+        }
+        .btn-touch:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.4);
+        }
+
+        /* Blueprint Corner Marks */
+        .blueprint-card::before {
+            content: "+";
+            position: absolute;
+            top: 4px;
+            left: 6px;
+            font-family: monospace;
+            font-size: 10px;
+            color: #64748b;
+        }
+        .blueprint-card::after {
+            content: "+";
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            font-family: monospace;
+            font-size: 10px;
+            color: #64748b;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b1329;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a437e;
+            border-radius: 6px;
+            border: 3px solid #0b1329;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20 selection:bg-cyan-500 selection:text-slate-900">
+
+    <!-- Top Blueprint Header Bar -->
+    <header class="sticky top-0 z-50 bg-[#0b1329]/95 backdrop-blur-md border-b-2 border-blue-900/80 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+            
+            <!-- Logo / Title -->
+            <a href="#" class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white text-2xl font-black shadow-md border-2 border-cyan-300">
+                    📐
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-black tracking-wide font-tech text-white leading-none">
+                        STICKMAN <span class="text-cyan-400">PROJECT LAB</span>
+                    </h1>
+                    <p class="text-xs sm:text-sm font-bold text-slate-400 font-nunito">Elementary Game Development Hub 🚀</p>
+                </div>
+            </a>
+
+            <!-- Quick Controls: Sound Toggle & Google Form Config -->
+            <div class="flex items-center gap-3">
+                <button id="soundToggleBtn" onclick="toggleSound()" class="px-3.5 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border-2 border-slate-700 text-slate-200 font-bold text-sm flex items-center gap-2 transition">
+                    <i id="soundIcon" class="fa-solid fa-volume-high text-cyan-400"></i>
+                    <span id="soundText" class="hidden sm:inline">Sound: ON</span>
+                </button>
+                <button onclick="configureFormUrl()" class="px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border-2 border-slate-700 text-slate-400 hover:text-white transition" title="Set Google Form Link (Teacher Config)">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-8">
+
+        <!-- FEATURED BANNER: Google Form Idea Submission -->
+        <section class="blueprint-card rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-blue-950 via-[#132042] to-slate-900 border-2 border-cyan-500/50 shadow-2xl relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
+                <div class="space-y-3 text-center lg:text-left max-w-2xl">
+                    <span class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 text-xs font-black tracking-wide uppercase">
+                        <i class="fa-solid fa-lightbulb text-amber-400"></i> Student Feature Nominations
+                    </span>
+                    <h2 class="text-3xl sm:text-4xl font-black font-tech text-white leading-tight">
+                        Have an idea for the next Stickman update? 💡
+                    </h2>
+                    <p class="text-slate-300 font-bold text-sm sm:text-base leading-relaxed">
+                        Submit your feature ideas using our class Google Form! We'll vote on top nominations, then your teacher will code the winning idea into the next build!
+                    </p>
+                </div>
+
+                <!-- Touch-friendly Action Button -->
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                    <button onclick="openFormModal()" class="btn-touch w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-black font-tech text-lg flex items-center justify-center gap-3 border-2 border-cyan-300">
+                        <i class="fa-solid fa-paper-plane text-yellow-300"></i> SUBMIT GAME IDEA
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search Bar & Sticky Grade Navigation Bar -->
+        <div class="sticky top-[73px] z-40 bg-[#0b1329]/90 backdrop-blur-md py-3 space-y-3">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+                
+                <!-- Quick Filter Search Input -->
+                <div class="relative w-full sm:w-80">
+                    <input type="text" id="searchInput" onkeyup="filterCards()" placeholder="Search student or class name..." 
+                           class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/90 text-white placeholder-slate-400 font-bold text-sm border-2 border-slate-700 focus:outline-none focus:border-cyan-400">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400"></i>
+                </div>
+
+                <!-- Grade Navigation Jump Pills -->
+                <div class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 scrollbar-none">
+                    <a href="#2nd-grade" onclick="playClick()" class="btn-touch px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm whitespace-nowrap flex items-center gap-2 border border-amber-300">
+                        <span>🟡</span> 2nd Grade
+                    </a>
+                    <a href="#3rd-grade" onclick="playClick()" class="btn-touch px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm whitespace-nowrap flex items-center gap-2 border border-emerald-300">
+                        <span>🟢</span> 3rd Grade
+                    </a>
+                    <a href="#5th-grade" onclick="playClick()" class="btn-touch px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-sm whitespace-nowrap flex items-center gap-2 border border-cyan-300">
+                        <span>🔵</span> 5th Grade
+                    </a>
+                    <a href="#baseline-engine" onclick="playClick()" class="btn-touch px-4 py-2 rounded-xl bg-pink-500 hover:bg-pink-400 text-white font-black text-sm whitespace-nowrap flex items-center gap-2 border border-pink-300">
+                        <span>💗</span> Baseline Starter
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN GRADE SECTIONS -->
+        <main class="space-y-12">
+
+            <!-- SECTION 1: 2nd Grade (Golden Amber / Sunflower Yellow) -->
+            <section id="2nd-grade" class="scroll-mt-36">
+                <div class="flex items-center gap-3 mb-6 bg-amber-950/60 p-4 rounded-2xl border-2 border-amber-500/50">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-xl font-black shadow">
+                        🟡
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black font-tech text-amber-300">2nd Grade Classrooms</h3>
+                        <p class="text-xs font-bold text-amber-200/80">Active Student Stickman Builds</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    
+                    <!-- Balshem Stickman -->
+                    <div class="blueprint-card rounded-2xl p-5 flex flex-col justify-between group" data-title="balshem 2nd grade stickman">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-black">2nd Grade</span>
+                                <i class="fa-solid fa-gamepad text-2xl text-amber-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h4 class="text-xl font-black text-white mb-1">Balshem</h4>
+                            <p class="text-slate-400 font-bold text-xs mb-6">Balshem Stickman App</p>
+                        </div>
+                        <a href="./2nd Grade/Balshem Stickman.html" onclick="playLaunchSound()" class="btn-touch w-full py-3 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-black font-tech text-base text-center flex items-center justify-center gap-2 border border-amber-300">
+                            PLAY GAME <i class="fa-solid fa-play text-xs"></i>
+                        </a>
+                    </div>
+
+                    <!-- Jerue Stickguy -->
+                    <div class="blueprint-card rounded-2xl p-5 flex flex-col justify-between group" data-title="jerue stickguy 2nd grade">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-black">2nd Grade</span>
+                                <i class="fa-solid fa-bolt text-2xl text-amber-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h4 class="text-xl font-black text-white mb-1">Jerue</h4>
+                            <p class="text-slate-400 font-bold text-xs mb-6">Jerue Stickguy App</p>
+                        </div>
+                        <a href="./2nd Grade/Jerue Stickguy.html" onclick="playLaunchSound()" class="btn-touch w-full py-3 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-black font-tech text-base text-center flex items-center justify-center gap-2 border border-amber-300">
+                            PLAY GAME <i class="fa-solid fa-play text-xs"></i>
+                        </a>
+                    </div>
+
+                    <!-- Stenson Stickman -->
+                    <div class="blueprint-card rounded-2xl p-5 flex flex-col justify-between group" data-title="stenson 2nd grade stickman">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-black">2nd Grade</span>
+                                <i class="fa-solid fa-star text-2xl text-amber-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h4 class="text-xl font-black text-white mb-1">Stenson</h4>
+                            <p class="text-slate-400 font-bold text-xs mb-6">Stenson Stickman App</p>
+                        </div>
+                        <a href="./2nd Grade/Stenson Stickman.html" onclick="playLaunchSound()" class="btn-touch w-full py-3 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-black font-tech text-base text-center flex items-center justify-center gap-2 border border-amber-300">
+                            PLAY GAME <i class="fa-solid fa-play text-xs"></i>
+                        </a>
+                    </div>
+
+                    <!-- Stickman Sullivan -->
+                    <div class="blueprint-card rounded-2xl p-5 flex flex-col justify-between group" data-title="sullivan 2nd grade stickman">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-black">2nd Grade</span>
+                                <i class="fa-solid fa-fire text-2xl text-amber-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h4 class="text-xl font-black text-white mb-1">Sullivan</h4>
+                            <p class="text-slate-400 font-bold text-xs mb-6">Stickman Sullivan App</p>
+                        </div>
+                        <a href="./2nd Grade/Stickman_Sullivan.html" onclick="playLaunchSound()" class="btn-touch w-full py-3 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-black font-tech text-base text-center flex items-center justify-center gap-2 border border-amber-300">
+                            PLAY GAME <i class="fa-solid fa-play text-xs"></i>
+                        </a>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- SECTION 2: 3rd Grade (Emerald Mint Green) -->
+            <section id="3rd-grade" class="scroll-mt-36">
+                <div class="flex items-center gap-3 mb-6 bg-emerald-950/60 p-4 rounded-2xl border-2 border-emerald-500/50">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center text-xl font-black shadow">
+                        🟢
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black font-tech text-emerald-300">3rd Grade Classrooms</h3>
+                        <p class="text-xs font-bold text-emerald-200/80">Active Student Stickman Builds</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                    <!-- Hochstrasser Derasmo -->
+                    <div class="blueprint-card rounded-2xl p-5 flex flex-col justify-between group" data-title="hochstrasser derasmo 3rd grade stickman">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black">3rd Grade</span>
+                                <i class="fa-solid fa-wand-magic-sparkles text-2xl text-emerald-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h4 class="text-xl font-black text-white mb-1">Hochstrasser Derasmo</h4>
+                            <p class="text-slate-400 font-bold text-xs mb-6">Hochstrasser Derasmo Stickman App</p>
+                        </div>
+                        <a href="./3rd Grade/Hochstrasser Derasmo Stickman.html" onclick="playLaunchSound()" class="btn-touch w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-black font-tech text-base text-center flex items-center justify-center gap-2 border border-emerald-300">
+                            PLAY GAME <i class="fa-solid fa-play text-xs"></i>
+                        </a>
+                    </div>
+
+                    <!-- Stickman Dennis -->
+                    <div class="blueprint-card rounded-2xl p-5 flex flex-col justify-between group" data-title="dennis 3rd grade stickman">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black">3rd Grade</span>
+                                <i class="fa-solid fa-shield-halved text-2xl text-emerald-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h4 class="text-xl font-black text-white mb-1">Dennis</h4>
+                            <p class="text-slate-400 font-bold text-xs mb-6">Stickman Dennis App</p>
+                        </div>
+                        <a href="./3rd Grade/Stickman Dennis.html" onclick="playLaunchSound()" class="btn-touch w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-black font-tech text-base text-center flex items-center justify-center gap-2 border border-emerald-300">
+                            PLAY GAME <i class="fa-solid fa-play text-xs"></i>
+                        </a>
+                    </div>
+
+                    <!-- Williams Stickman -->
+                    <div class="blueprint-card rounded-2xl p-5 flex flex-col justify-between group" data-title="williams 3rd grade stickman">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black">3rd Grade</span>
+                                <i class="fa-solid fa-rocket text-2xl text-emerald-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h4 class="text-xl font-black text-white mb-1">Williams</h4>
+                            <p class="text-slate-400 font-bold text-xs mb-6">Williams Stickman App</p>
+                        </div>
+                        <a href="./3rd Grade/Williams Stickman.html" onclick="playLaunchSound()" class="btn-touch w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-black font-tech text-base text-center flex items-center justify-center gap-2 border border-emerald-300">
+                            PLAY GAME <i class="fa-solid fa-play text-xs"></i>
+                        </a>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- SECTION 3: 5th Grade (Electric Cyan Blue) -->
+            <section id="5th-grade" class="scroll-mt-36">
+                <div class="flex items-center gap-3 mb-6 bg-cyan-950/60 p-4 rounded-2xl border-2 border-cyan-500/50">
+                    <div class="w-10 h-10 rounded-xl bg-cyan-500 text-slate-950 flex items-center justify-center text-xl font-black shadow">
+                        🔵
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black font-tech text-cyan-300">5th Grade Classrooms</h3>
+                        <p class="text-xs font-bold text-cyan-200/80">Active Student Stickman Builds</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                    <!-- Adams Scully Stickman -->
+                    <div class="blueprint-card rounded-2xl p-5 flex flex-col justify-between group" data-title="adams scully 5th grade stickman">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-xs font-black">5th Grade</span>
+                                <i class="fa-solid fa-atom text-2xl text-cyan-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h4 class="text-xl font-black text-white mb-1">Adams Scully</h4>
+                            <p class="text-slate-400 font-bold text-xs mb-6">Adams Scully Stickman App</p>
+                        </div>
+                        <a href="./5th Grade/Adams Scully Stickman.html" onclick="playLaunchSound()" class="btn-touch w-full py-3 px-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl font-black font-tech text-base text-center flex items-center justify-center gap-2 border border-cyan-300">
+                            PLAY GAME <i class="fa-solid fa-play text-xs"></i>
+                        </a>
+                    </div>
+
+                    <!-- Bisignaro Stickman -->
+                    <div class="blueprint-card rounded-2xl p-5 flex flex-col justify-between group" data-title="bisignaro 5th grade stickman">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-xs font-black">5th Grade</span>
+                                <i class="fa-solid fa-microchip text-2xl text-cyan-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h4 class="text-xl font-black text-white mb-1">Bisignaro</h4>
+                            <p class="text-slate-400 font-bold text-xs mb-6">Bisignaro Stickman App</p>
+                        </div>
+                        <a href="./5th Grade/Bisignaro Stickman.html" onclick="playLaunchSound()" class="btn-touch w-full py-3 px-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl font-black font-tech text-base text-center flex items-center justify-center gap-2 border border-cyan-300">
+                            PLAY GAME <i class="fa-solid fa-play text-xs"></i>
+                        </a>
+                    </div>
+
+                    <!-- Kasunich Stickman -->
+                    <div class="blueprint-card rounded-2xl p-5 flex flex-col justify-between group" data-title="kasunich 5th grade stickman">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-xs font-black">5th Grade</span>
+                                <i class="fa-solid fa-compass-drafting text-2xl text-cyan-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h4 class="text-xl font-black text-white mb-1">Kasunich</h4>
+                            <p class="text-slate-400 font-bold text-xs mb-6">Kasunich Stickman App</p>
+                        </div>
+                        <a href="./5th Grade/Kasunich Stickman.html" onclick="playLaunchSound()" class="btn-touch w-full py-3 px-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl font-black font-tech text-base text-center flex items-center justify-center gap-2 border border-cyan-300">
+                            PLAY GAME <i class="fa-solid fa-play text-xs"></i>
+                        </a>
+                    </div>
+
+                    <!-- Seddon Stickman -->
+                    <div class="blueprint-card rounded-2xl p-5 flex flex-col justify-between group" data-title="seddon 5th grade stickman">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-xs font-black">5th Grade</span>
+                                <i class="fa-solid fa-trophy text-2xl text-cyan-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h4 class="text-xl font-black text-white mb-1">Seddon</h4>
+                            <p class="text-slate-400 font-bold text-xs mb-6">Seddon Stickman App</p>
+                        </div>
+                        <a href="./5th Grade/Seddon Stickman.html" onclick="playLaunchSound()" class="btn-touch w-full py-3 px-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl font-black font-tech text-base text-center flex items-center justify-center gap-2 border border-cyan-300">
+                            PLAY GAME <i class="fa-solid fa-play text-xs"></i>
+                        </a>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- SECTION 4: Baseline Engine & Project Starter (Hot Pink / Magenta) -->
+            <section id="baseline-engine" class="scroll-mt-36">
+                <div class="flex items-center gap-3 mb-6 bg-pink-950/60 p-4 rounded-2xl border-2 border-pink-500/50">
+                    <div class="w-10 h-10 rounded-xl bg-pink-500 text-white flex items-center justify-center text-xl font-black shadow">
+                        💗
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black font-tech text-pink-300">Baseline Starter Code</h3>
+                        <p class="text-xs font-bold text-pink-200/80">Original Unmodified Stickman Physics Canvas</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+                    <!-- Baseline Code Card -->
+                    <div class="blueprint-card rounded-2xl p-6 flex flex-col justify-between group" data-title="stickman baseline starter engine">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="px-3 py-1 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/40 text-xs font-black">Project Starter</span>
+                                <i class="fa-solid fa-code text-3xl text-pink-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h4 class="text-2xl font-black text-white mb-2">Stickman Baseline</h4>
+                            <p class="text-slate-300 font-bold text-sm mb-6">
+                                The clean 2D Stickman movement engine [WASD] used as the foundation for all student modifications.
+                            </p>
+                        </div>
+                        <a href="./Stickman_Baseline.html" onclick="playLaunchSound()" class="btn-touch w-full py-3.5 px-4 bg-pink-500 hover:bg-pink-400 text-white rounded-xl font-black font-tech text-lg text-center flex items-center justify-center gap-2 border border-pink-300">
+                            LAUNCH BASELINE 🚀
+                        </a>
+                    </div>
+
+                    <!-- README Card -->
+                    <div class="blueprint-card rounded-2xl p-6 flex flex-col justify-between group" data-title="readme documentation project details">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="px-3 py-1 rounded-full bg-slate-700 text-slate-300 text-xs font-black">Project Info</span>
+                                <i class="fa-solid fa-file-lines text-3xl text-slate-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h4 class="text-2xl font-black text-white mb-2">Project Overview</h4>
+                            <p class="text-slate-300 font-bold text-sm mb-6">
+                                Built for elementary students (1st-6th grade) using Chromebooks, GitHub Pages, and Gemini AI.
+                            </p>
+                        </div>
+                        <a href="./README.md" target="_blank" onclick="playClick()" class="btn-touch w-full py-3.5 px-4 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-xl font-black font-tech text-lg text-center flex items-center justify-center gap-2 border border-slate-600">
+                            VIEW README <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                        </a>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- GOOGLE FORM SUBMISSION MODAL -->
+    <div id="formModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-[#132042] border-2 border-cyan-400 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            
+            <div class="p-4 sm:p-6 bg-slate-900 border-b border-slate-700 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">📝</span>
+                    <h3 class="text-xl sm:text-2xl font-black font-tech text-white">Submit Stickman Feature Idea</h3>
+                </div>
+                <button onclick="closeFormModal()" class="w-10 h-10 rounded-xl bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center font-black text-xl transition">
+                    ✕
+                </button>
+            </div>
+
+            <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+                <p class="text-sm font-bold text-slate-300">
+                    Fill out the form below to nominate new abilities, obstacles, weapons, or themes for your stickman project!
+                </p>
+                <div id="formContainer" class="w-full h-[450px] bg-slate-900 rounded-2xl overflow-hidden border border-slate-700 flex items-center justify-center text-slate-400 font-bold">
+                    <!-- Google Form Iframe dynamically injected here -->
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-900 border-t border-slate-700 flex justify-end">
+                <button onclick="closeFormModal()" class="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm">
+                    Close Window
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-20 border-t-2 border-blue-900/60 bg-[#070d1c] py-8 text-center text-slate-400 font-bold text-sm">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p class="flex items-center gap-2">
+                <span>🏫</span> Stickman Project Lab — Designed for Chromebooks (1366x768)
+            </p>
+            <p class="text-xs text-slate-500">
+                Happy Coding & Learning! 🚀
+            </p>
+        </div>
+    </footer>
+
+    <!-- INTERACTIVE JAVASCRIPT LOGIC -->
+    <script>
+        // --- Web Audio Synth Sound Effects ---
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        function playClick() {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(500, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.08);
+                
+                gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + 0.08);
+            } catch(e) {}
+        }
+
+        function playLaunchSound() {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(350, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.22);
+                
+                gain.gain.setValueAtTime(0.18, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.22);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + 0.22);
+            } catch(e) {}
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            const text = document.getElementById('soundText');
+            if (soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-cyan-400';
+                text.innerText = 'Sound: ON';
+                playClick();
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+                text.innerText = 'Sound: OFF';
+            }
+        }
+
+        // --- Search Card Filter Logic ---
+        function filterCards() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const cards = document.querySelectorAll('.blueprint-card[data-title]');
+            
+            cards.forEach(card => {
+                const title = card.getAttribute('data-title') || '';
+                if (title.includes(query)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // --- Google Form Integration Modal Logic ---
+        let googleFormUrl = localStorage.getItem('stickman_google_form_url') || 'https://docs.google.com/forms/u/0/';
+
+        function openFormModal() {
+            playClick();
+            const container = document.getElementById('formContainer');
+            if (googleFormUrl && googleFormUrl.includes('google.com/forms')) {
+                container.innerHTML = `<iframe src="${googleFormUrl}" width="100%" height="100%" frameborder="0" marginheight="0" marginwidth="0">Loading form...</iframe>`;
+            } else {
+                container.innerHTML = `
+                    <div class="text-center p-6 space-y-4">
+                        <p class="text-amber-400 font-bold text-lg">Google Form Link Needed</p>
+                        <p class="text-slate-300 text-sm max-w-md">Teachers: Click the gear icon in the top right header to paste your class Google Form embed URL!</p>
+                        <button onclick="window.open('${googleFormUrl}', '_blank')" class="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl font-black">Open Form in New Tab ↗</button>
+                    </div>
+                `;
+            }
+            document.getElementById('formModal').classList.remove('hidden');
+        }
+
+        function closeFormModal() {
+            playClick();
+            document.getElementById('formModal').classList.add('hidden');
+        }
+
+        function configureFormUrl() {
+            const current = localStorage.getItem('stickman_google_form_url') || '';
+            const newUrl = prompt('Teacher Settings: Paste your Google Form URL here:', current);
+            if (newUrl !== null) {
+                localStorage.setItem('stickman_google_form_url', newUrl.trim());
+                googleFormUrl = newUrl.trim();
+                alert('Google Form URL updated!');
+            }
+        }
+    </script>
+</body>
+</html>
