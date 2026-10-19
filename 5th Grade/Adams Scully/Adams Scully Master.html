@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman: Aztec Jungle Edition</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', Courier, monospace, sans-serif;
+    }
+
+    body {
+      background-color: #050b05;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 16px;
+    }
+
+    /* Top Header Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1100px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #4caf50;
+    }
+
+    h1 {
+      font-size: 18px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: bold;
+      color: #81c784;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      background: transparent;
+      color: #81c784;
+      border: 1px solid #81c784;
+      padding: 6px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .btn:hover {
+      background: #81c784;
+      color: #050b05;
+    }
+
+    /* Main Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      background-color: #0a150a;
+      border: 1px solid #2e7d32;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .instructions {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #a5d6a7;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <div id="header">
+    <h1>Stickman: Aztec Jungle</h1>
+    <div class="btn-group">
+      <button class="btn" onclick="playIntro()">Replay Intro</button>
+      <button class="btn" onclick="resetSimulation()">Reset</button>
+    </div>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+  </div>
+
+  <div class="instructions">
+    [WASD] Move (Arrow keys disabled)
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // KEYBOARD INPUT STATE - WASD Only
+    const keys = {};
+
+    // GAME STATE MACHINE
+    // 'CLASSROOM', 'ZAPPING', 'PLAYING'
+    let gameState = 'CLASSROOM';
+    let introTimer = 0;
+    let zapParticles = [];
+
+    // STICKMAN PLAYER STATE (Baseline generic stickman)[cite: 1]
+    const player = {
+      x: 0,
+      y: 0,
+      speed: 4.5,
+      facing: 1, // 1 = Right, -1 = Left
+      walkFrame: 0
+    };
+
+    // ENVIRONMENT ANIMATED ELEMENTS
+    const birds = [];
+    const monkeys = [];
+    const jaguar = {
+      x: -100,
+      y: 0,
+      speed: 2.5,
+      active: false,
+      timer: 0,
+      frame: 0
+    };
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+      
+      if (player.x === 0 && player.y === 0) {
+        resetSimulation();
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // CONTROLS HANDLERS - Strictly WASD (Arrow keys disabled)
+    window.addEventListener('keydown', (e) => {
+      // Intercept and prevent default scrolling/movement for Arrow Keys
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+        return; // Explicitly block arrow keys
+      }
+
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        e.preventDefault();
+        keys[e.code] = true;
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        keys[e.code] = false;
+      }
+    });
+
+    function playIntro() {
+      gameState = 'CLASSROOM';
+      introTimer = 0;
+      zapParticles = [];
+    }
+
+    function resetSimulation() {
+      player.x = canvas.width / 2;
+      player.y = canvas.height * 0.75;
+      player.facing = 1;
+      player.walkFrame = 0;
+      
+      // Initialize Birds
+      birds.length = 0;
+      for (let i = 0; i < 4; i++) {
+        birds.push({
+          x: Math.random() * canvas.width,
+          y: 40 + Math.random() * 120,
+          speed: 1 + Math.random() * 2,
+          wing: Math.random() * Math.PI,
+          color: i % 2 === 0 ? '#ff5252' : '#ffeb3b'
+        });
+      }
+
+      // Initialize Monkeys
+      monkeys.length = 0;
+      monkeys.push({ x: canvas.width * 0.18, y: canvas.height * 0.4, swing: 0 });
+      monkeys.push({ x: canvas.width * 0.82, y: canvas.height * 0.35, swing: Math.PI });
+
+      // Reset Jaguar
+      jaguar.active = false;
+      jaguar.timer = 0;
+      jaguar.x = -100;
+    }
+
+    function updatePhysics() {
+      if (gameState !== 'PLAYING') return;
+
+      // WASD Movement Calculation
+      let dx = 0;
+      let dy = 0;
+
+      if (keys['KeyW']) dy -= 1;
+      if (keys['KeyS']) dy += 1;
+      if (keys['KeyA']) { dx -= 1; player.facing = -1; }
+      if (keys['KeyD']) { dx += 1; player.facing = 1; }
+
+      // Normalize diagonal movement speed[cite: 1]
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.7071;
+        dy *= 0.7071;
+      }
+
+      // Update stickman position[cite: 1]
+      player.x += dx * player.speed;
+      player.y += dy * player.speed;
+
+      // Keep stickman inside canvas boundaries
+      const margin = 20;
+      const minY = canvas.height * 0.55; // Keep player on jungle floor
+      player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
+      player.y = Math.max(minY, Math.min(canvas.height - margin - 10, player.y));
+
+      // Walk animation cycle updates[cite: 1]
+      if (dx !== 0 || dy !== 0) {
+        player.walkFrame += 0.25;
+      } else {
+        player.walkFrame = 0;
+      }
+
+      // Update Birds
+      birds.forEach(b => {
+        b.x += b.speed;
+        b.wing += 0.15;
+        if (b.x > canvas.width + 20) b.x = -20;
+      });
+
+      // Update Monkeys
+      monkeys.forEach(m => {
+        m.swing += 0.05;
+      });
+
+      // Update Jaguar (Occasional Appearance)
+      jaguar.timer++;
+      if (!jaguar.active && jaguar.timer > 350) {
+        jaguar.active = true;
+        jaguar.x = -80;
+        jaguar.y = canvas.height * 0.65 + Math.random() * (canvas.height * 0.2);
+        jaguar.timer = 0;
+      }
+
+      if (jaguar.active) {
+        jaguar.x += jaguar.speed;
+        jaguar.frame += 0.2;
+        if (jaguar.x > canvas.width + 100) {
+          jaguar.active = false;
+        }
+      }
+    }
+
+    /* ---------------- DRAWING FUNCTIONS ---------------- */
+
+    function drawBlondHair(headX, headY, facing) {
+      ctx.fillStyle = '#ffee58';
+      ctx.strokeStyle = '#fbc02d';
+      ctx.lineWidth = 1.2;
+
+      // Long blond flowing hair
+      ctx.beginPath();
+      ctx.moveTo(headX - facing * 3, headY - 4);
+      ctx.quadraticCurveTo(headX - facing * 8, headY + 4, headX - facing * 7, headY + 16);
+      ctx.lineTo(headX - facing * 3, headY + 14);
+      ctx.quadraticCurveTo(headX - facing * 4, headY + 4, headX, headY - 5);
+      ctx.fill();
+      ctx.stroke();
+
+      // Top hair bump
+      ctx.beginPath();
+      ctx.arc(headX, headY - 1, 6, Math.PI, Math.PI * 1.8);
+      ctx.fill();
+    }
+
+    // Baseline Generic Stickman Drawing Routine[cite: 1]
+    function drawGenericStickman(x, y, facing, walkFrame) {
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const headRadius = 5;
+      const bodyLength = 15;
+      const legLength = 11;
+      const neckY = y - bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 4;
+
+      // Head
+      ctx.beginPath();
+      ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Eye
+      ctx.beginPath();
+      ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Torso
+      ctx.beginPath();
+      ctx.moveTo(x, neckY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+
+      // Legs
+      const legSwing = Math.sin(walkFrame) * 6;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - legSwing, y + legLength);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + legSwing, y + legLength);
+      ctx.stroke();
+
+      // Arms
+      const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
+      ctx.stroke();
+    }
+
+    // Teacher Stickman (used only in classroom opening scene)
+    function drawTeacherStickman(x, y, facing) {
+      drawGenericStickman(x, y, facing, 0);
+      const neckY = y - 15;
+      const headY = neckY - 5;
+      drawBlondHair(x, headY, facing);
+    }
+
+    function drawClassroomScene() {
+      // Chalkboard background
+      ctx.fillStyle = '#1c2a23';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Floor line
+      const floorY = canvas.height * 0.75;
+      ctx.fillStyle = '#3e2723';
+      ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
+
+      // Chalkboard
+      const boardW = canvas.width * 0.6;
+      const boardH = canvas.height * 0.35;
+      const boardX = (canvas.width - boardW) / 2;
+      const boardY = canvas.height * 0.15;
+      ctx.fillStyle = '#0d1b1e';
+      ctx.fillRect(boardX, boardY, boardW, boardH);
+      ctx.strokeStyle = '#8d6e63';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(boardX, boardY, boardW, boardH);
+
+      // Chalkboard text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '16px "Courier New"';
+      ctx.textAlign = 'center';
+      ctx.fillText('WELCOME CLASS!', canvas.width / 2, boardY + 40);
+      ctx.fillText('Today: Aztec History Lesson', canvas.width / 2, boardY + 75);
+
+      // Teachers & Desks
+      const teacher1X = canvas.width * 0.35;
+      const teacher2X = canvas.width * 0.65;
+
+      function drawDesk(deskX) {
+        ctx.fillStyle = '#5d4037';
+        ctx.fillRect(deskX - 45, floorY - 25, 90, 25);
+        ctx.fillStyle = '#3e2723';
+        ctx.fillRect(deskX - 40, floorY - 25, 10, 25);
+        ctx.fillRect(deskX + 30, floorY - 25, 10, 25);
+        
+        ctx.fillStyle = '#b0bec5';
+        ctx.fillRect(deskX - 15, floorY - 35, 20, 10);
+      }
+
+      // Teachers with long blond hair sitting behind desks
+      drawTeacherStickman(teacher1X, floorY - 20, 1);
+      drawDesk(teacher1X);
+
+      drawTeacherStickman(teacher2X, floorY - 20, -1);
+      drawDesk(teacher2X);
+
+      // Speech bubble
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(canvas.width / 2 - 140, boardY + boardH + 15, 280, 30);
+      ctx.fillStyle = '#000000';
+      ctx.font = '12px "Courier New"';
+      ctx.fillText('Pay attention, or get zapped...', canvas.width / 2, boardY + boardH + 34);
+
+      introTimer++;
+
+      if (introTimer > 120) {
+        gameState = 'ZAPPING';
+        introTimer = 0;
+      }
+    }
+
+    function drawZapEffect() {
+      drawClassroomScene();
+
+      introTimer++;
+
+      const beam1X = canvas.width * 0.35;
+      const beam2X = canvas.width * 0.65;
+
+      // Energy Beams
+      ctx.strokeStyle = '#00e5ff';
+      ctx.shadowColor = '#00e5ff';
+      ctx.shadowBlur = 15;
+      ctx.lineWidth = Math.random() * 12 + 6;
+
+      ctx.beginPath();
+      ctx.moveTo(beam1X + (Math.random() - 0.5) * 20, 0);
+      ctx.lineTo(beam1X, canvas.height * 0.7);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(beam2X + (Math.random() - 0.5) * 20, 0);
+      ctx.lineTo(beam2X, canvas.height * 0.7);
+      ctx.stroke();
+
+      ctx.shadowBlur = 0;
+
+      // Zap Particles
+      for (let i = 0; i < 8; i++) {
+        zapParticles.push({
+          x: (Math.random() > 0.5 ? beam1X : beam2X) + (Math.random() - 0.5) * 40,
+          y: canvas.height * 0.65 + (Math.random() - 0.5) * 40,
+          vx: (Math.random() - 0.5) * 8,
+          vy: (Math.random() - 0.5) * 8,
+          size: Math.random() * 5 + 2,
+          color: Math.random() > 0.5 ? '#00e5ff' : '#ffff00'
+        });
+      }
+
+      zapParticles.forEach((p, index) => {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+        p.x += p.vx;
+        p.y += p.vy;
+        p.size *= 0.95;
+        if (p.size < 0.5) zapParticles.splice(index, 1);
+      });
+
+      // Screen Flash
+      if (introTimer % 4 < 2) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      if (introTimer > 80) {
+        gameState = 'PLAYING';
+        resetSimulation();
+      }
+    }
+
+    function drawAztecTemple() {
+      const centerX = canvas.width / 2;
+      const baseY = canvas.height * 0.52;
+      
+      // Distant mountain haze
+      ctx.fillStyle = '#1b381e';
+      ctx.beginPath();
+      ctx.arc(centerX, baseY, 220, Math.PI, 0);
+      ctx.fill();
+
+      // Aztec Step Pyramid
+      ctx.fillStyle = '#4a5d4e';
+      ctx.strokeStyle = '#2d3a2e';
+      ctx.lineWidth = 2;
+
+      // Tiers
+      ctx.fillRect(centerX - 100, baseY - 30, 200, 30);
+      ctx.strokeRect(centerX - 100, baseY - 30, 200, 30);
+
+      ctx.fillRect(centerX - 75, baseY - 60, 150, 30);
+      ctx.strokeRect(centerX - 75, baseY - 60, 150, 30);
+
+      ctx.fillRect(centerX - 50, baseY - 85, 100, 25);
+      ctx.strokeRect(centerX - 50, baseY - 85, 100, 25);
+
+      // Shrine Top
+      ctx.fillRect(centerX - 25, baseY - 110, 50, 25);
+      ctx.strokeRect(centerX - 25, baseY - 110, 50, 25);
+
+      // Central Staircase
+      ctx.fillStyle = '#37473f';
+      ctx.beginPath();
+      ctx.moveTo(centerX - 18, baseY);
+      ctx.lineTo(centerX - 10, baseY - 110);
+      ctx.lineTo(centerX + 10, baseY - 110);
+      ctx.lineTo(centerX + 18, baseY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    function drawJungleEnvironment() {
+      // Sky Gradient
+      const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      skyGradient.addColorStop(0, '#1b5e20');
+      skyGradient.addColorStop(0.5, '#33691e');
+      skyGradient.addColorStop(1, '#050b05');
+      ctx.fillStyle = skyGradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Distant Aztec Temple
+      drawAztecTemple();
+
+      // Background Jungle Canopy
+      ctx.fillStyle = '#0f2d12';
+      for (let x = -20; x < canvas.width + 40; x += 60) {
+        ctx.beginPath();
+        ctx.arc(x, canvas.height * 0.48, 50, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Midground Trees
+      ctx.fillStyle = '#1b431e';
+      for (let x = 10; x < canvas.width + 60; x += 110) {
+        ctx.fillRect(x - 8, canvas.height * 0.35, 16, canvas.height * 0.3);
+        ctx.beginPath();
+        ctx.arc(x, canvas.height * 0.35, 45, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Ground
+      ctx.fillStyle = '#0a1d0d';
+      ctx.fillRect(0, canvas.height * 0.55, canvas.width, canvas.height * 0.45);
+
+      // Vines
+      ctx.strokeStyle = '#2e7d32';
+      ctx.lineWidth = 3;
+      for (let x = 30; x < canvas.width; x += 90) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.quadraticCurveTo(x + 15, canvas.height * 0.15, x - 10, canvas.height * 0.28);
+        ctx.stroke();
+      }
+
+      // Birds
+      birds.forEach(b => {
+        ctx.fillStyle = b.color;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = b.color;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y);
+        ctx.lineTo(b.x - 6, b.y - Math.sin(b.wing) * 6);
+        ctx.moveTo(b.x, b.y);
+        ctx.lineTo(b.x + 6, b.y - Math.sin(b.wing) * 6);
+        ctx.stroke();
+      });
+
+      // Monkeys
+      monkeys.forEach(m => {
+        const swingX = m.x + Math.sin(m.swing) * 12;
+        ctx.fillStyle = '#4e342e';
+        ctx.beginPath();
+        ctx.arc(swingX, m.y, 7, 0, Math.PI * 2);
+        ctx.arc(swingX, m.y - 8, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#4e342e';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(swingX, m.y);
+        ctx.lineTo(m.x, m.y - 25);
+        ctx.stroke();
+      });
+
+      // Occasional Jaguar
+      if (jaguar.active) {
+        const jx = jaguar.x;
+        const jy = jaguar.y;
+        const legAnim = Math.sin(jaguar.frame) * 6;
+
+        ctx.fillStyle = '#ffb300';
+        ctx.strokeStyle = '#ffb300';
+        ctx.lineWidth = 3;
+
+        ctx.fillRect(jx, jy - 10, 32, 14);
+        ctx.fillRect(jx + 28, jy - 16, 10, 10);
+
+        ctx.beginPath();
+        ctx.moveTo(jx, jy - 8);
+        ctx.quadraticCurveTo(jx - 12, jy - 15, jx - 10, jy - 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(jx + 4, jy + 4);
+        ctx.lineTo(jx + 4 + legAnim, jy + 14);
+        ctx.moveTo(jx + 12, jy + 4);
+        ctx.lineTo(jx + 12 - legAnim, jy + 14);
+        ctx.moveTo(jx + 22, jy + 4);
+        ctx.lineTo(jx + 22 + legAnim, jy + 14);
+        ctx.moveTo(jx + 28, jy + 4);
+        ctx.lineTo(jx + 28 - legAnim, jy + 14);
+        ctx.stroke();
+
+        // Jaguar Spots
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(jx + 8, jy - 6, 3, 3);
+        ctx.fillRect(jx + 18, jy - 4, 3, 3);
+        ctx.fillRect(jx + 24, jy - 8, 3, 3);
+      }
+    }
+
+    /* ---------------- MAIN ENGINE LOOP ---------------- */
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (gameState === 'CLASSROOM') {
+        drawClassroomScene();
+      } else if (gameState === 'ZAPPING') {
+        drawZapEffect();
+      } else if (gameState === 'PLAYING') {
+        drawJungleEnvironment();
+        // Uses generic stickman baseline drawing for the playable character[cite: 1]
+        drawGenericStickman(player.x, player.y, player.facing, player.walkFrame);
+      }
+    }
+
+    function animate() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+      resizeCanvas();
+      animate();
+    };
+  </script>
+</body>
+</html>

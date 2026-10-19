@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman Stadium - Capture The Flag</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', Courier, monospace, sans-serif;
+    }
+
+    body {
+      background-color: #0d0d11;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 16px;
+    }
+
+    /* Top Header Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1100px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #ffffff;
+    }
+
+    h1 {
+      font-size: 18px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+
+    .status-display {
+      font-size: 14px;
+      font-weight: bold;
+      color: #ffdd57;
+    }
+
+    .btn-reset {
+      background: transparent;
+      color: #ffffff;
+      border: 1px solid #ffffff;
+      padding: 6px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .btn-reset:hover {
+      background: #ffffff;
+      color: #000000;
+    }
+
+    /* Main Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      background-color: #111111;
+      border: 1px solid #ffffff;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .instructions {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #aaaaaa;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <div id="header">
+    <h1>Stickman Engine: Stadium CTF</h1>
+    <div id="status" class="status-display">Objective: Retrieve the Red Flag!</div>
+    <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+  </div>
+
+  <div class="instructions">
+    [WASD] Move Stickman | Exclusive WASD Movement Controls
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusEl = document.getElementById('status');
+
+    // KEYBOARD INPUT STATE
+    const keys = {};
+
+    // STICKMAN PLAYER STATE
+    const player = {
+      x: 0,
+      y: 0,
+      speed: 4.5,
+      facing: 1, // 1 = Right, -1 = Left
+      walkFrame: 0,
+      hasFlag: false
+    };
+
+    // FLAG STATES
+    const blueFlag = { x: 0, y: 0 };
+    const redFlag = { x: 0, y: 0, homeX: 0, homeY: 0, isCarried: false, captured: false };
+
+    // STADIUM CROWD PATTERN CACHE
+    let crowdCanvas = null;
+
+    function generateCrowdPattern(width, height) {
+      const pCanvas = document.createElement('canvas');
+      pCanvas.width = width;
+      pCanvas.height = height;
+      const pCtx = pCanvas.getContext('2d');
+
+      const colors = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6', '#ffffff', '#e67e22'];
+      const tileSize = 6;
+
+      for (let x = 0; x < width; x += tileSize) {
+        for (let y = 0; y < height; y += tileSize) {
+          pCtx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+          pCtx.fillRect(x + 1, y + 1, tileSize - 2, tileSize - 2);
+        }
+      }
+      return pCanvas;
+    }
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+
+      crowdCanvas = generateCrowdPattern(canvas.width, canvas.height);
+
+      if (player.x === 0 && player.y === 0) {
+        resetSimulation();
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // CONTROLS HANDLERS - STRICTLY WASD MOVEMENT ONLY
+    window.addEventListener('keydown', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+        e.preventDefault();
+        keys[e.code] = true;
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+        keys[e.code] = false;
+      }
+    });
+
+    function getFieldDimensions() {
+      const marginX = Math.max(50, canvas.width * 0.08);
+      const marginY = Math.max(40, canvas.height * 0.08);
+      const fieldX = marginX;
+      const fieldY = marginY;
+      const fieldW = canvas.width - (marginX * 2);
+      const fieldH = canvas.height - (marginY * 2);
+
+      return { fieldX, fieldY, fieldW, fieldH };
+    }
+
+    function resetSimulation() {
+      const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
+
+      // Left base center for player start
+      player.x = fieldX + fieldW * 0.09;
+      player.y = fieldY + fieldH / 2;
+      player.facing = 1;
+      player.walkFrame = 0;
+      player.hasFlag = false;
+
+      // Flag initial positions
+      blueFlag.x = fieldX + fieldW * 0.07;
+      blueFlag.y = fieldY + fieldH / 2;
+
+      redFlag.homeX = fieldX + fieldW * 0.93;
+      redFlag.homeY = fieldY + fieldH / 2;
+      redFlag.x = redFlag.homeX;
+      redFlag.y = redFlag.homeY;
+      redFlag.isCarried = false;
+      redFlag.captured = false;
+
+      statusEl.textContent = "Objective: Retrieve the Red Flag!";
+      statusEl.style.color = "#ffdd57";
+    }
+
+    function updatePhysics() {
+      const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
+
+      // Movement Direction Calculation (WASD only)
+      let dx = 0;
+      let dy = 0;
+
+      if (keys['KeyW'] || keys['Keyw']) dy -= 1;
+      if (keys['KeyS'] || keys['Keys']) dy += 1;
+      if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
+      if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+
+      // Normalize diagonal movement vector speed
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.7071;
+        dy *= 0.7071;
+      }
+
+      // Update stickman position
+      player.x += dx * player.speed;
+      player.y += dy * player.speed;
+
+      // Keep stickman inside field boundaries
+      const margin = 12;
+      player.x = Math.max(fieldX + margin, Math.min(fieldX + fieldW - margin, player.x));
+      player.y = Math.max(fieldY + margin + 10, Math.min(fieldY + fieldH - margin, player.y));
+
+      // Walk animation cycle updates
+      if (dx !== 0 || dy !== 0) {
+        player.walkFrame += 0.25;
+      } else {
+        player.walkFrame = 0;
+      }
+
+      // Red Flag Pickup logic
+      const distToRedFlag = Math.hypot(player.x - redFlag.x, player.y - redFlag.y);
+      if (!redFlag.isCarried && !redFlag.captured && distToRedFlag < 28) {
+        redFlag.isCarried = true;
+        player.hasFlag = true;
+        statusEl.textContent = "Flag Picked Up! Return to Left Base!";
+        statusEl.style.color = "#ff9900";
+      }
+
+      // Flag carry positioning
+      if (redFlag.isCarried) {
+        redFlag.x = player.x + (player.facing * 12);
+        redFlag.y = player.y - 12;
+
+        // Check if player returned to home base zone (left base line)
+        const leftBaseLineWidth = fieldX + fieldW * 0.18;
+        if (player.x <= leftBaseLineWidth) {
+          redFlag.isCarried = false;
+          redFlag.captured = true;
+          player.hasFlag = false;
+          statusEl.textContent = "Touchdown! Red Flag Captured!";
+          statusEl.style.color = "#2ecc71";
+        }
+      }
+    }
+
+    function drawStadiumAndField() {
+      const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
+
+      // 1. Draw Packed Stadium Crowd Background
+      if (crowdCanvas) {
+        ctx.drawImage(crowdCanvas, 0, 0);
+      }
+
+      // Dark overlay for aisle lines / crowd depth
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 2. Draw Rectangular Pitch / Field
+      ctx.fillStyle = '#27a745';
+      ctx.fillRect(fieldX, fieldY, fieldW, fieldH);
+
+      // Grass mowing stripes
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      const stripeWidth = fieldW / 10;
+      for (let i = 0; i < 10; i += 2) {
+        ctx.fillRect(fieldX + i * stripeWidth, fieldY, stripeWidth, fieldH);
+      }
+
+      // Outer Field Border
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(fieldX, fieldY, fieldW, fieldH);
+
+      // 3. Half-Field Marker (Center Line)
+      const halfX = fieldX + fieldW / 2;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(halfX, fieldY);
+      ctx.lineTo(halfX, fieldY + fieldH);
+      ctx.stroke();
+
+      // Center Circle
+      ctx.beginPath();
+      ctx.arc(halfX, fieldY + fieldH / 2, Math.min(fieldW, fieldH) * 0.16, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Center Spot
+      ctx.beginPath();
+      ctx.arc(halfX, fieldY + fieldH / 2, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+
+      // 4. Base Zones (Lines at either end of field)
+      const leftBaseX = fieldX + fieldW * 0.18;
+      const rightBaseX = fieldX + fieldW * 0.82;
+
+      // Left Base Zone Tint & Boundary Line
+      ctx.fillStyle = 'rgba(52, 152, 219, 0.18)';
+      ctx.fillRect(fieldX, fieldY, fieldW * 0.18, fieldH);
+      ctx.strokeStyle = '#3498db';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(leftBaseX, fieldY);
+      ctx.lineTo(leftBaseX, fieldY + fieldH);
+      ctx.stroke();
+
+      // Right Base Zone Tint & Boundary Line
+      ctx.fillStyle = 'rgba(231, 76, 60, 0.18)';
+      ctx.fillRect(rightBaseX, fieldY, fieldW * 0.18, fieldH);
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(rightBaseX, fieldY);
+      ctx.lineTo(rightBaseX, fieldY + fieldH);
+      ctx.stroke();
+    }
+
+    function drawFlag(x, y, color) {
+      ctx.save();
+
+      // Flag Pole
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y - 32);
+      ctx.stroke();
+
+      // Triangular Flag
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x, y - 32);
+      ctx.lineTo(x + 20, y - 22);
+      ctx.lineTo(x, y - 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Stand Base
+      ctx.beginPath();
+      ctx.ellipse(x, y, 8, 4, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#222222';
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawStickman(x, y, facing, walkFrame) {
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // Stickman Proportions
+      const headRadius = 6;
+      const bodyLength = 18;
+      const legLength = 14;
+      const neckY = y - bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 4;
+
+      // 1. Head
+      ctx.beginPath();
+      ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Eye Indicator
+      ctx.beginPath();
+      ctx.arc(x + facing * 2.5, headY - 0.5, 1, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Torso
+      ctx.beginPath();
+      ctx.moveTo(x, neckY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+
+      // 3. Legs
+      const legSwing = Math.sin(walkFrame) * 7;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - legSwing, y + legLength);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + legSwing, y + legLength);
+      ctx.stroke();
+
+      // 4. Back Arm
+      const armSwing = Math.sin(walkFrame + Math.PI) * 5;
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x - facing * 5 - armSwing, shoulderY + 7);
+      ctx.stroke();
+
+      // 5. Front Arm
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x + facing * 5 + armSwing, shoulderY + 7);
+      ctx.stroke();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Field & Stadium
+      drawStadiumAndField();
+
+      // Draw Base Flags
+      drawFlag(blueFlag.x, blueFlag.y, '#3498db');
+      drawFlag(redFlag.x, redFlag.y, '#e74c3c');
+
+      // Draw Player
+      drawStickman(player.x, player.y, player.facing, player.walkFrame);
+    }
+
+    function animate() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+      resizeCanvas();
+      animate();
+    };
+  </script>
+</body>
+</html>

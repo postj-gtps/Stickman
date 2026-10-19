@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Stickman Engine - Aztec Jungle</title>
+ <style>
+ * {
+ box-sizing: border-box;
+ user-select: none;
+ margin: 0;
+ padding: 0;
+ font-family: 'Courier New', Courier, monospace, sans-serif;
+ }
+
+ body {
+ background-color: #0b1d0e;
+ color: #ffffff;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: flex-start;
+ height: 100vh;
+ overflow: hidden;
+ padding: 16px;
+ }
+
+ /* Top Header Bar */
+ #header {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ width: 100%;
+ max-width: 1100px;
+ margin-bottom: 12px;
+ padding-bottom: 8px;
+ border-bottom: 1px solid #2e7d32;
+ }
+
+ h1 {
+ font-size: 18px;
+ letter-spacing: 2px;
+ text-transform: uppercase;
+ font-weight: bold;
+ color: #ffd700;
+ text-shadow: 1px 1px 2px #000;
+ }
+
+ .btn-reset {
+ background: transparent;
+ color: #ffd700;
+ border: 1px solid #ffd700;
+ padding: 6px 16px;
+ font-size: 14px;
+ font-weight: bold;
+ cursor: pointer;
+ text-transform: uppercase;
+ letter-spacing: 1px;
+ transition: all 0.15s ease-in-out;
+ }
+
+ .btn-reset:hover {
+ background: #ffd700;
+ color: #000000;
+ }
+
+ /* Main Canvas Container */
+ #canvas-wrapper {
+ position: relative;
+ width: 100%;
+ max-width: 1100px;
+ flex-grow: 1;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ }
+
+ canvas {
+ background-color: #122b14;
+ border: 2px solid #ffd700;
+ border-radius: 4px;
+ display: block;
+ width: 100%;
+ height: 100%;
+ box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+ }
+
+ .instructions {
+ margin-top: 8px;
+ font-size: 12px;
+ color: #a3e635;
+ text-align: center;
+ font-weight: bold;
+ }
+ </style>
+</head>
+<body>
+
+ <!-- Header Section -->
+ <div id="header">
+ <h1>Stickman Engine: Aztec Jungle</h1>
+ <button class="btn-reset" onclick="resetSimulation()">Reset Game</button>
+ </div>
+
+ <!-- Canvas Container -->
+ <div id="canvas-wrapper">
+ <canvas id="simCanvas"></canvas>
+ </div>
+
+ <div class="instructions">
+ Movement: [W][A][S][D] Only (Arrow Keys Disabled)
+ </div>
+
+ <script>
+ const canvas = document.getElementById('simCanvas');
+ const ctx = canvas.getContext('2d');
+
+ // KEYBOARD INPUT STATE
+ const keys = {};
+
+ // STICKMAN PLAYER STATE
+ const player = {
+ x: 0,
+ y: 0,
+ speed: 4.5,
+ facing: 1, // 1 = Right, -1 = Left
+ walkFrame: 0,
+ coinsCollected: 0,
+ armor: {
+ helmet: false,
+ chestplate: false,
+ leggings: false,
+ shield: false
+ }
+ };
+
+ // GAME OBJECTS
+ let coins = [];
+ let armorItems = [];
+ let trees = [];
+ let flowers = [];
+ let monkeys = [];
+ let birds = [];
+
+ function resizeCanvas() {
+ const wrapper = document.getElementById('canvas-wrapper');
+ canvas.width = wrapper.clientWidth;
+ canvas.height = wrapper.clientHeight;
+ 
+ resetSimulation();
+ }
+
+ window.addEventListener('resize', resizeCanvas);
+
+ // STRICT WASD CONTROLS HANDLER (EXCLUDES ARROW KEYS)
+ window.addEventListener('keydown', (e) => {
+ const key = e.key.toLowerCase();
+ if (['w', 'a', 's', 'd'].includes(key)) {
+ e.preventDefault();
+ keys[key] = true;
+ }
+ });
+
+ window.addEventListener('keyup', (e) => {
+ const key = e.key.toLowerCase();
+ if (['w', 'a', 's', 'd'].includes(key)) {
+ keys[key] = false;
+ }
+ });
+
+ function initEnvironment() {
+ const w = canvas.width;
+ const h = canvas.height;
+ const groundTop = h * 0.35;
+
+ // Generate Trees
+ trees = [];
+ const treeCount = 7;
+ for (let i = 0; i < treeCount; i++) {
+ trees.push({
+ x: (w / (treeCount + 1)) * (i + 1) + (Math.random() * 40 - 20),
+ y: groundTop + Math.random() * (h - groundTop - 80),
+ scale: 0.8 + Math.random() * 0.4
+ });
+ }
+
+ // Generate Flowers
+ flowers = [];
+ const colors = ['#ff4d6d', '#ff007f', '#ffb703', '#00f5d4', '#e0aaff'];
+ for (let i = 0; i < 25; i++) {
+ flowers.push({
+ x: Math.random() * (w - 40) + 20,
+ y: groundTop + 30 + Math.random() * (h - groundTop - 50),
+ color: colors[Math.floor(Math.random() * colors.length)],
+ radius: 3 + Math.random() * 3
+ });
+ }
+
+ // Generate Monkeys in Trees
+ monkeys = [];
+ trees.slice(0, 3).forEach(tree => {
+ monkeys.push({
+ x: tree.x + 10,
+ y: tree.y - 40 * tree.scale
+ });
+ });
+
+ // Generate Exotic Birds
+ birds = [
+ { x: w * 0.2, y: h * 0.18, color: '#ff0055', wing: 0 },
+ { x: w * 0.75, y: h * 0.22, color: '#00bbf9', wing: 1 },
+ { x: w * 0.85, y: h * 0.12, color: '#f15bb5', wing: 2 }
+ ];
+
+ // Generate Gold Coins
+ coins = [];
+ const coinCount = 10;
+ for (let i = 0; i < coinCount; i++) {
+ coins.push({
+ x: 50 + Math.random() * (w - 100),
+ y: groundTop + 40 + Math.random() * (h - groundTop - 80),
+ collected: false
+ });
+ }
+
+ // Generate Gold Armor Items
+ armorItems = [
+ { type: 'helmet', name: 'Golden Helmet', x: w * 0.2, y: groundTop + 60, collected: false },
+ { type: 'chestplate', name: 'Golden Chestplate', x: w * 0.8, y: groundTop + 80, collected: false },
+ { type: 'leggings', name: 'Golden Leggings', x: w * 0.35, y: h - 60, collected: false },
+ { type: 'shield', name: 'Golden Shield', x: w * 0.65, y: h - 100, collected: false }
+ ];
+ }
+
+ function resetSimulation() {
+ player.x = canvas.width / 2;
+ player.y = canvas.height * 0.65;
+ player.facing = 1;
+ player.walkFrame = 0;
+ player.coinsCollected = 0;
+ player.armor = { helmet: false, chestplate: false, leggings: false, shield: false };
+
+ keys['w'] = false;
+ keys['a'] = false;
+ keys['s'] = false;
+ keys['d'] = false;
+
+ initEnvironment();
+ }
+
+ function updatePhysics() {
+ let dx = 0;
+ let dy = 0;
+
+ if (keys['w']) dy -= 1;
+ if (keys['s']) dy += 1;
+ if (keys['a']) { dx -= 1; player.facing = -1; }
+ if (keys['d']) { dx += 1; player.facing = 1; }
+
+ // Normalize diagonal movement speed
+ if (dx !== 0 && dy !== 0) {
+ dx *= 0.7071;
+ dy *= 0.7071;
+ }
+
+ // Update stickman position
+ player.x += dx * player.speed;
+ player.y += dy * player.speed;
+
+ // Keep stickman inside jungle ground area
+ const margin = 20;
+ const minY = canvas.height * 0.38;
+ const maxY = canvas.height - 20;
+ player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
+ player.y = Math.max(minY, Math.min(maxY, player.y));
+
+ // Walk animation cycle updates
+ if (dx !== 0 || dy !== 0) {
+ player.walkFrame += 0.25;
+ } else {
+ player.walkFrame = 0;
+ }
+
+ // Item Pickups Check
+ const pickupRadius = 22;
+
+ // Pick up coins
+ coins.forEach(coin => {
+ if (!coin.collected) {
+ const dist = Math.hypot(player.x - coin.x, player.y - coin.y);
+ if (dist < pickupRadius) {
+ coin.collected = true;
+ player.coinsCollected++;
+ }
+ }
+ });
+
+ // Pick up armor
+ armorItems.forEach(item => {
+ if (!item.collected) {
+ const dist = Math.hypot(player.x - item.x, player.y - item.y);
+ if (dist < pickupRadius) {
+ item.collected = true;
+ player.armor[item.type] = true;
+ }
+ }
+ });
+ }
+
+ function drawAztecPyramid() {
+ const w = canvas.width;
+ const h = canvas.height;
+ const pyramidBaseWidth = Math.min(320, w * 0.4);
+ const centerX = w * 0.5;
+ const baseY = h * 0.38;
+
+ // Far distance sky gradient
+ const skyGrad = ctx.createLinearGradient(0, 0, 0, baseY);
+ skyGrad.addColorStop(0, '#1a3c40');
+ skyGrad.addColorStop(1, '#2d5a27');
+ ctx.fillStyle = skyGrad;
+ ctx.fillRect(0, 0, w, baseY);
+
+ // Golden Aztec Temple Steps
+ const steps = 6;
+ const stepHeight = 14;
+ let currentWidth = pyramidBaseWidth;
+
+ for (let i = 0; i < steps; i++) {
+ const stepY = baseY - (i + 1) * stepHeight;
+ const stepX = centerX - currentWidth / 2;
+
+ // Gold Pyramid Gradient
+ const goldGrad = ctx.createLinearGradient(stepX, stepY, stepX + currentWidth, stepY + stepHeight);
+ goldGrad.addColorStop(0, '#b8860b');
+ goldGrad.addColorStop(0.5, '#ffd700');
+ goldGrad.addColorStop(1, '#996515');
+
+ ctx.fillStyle = goldGrad;
+ ctx.fillRect(stepX, stepY, currentWidth, stepHeight);
+ ctx.strokeStyle = '#5c4033';
+ ctx.lineWidth = 1;
+ ctx.strokeRect(stepX, stepY, currentWidth, stepHeight);
+
+ currentWidth -= pyramidBaseWidth / (steps + 2);
+ }
+
+ // Temple Top Structure
+ const topW = currentWidth * 0.7;
+ const topH = 16;
+ const topX = centerX - topW / 2;
+ const topY = baseY - steps * stepHeight - topH;
+
+ ctx.fillStyle = '#ffd700';
+ ctx.fillRect(topX, topY, topW, topH);
+ ctx.strokeRect(topX, topY, topW, topH);
+
+ // Temple Doorway
+ ctx.fillStyle = '#221200';
+ ctx.fillRect(centerX - 5, topY + 4, 10, topH - 4);
+
+ // Stairway down the middle
+ ctx.fillStyle = '#da10b';
+ ctx.beginPath();
+ ctx.moveTo(centerX - 12, baseY);
+ ctx.lineTo(centerX + 12, baseY);
+ ctx.lineTo(centerX + 6, topY + topH);
+ ctx.lineTo(centerX - 6, topY + topH);
+ ctx.closePath();
+ ctx.fillStyle = '#d4af37';
+ ctx.fill();
+ ctx.stroke();
+ }
+
+ function drawJungleBackground() {
+ const w = canvas.width;
+ const h = canvas.height;
+ const groundTop = h * 0.35;
+
+ // Jungle Ground
+ const groundGrad = ctx.createLinearGradient(0, groundTop, 0, h);
+ groundGrad.addColorStop(0, '#1e4620');
+ groundGrad.addColorStop(1, '#0d280f');
+ ctx.fillStyle = groundGrad;
+ ctx.fillRect(0, groundTop, w, h - groundTop);
+
+ // Jungle Flowers
+ flowers.forEach(flower => {
+ ctx.fillStyle = flower.color;
+ ctx.beginPath();
+ ctx.arc(flower.x, flower.y, flower.radius, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.fillStyle = '#ffff55';
+ ctx.beginPath();
+ ctx.arc(flower.x, flower.y, flower.radius * 0.4, 0, Math.PI * 2);
+ ctx.fill();
+ });
+
+ // Jungle Trees
+ trees.forEach(tree => {
+ const trunkW = 14 * tree.scale;
+ const trunkH = 60 * tree.scale;
+
+ // Trunk
+ ctx.fillStyle = '#4a2c11';
+ ctx.fillRect(tree.x - trunkW / 2, tree.y - trunkH, trunkW, trunkH);
+
+ // Leaf Canopy
+ ctx.fillStyle = '#1b5e20';
+ ctx.beginPath();
+ ctx.arc(tree.x, tree.y - trunkH - 10, 30 * tree.scale, 0, Math.PI * 2);
+ ctx.arc(tree.x - 18 * tree.scale, tree.y - trunkH, 22 * tree.scale, 0, Math.PI * 2);
+ ctx.arc(tree.x + 18 * tree.scale, tree.y - trunkH, 22 * tree.scale, 0, Math.PI * 2);
+ ctx.fill();
+ });
+
+ // Monkeys
+ monkeys.forEach(m => {
+ ctx.fillStyle = '#795548';
+ ctx.beginPath();
+ ctx.arc(m.x, m.y, 6, 0, Math.PI * 2); // Body
+ ctx.arc(m.x, m.y - 7, 4.5, 0, Math.PI * 2); // Head
+ ctx.fill();
+ // Face
+ ctx.fillStyle = '#d7ccc8';
+ ctx.beginPath();
+ ctx.arc(m.x, m.y - 7, 2, 0, Math.PI * 2);
+ ctx.fill();
+ });
+
+ // Exotic Birds
+ birds.forEach(b => {
+ b.wing += 0.1;
+ const wingY = Math.sin(b.wing) * 3;
+ ctx.fillStyle = b.color;
+ ctx.beginPath();
+ ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
+ ctx.fill();
+ // Beak
+ ctx.fillStyle = '#ffb703';
+ ctx.beginPath();
+ ctx.arc(b.x + 3, b.y, 1.5, 0, Math.PI * 2);
+ ctx.fill();
+ // Wing
+ ctx.strokeStyle = b.color;
+ ctx.lineWidth = 2;
+ ctx.beginPath();
+ ctx.moveTo(b.x - 2, b.y);
+ ctx.lineTo(b.x - 6, b.y - 4 + wingY);
+ ctx.stroke();
+ });
+ }
+
+ function drawCollectibles() {
+ // Gold Coins
+ coins.forEach(coin => {
+ if (!coin.collected) {
+ ctx.fillStyle = '#ffd700';
+ ctx.strokeStyle = '#b8860b';
+ ctx.lineWidth = 1.5;
+ ctx.beginPath();
+ ctx.arc(coin.x, coin.y, 6, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.stroke();
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = 'bold 8px sans-serif';
+ ctx.fillText('$', coin.x - 2.5, coin.y + 3);
+ }
+ });
+
+ // Gold Armor Items
+ armorItems.forEach(item => {
+ if (!item.collected) {
+ ctx.save();
+ ctx.translate(item.x, item.y);
+ 
+ // Glowing aura around armor
+ ctx.fillStyle = 'rgba(255, 215, 0, 0.25)';
+ ctx.beginPath();
+ ctx.arc(0, 0, 14, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.fillStyle = '#ffd700';
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 1;
+
+ if (item.type === 'helmet') {
+ ctx.beginPath();
+ ctx.arc(0, 2, 7, Math.PI, 0);
+ ctx.closePath();
+ ctx.fill();
+ ctx.stroke();
+ } else if (item.type === 'chestplate') {
+ ctx.fillRect(-6, -6, 12, 12);
+ ctx.strokeRect(-6, -6, 12, 12);
+ } else if (item.type === 'leggings') {
+ ctx.fillRect(-5, -6, 4, 12);
+ ctx.fillRect(1, -6, 4, 12);
+ ctx.strokeRect(-5, -6, 4, 12);
+ ctx.strokeRect(1, -6, 4, 12);
+ } else if (item.type === 'shield') {
+ ctx.beginPath();
+ ctx.moveTo(-6, -7);
+ ctx.lineTo(6, -7);
+ ctx.lineTo(6, 2);
+ ctx.lineTo(0, 8);
+ ctx.lineTo(-6, 2);
+ ctx.closePath();
+ ctx.fill();
+ ctx.stroke();
+ }
+
+ ctx.restore();
+ }
+ });
+ }
+
+ function drawStickman(x, y, facing, walkFrame) {
+ ctx.strokeStyle = '#ffffff';
+ ctx.fillStyle = '#ffffff';
+ ctx.lineWidth = 1.8;
+ ctx.lineCap = 'round';
+ ctx.lineJoin = 'round';
+
+ const headRadius = 5;
+ const bodyLength = 15;
+ const legLength = 11;
+ const neckY = y - bodyLength;
+ const headY = neckY - headRadius;
+ const shoulderY = neckY + 4;
+ const legSwing = Math.sin(walkFrame) * 6;
+ const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+
+ // 1. Head
+ ctx.beginPath();
+ ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+ ctx.stroke();
+
+ // Eye direction
+ ctx.beginPath();
+ ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+ ctx.fill();
+
+ // GOLD HELMET OVERLAY
+ if (player.armor.helmet) {
+ ctx.fillStyle = '#ffd700';
+ ctx.strokeStyle = '#b8860b';
+ ctx.beginPath();
+ ctx.arc(x, headY, headRadius + 1.5, Math.PI * 0.8, Math.PI * 2.2);
+ ctx.closePath();
+ ctx.fill();
+ ctx.stroke();
+ }
+
+ // 2. Torso
+ ctx.beginPath();
+ ctx.moveTo(x, neckY);
+ ctx.lineTo(x, y);
+ ctx.stroke();
+
+ // GOLD CHESTPLATE OVERLAY
+ if (player.armor.chestplate) {
+ ctx.fillStyle = '#ffd700';
+ ctx.strokeStyle = '#b8860b';
+ ctx.fillRect(x - 4, neckY + 2, 8, bodyLength - 3);
+ ctx.strokeRect(x - 4, neckY + 2, 8, bodyLength - 3);
+ }
+
+ // 3. Legs
+ ctx.strokeStyle = player.armor.leggings ? '#ffd700' : '#ffffff';
+ ctx.lineWidth = player.armor.leggings ? 3 : 1.8;
+
+ ctx.beginPath();
+ ctx.moveTo(x, y);
+ ctx.lineTo(x - legSwing, y + legLength);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.moveTo(x, y);
+ ctx.lineTo(x + legSwing, y + legLength);
+ ctx.stroke();
+
+ // Reset line width
+ ctx.lineWidth = 1.8;
+ ctx.strokeStyle = '#ffffff';
+
+ // 4. Back Arm
+ ctx.beginPath();
+ ctx.moveTo(x, shoulderY);
+ ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+ ctx.stroke();
+
+ // 5. Front Arm
+ const frontArmEndX = x + facing * 4 + armSwing;
+ const frontArmEndY = shoulderY + 6;
+ ctx.beginPath();
+ ctx.moveTo(x, shoulderY);
+ ctx.lineTo(frontArmEndX, frontArmEndY);
+ ctx.stroke();
+
+ // GOLD SHIELD OVERLAY
+ if (player.armor.shield) {
+ ctx.fillStyle = '#ffd700';
+ ctx.strokeStyle = '#b8860b';
+ ctx.beginPath();
+ ctx.arc(frontArmEndX + facing * 3, frontArmEndY, 6, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.stroke();
+ }
+ }
+
+ function drawHUD() {
+ ctx.fillStyle = '#ffffff';
+ ctx.font = '12px "Courier New", monospace';
+ ctx.textAlign = 'left';
+
+ // Coin counter
+ ctx.fillStyle = '#ffd700';
+ ctx.fillText(`COINS: ${player.coinsCollected} / ${coins.length}`, 15, 25);
+
+ // Armor status display
+ const collectedArmorCount = Object.values(player.armor).filter(Boolean).length;
+ ctx.fillText(`ARMOR PIECES: ${collectedArmorCount} / 4`, 15, 45);
+
+ // Mini Inventory list on HUD
+ const itemsList = [
+ player.armor.helmet ? '[X] Helmet' : '[ ] Helmet',
+ player.armor.chestplate ? '[X] Chestplate' : '[ ] Chestplate',
+ player.armor.leggings ? '[X] Leggings' : '[ ] Leggings',
+ player.armor.shield ? '[X] Shield' : '[ ] Shield'
+ ];
+ ctx.fillStyle = '#a3e635';
+ ctx.font = '10px "Courier New", monospace';
+ ctx.fillText(itemsList.join('  '), 15, 62);
+ }
+
+ function draw() {
+ // Draw Far Aztec Pyramid Sky
+ drawAztecPyramid();
+
+ // Draw Jungle Ground, Plants, & Animals
+ drawJungleBackground();
+
+ // Draw Collectible Items
+ drawCollectibles();
+
+ // Draw Stickman Player
+ drawStickman(player.x, player.y, player.facing, player.walkFrame);
+
+ // Draw HUD Overlay
+ drawHUD();
+ }
+
+ function animate() {
+ updatePhysics();
+ draw();
+ requestAnimationFrame(animate);
+ }
+
+ window.onload = function() {
+ resizeCanvas();
+ animate();
+ };
+ </script>
+</body>
+</html>
