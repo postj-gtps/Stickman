@@ -1,270 +1,666 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stickman Starter Canvas</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            margin: 0;
-            padding: 0;
-            font-family: 'Courier New', Courier, monospace, sans-serif;
-        }
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Stickman Underwater Treasure Hunt</title>
+ <style>
+ * {
+ box-sizing: border-box;
+ user-select: none;
+ margin: 0;
+ padding: 0;
+ font-family: 'Courier New', Courier, monospace, sans-serif;
+ }
 
-        body {
-            background-color: #000000;
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            height: 100vh;
-            overflow: hidden;
-            padding: 16px;
-        }
+ body {
+ background-color: #030a16;
+ color: #ffffff;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: flex-start;
+ height: 100vh;
+ overflow: hidden;
+ padding: 16px;
+ }
 
-        /* Top Header Bar */
-        #header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            max-width: 1100px;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #ffffff;
-        }
+ /* Top Header Bar */
+ #header {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ width: 100%;
+ max-width: 1100px;
+ margin-bottom: 12px;
+ padding-bottom: 8px;
+ border-bottom: 1px solid #00d2ff;
+ }
 
-        h1 {
-            font-size: 18px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
+ h1 {
+ font-size: 18px;
+ letter-spacing: 2px;
+ text-transform: uppercase;
+ font-weight: bold;
+ color: #00d2ff;
+ }
 
-        .btn-reset {
-            background: transparent;
-            color: #ffffff;
-            border: 1px solid #ffffff;
-            padding: 6px 16px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.15s ease-in-out;
-        }
+ .stats-container {
+ display: flex;
+ gap: 20px;
+ align-items: center;
+ font-size: 14px;
+ font-weight: bold;
+ }
 
-        .btn-reset:hover {
-            background: #ffffff;
-            color: #000000;
-        }
+ .stat-item {
+ display: flex;
+ align-items: center;
+ gap: 6px;
+ }
 
-        /* Main Canvas Container */
-        #canvas-wrapper {
-            position: relative;
-            width: 100%;
-            max-width: 1100px;
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+ .btn-reset {
+ background: transparent;
+ color: #00d2ff;
+ border: 1px solid #00d2ff;
+ padding: 6px 16px;
+ font-size: 14px;
+ font-weight: bold;
+ cursor: pointer;
+ text-transform: uppercase;
+ letter-spacing: 1px;
+ transition: all 0.15s ease-in-out;
+ }
 
-        canvas {
-            background-color: #000000;
-            border: 1px solid #ffffff;
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
+ .btn-reset:hover {
+ background: #00d2ff;
+ color: #030a16;
+ }
 
-        .instructions {
-            margin-top: 8px;
-            font-size: 11px;
-            color: #888888;
-            text-align: center;
-        }
-    </style>
+ /* Main Canvas Container */
+ #canvas-wrapper {
+ position: relative;
+ width: 100%;
+ max-width: 1100px;
+ flex-grow: 1;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ }
+
+ canvas {
+ background-color: #051329;
+ border: 1px solid #00d2ff;
+ display: block;
+ width: 100%;
+ height: 100%;
+ }
+
+ .instructions {
+ margin-top: 8px;
+ font-size: 11px;
+ color: #64b5f6;
+ text-align: center;
+ }
+ </style>
 </head>
 <body>
 
-    <!-- Header Section -->
-    <div id="header">
-        <h1>Stickman Engine</h1>
-        <button class="btn-reset" onclick="resetSimulation()">Reset</button>
-    </div>
+ <!-- Header Section -->
+ <div id="header">
+ <h1>Stickman Ocean Diver</h1>
+ <div class="stats-container">
+ <div class="stat-item">LEVEL: <span id="level-display" style="color:#00d2ff">1</span></div>
+ <div class="stat-item">TREASURE: <span id="treasure-display" style="color:#ffd700">0</span></div>
+ </div>
+ <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+ </div>
 
-    <!-- Canvas Container -->
-    <div id="canvas-wrapper">
-        <canvas id="simCanvas"></canvas>
-    </div>
+ <!-- Canvas Container -->
+ <div id="canvas-wrapper">
+ <canvas id="simCanvas"></canvas>
+ </div>
 
-    <div class="instructions">
-        [WASD] Move
-    </div>
+ <div class="instructions">
+ [WASD] Move (Exclusive Movement Keys) | Swim to surface to refill oxygen
+ </div>
 
-    <script>
-        const canvas = document.getElementById('simCanvas');
-        const ctx = canvas.getContext('2d');
+ <script>
+ const canvas = document.getElementById('simCanvas');
+ const ctx = canvas.getContext('2d');
 
-        // KEYBOARD INPUT STATE
-        const keys = {};
+ // KEYBOARD INPUT STATE (Strictly WASD)
+ const keys = {};
 
-        // STICKMAN PLAYER STATE
-        const player = {
-            x: 0,
-            y: 0,
-            speed: 4.5,
-            facing: 1, // 1 = Right, -1 = Left
-            walkFrame: 0
-        };
+ // STICKMAN PLAYER STATE
+ const player = {
+ x: 0,
+ y: 0,
+ speed: 4.5,
+ facing: 1, // 1 = Right, -1 = Left
+ walkFrame: 0
+ };
 
-        function resizeCanvas() {
-            const wrapper = document.getElementById('canvas-wrapper');
-            canvas.width = wrapper.clientWidth;
-            canvas.height = wrapper.clientHeight;
-            
-            // Set initial position to exact center on first load
-            if (player.x === 0 && player.y === 0) {
-                resetSimulation();
-            }
-        }
+ // GAME ENVIRONMENT & MECHANICS STATE
+ let surfaceY = 50;
+ let seabedY = 0;
+ let maxOxygen = 100;
+ let currentOxygen = 100;
+ let collectedTreasure = 0;
+ let currentLevel = 1;
+ let alertMessage = "";
+ let alertTimer = 0;
 
-        window.addEventListener('resize', resizeCanvas);
+ let corals = [];
+ let chests = [];
+ let wreckedShip = null;
+ let bubbles = [];
+ let waveOffset = 0;
 
-        // CONTROLS HANDLERS
-        window.addEventListener('keydown', (e) => {
-            if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
-                e.preventDefault();
-            }
-            keys[e.code] = true;
-        });
+ function resizeCanvas() {
+ const wrapper = document.getElementById('canvas-wrapper');
+ canvas.width = wrapper.clientWidth;
+ canvas.height = wrapper.clientHeight;
+ 
+ seabedY = canvas.height - 45;
 
-        window.addEventListener('keyup', (e) => {
-            keys[e.code] = false;
-        });
+ if (player.x === 0 && player.y === 0) {
+ resetSimulation();
+ } else {
+ calculateOxygenCapacity();
+ }
+ }
 
-        function resetSimulation() {
-            player.x = canvas.width / 2;
-            player.y = canvas.height / 2;
-            player.facing = 1;
-            player.walkFrame = 0;
-        }
+ window.addEventListener('resize', resizeCanvas);
 
-        function updatePhysics() {
-            // Movement Direction Calculation
-            let dx = 0;
-            let dy = 0;
+ // CONTROLS HANDLERS - STRICTLY WASD ONLY (Arrow keys explicitly ignored)
+ window.addEventListener('keydown', (e) => {
+ const key = e.key.toLowerCase();
+ if (['w', 'a', 's', 'd'].includes(key) || ['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+ e.preventDefault();
+ keys[e.code] = true;
+ keys[key] = true;
+ }
+ });
 
-            if (keys['KeyW'] || keys['Keyw']) dy -= 1;
-            if (keys['KeyS'] || keys['Keys']) dy += 1;
-            if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
-            if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+ window.addEventListener('keyup', (e) => {
+ const key = e.key.toLowerCase();
+ keys[e.code] = false;
+ keys[key] = false;
+ });
 
-            // Normalize diagonal movement vector speed
-            if (dx !== 0 && dy !== 0) {
-                dx *= 0.7071;
-                dy *= 0.7071;
-            }
+ function calculateOxygenCapacity() {
+ // 2.5x the time it takes to travel straight from surface to sea bed
+ const verticalDistance = seabedY - surfaceY;
+ const travelTimeFrames = verticalDistance / player.speed;
+ maxOxygen = travelTimeFrames * 2.5;
+ currentOxygen = maxOxygen;
+ }
 
-            // Update stickman position
-            player.x += dx * player.speed;
-            player.y += dy * player.speed;
+ function generateSeabedFeatures() {
+ corals = [];
+ chests = [];
+ bubbles = [];
 
-            // Keep stickman inside canvas boundaries
-            const margin = 15;
-            player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
-            player.y = Math.max(margin + 15, Math.min(canvas.height - margin - 10, player.y));
+ // Random Corals and Sea Plants along sea bed
+ const coralCount = Math.floor(canvas.width / 45);
+ for (let i = 0; i < coralCount; i++) {
+ const cx = Math.random() * (canvas.width - 40) + 20;
+ const type = Math.floor(Math.random() * 3); // 0 = Kelp, 1 = Branching Coral, 2 = Brain/Cluster Coral
+ const height = 20 + Math.random() * 40;
+ const colorHue = [120, 320, 20, 280, 180][Math.floor(Math.random() * 5)];
+ corals.push({ x: cx, height: height, type: type, hue: colorHue });
+ }
 
-            // Walk animation cycle updates
-            if (dx !== 0 || dy !== 0) {
-                player.walkFrame += 0.25;
-            } else {
-                player.walkFrame = 0;
-            }
-        }
+ // 15% Chance of a Wrecked Ship on the sea bed
+ if (Math.random() < 0.15) {
+ wreckedShip = {
+ x: 100 + Math.random() * (canvas.width - 250),
+ width: 110,
+ height: 60
+ };
+ } else {
+ wreckedShip = null;
+ }
 
-        function drawStickman(x, y, facing, walkFrame) {
-            ctx.strokeStyle = '#ffffff';
-            ctx.fillStyle = '#ffffff';
-            ctx.lineWidth = 1.8;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
+ // Hidden Treasure Chests on each level (3 to 5 chests)
+ const numChests = 3 + Math.floor(Math.random() * 3);
+ for (let i = 0; i < numChests; i++) {
+ const chestX = 60 + Math.random() * (canvas.width - 120);
+ chests.push({
+ x: chestX,
+ y: seabedY - 12,
+ opened: false,
+ value: 100 + Math.floor(Math.random() * 150)
+ });
+ }
+ }
 
-            // Halved character dimensions
-            const headRadius = 5;
-            const bodyLength = 15;
-            const legLength = 11;
-            const neckY = y - bodyLength;
-            const headY = neckY - headRadius;
-            const shoulderY = neckY + 4;
+ function resetSimulation() {
+ surfaceY = 50;
+ seabedY = canvas.height - 45;
+ player.x = canvas.width / 2;
+ player.y = surfaceY;
+ player.facing = 1;
+ player.walkFrame = 0;
+ 
+ calculateOxygenCapacity();
+ generateSeabedFeatures();
+ updateUI();
+ }
 
-            // 1. Head
-            ctx.beginPath();
-            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
-            ctx.stroke();
+ function updateUI() {
+ document.getElementById('level-display').innerText = currentLevel;
+ document.getElementById('treasure-display').innerText = collectedTreasure;
+ }
 
-            // Eye direction indicator
-            ctx.beginPath();
-            ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
-            ctx.fill();
+ function updatePhysics() {
+ waveOffset += 0.05;
 
-            // 2. Torso
-            ctx.beginPath();
-            ctx.moveTo(x, neckY);
-            ctx.lineTo(x, y);
-            ctx.stroke();
+ // WASD Movement Vector
+ let dx = 0;
+ let dy = 0;
 
-            // 3. Legs
-            const legSwing = Math.sin(walkFrame) * 6;
+ if (keys['KeyW'] || keys['w']) dy -= 1;
+ if (keys['KeyS'] || keys['s']) dy += 1;
+ if (keys['KeyA'] || keys['a']) { dx -= 1; player.facing = -1; }
+ if (keys['KeyD'] || keys['d']) { dx += 1; player.facing = 1; }
 
-            // Left / Right Legs
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x - legSwing, y + legLength);
-            ctx.stroke();
+ if (dx !== 0 && dy !== 0) {
+ dx *= 0.7071;
+ dy *= 0.7071;
+ }
 
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + legSwing, y + legLength);
-            ctx.stroke();
+ player.x += dx * player.speed;
+ player.y += dy * player.speed;
 
-            // 4. Back Arm
-            const armSwing = Math.sin(walkFrame + Math.PI) * 4;
-            ctx.beginPath();
-            ctx.moveTo(x, shoulderY);
-            ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
-            ctx.stroke();
+ // Keep Stickman inside boundaries
+ const margin = 15;
+ player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
+ player.y = Math.max(surfaceY - 10, Math.min(seabedY - 12, player.y));
 
-            // 5. Front Arm
-            ctx.beginPath();
-            ctx.moveTo(x, shoulderY);
-            ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
-            ctx.stroke();
-        }
+ if (dx !== 0 || dy !== 0) {
+ player.walkFrame += 0.2;
+ // Generate underwater movement bubbles
+ if (Math.random() < 0.25 && player.y > surfaceY) {
+ bubbles.push({
+ x: player.x + (Math.random() * 8 - 4),
+ y: player.y - 10,
+ radius: 1 + Math.random() * 3,
+ speed: 0.5 + Math.random() * 1
+ });
+ }
+ } else {
+ player.walkFrame = 0;
+ }
 
-        function draw() {
-            // Clear canvas background
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+ // Update ambient bubbles
+ for (let i = bubbles.length - 1; i >= 0; i--) {
+ bubbles[i].y -= bubbles[i].speed;
+ if (bubbles[i].y < surfaceY) {
+ bubbles.splice(i, 1);
+ }
+ }
 
-            // Draw Stickman
-            drawStickman(player.x, player.y, player.facing, player.walkFrame);
-        }
+ // OXYGEN MECHANIC
+ if (player.y > surfaceY) {
+ // Submerged: Deplete Oxygen
+ currentOxygen -= 1;
 
-        function animate() {
-            updatePhysics();
-            draw();
-            requestAnimationFrame(animate);
-        }
+ if (currentOxygen <= 0) {
+ currentOxygen = 0;
+ triggerOxygenDepletion();
+ }
+ } else {
+ // At Surface: Replenish Oxygen
+ currentOxygen = Math.min(maxOxygen, currentOxygen + 5);
+ }
 
-        window.onload = function() {
-            resizeCanvas();
-            animate();
-        };
-    </script>
+ // CHEST INTERACTION & GOAL
+ let remainingUnopened = 0;
+ chests.forEach(chest => {
+ if (!chest.opened) {
+ const dist = Math.hypot(player.x - chest.x, player.y - chest.y);
+ if (dist < 28) {
+ chest.opened = true;
+ collectedTreasure += chest.value;
+ updateUI();
+ alertMessage = `Opened Chest! +$${chest.value}`;
+ alertTimer = 90;
+ } else {
+ remainingUnopened++;
+ }
+ }
+ });
+
+ // Advance to next level if all chests collected
+ if (remainingUnopened === 0 && chests.length > 0) {
+ currentLevel++;
+ alertMessage = `LEVEL ${currentLevel} CLEARED! Diving Deeper...`;
+ alertTimer = 120;
+ generateSeabedFeatures();
+ updateUI();
+ }
+ }
+
+ function triggerOxygenDepletion() {
+ alertMessage = "RAN OUT OF OXYGEN! Dropped all collected treasure!";
+ alertTimer = 150;
+
+ // Drop all treasure to the sea bed: Close chests and drop coins
+ collectedTreasure = 0;
+ updateUI();
+
+ chests.forEach(chest => {
+ chest.opened = false; // Chests re-lock/reset on seabed when lost
+ });
+
+ // Float stickman back to surface
+ player.y = surfaceY;
+ currentOxygen = maxOxygen;
+ }
+
+ /* --- DRAWING FUNCTIONS --- */
+
+ function drawBackground() {
+ // Ocean Gradient (Surface blue to deep navy seabed)
+ const oceanGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+ oceanGrad.addColorStop(0, '#1a6fba');
+ oceanGrad.addColorStop(0.2, '#0c447c');
+ oceanGrad.addColorStop(0.7, '#072448');
+ oceanGrad.addColorStop(1, '#030d1d');
+ ctx.fillStyle = oceanGrad;
+ ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+ // Light Rays
+ ctx.save();
+ ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+ for (let i = 0; i < 4; i++) {
+ ctx.beginPath();
+ ctx.moveTo(canvas.width * (0.2 + i * 0.25), 0);
+ ctx.lineTo(canvas.width * (0.1 + i * 0.25), canvas.height);
+ ctx.lineTo(canvas.width * (0.2 + i * 0.25), canvas.height);
+ ctx.closePath();
+ ctx.fill();
+ }
+ ctx.restore();
+
+ // Surface Water Waves
+ ctx.fillStyle = '#00d2ff';
+ ctx.beginPath();
+ ctx.moveTo(0, 0);
+ ctx.lineTo(0, surfaceY);
+ for (let x = 0; x <= canvas.width; x += 20) {
+ const y = surfaceY + Math.sin(x * 0.03 + waveOffset) * 4;
+ ctx.lineTo(x, y);
+ }
+ ctx.lineTo(canvas.width, 0);
+ ctx.closePath();
+ ctx.fillStyle = 'rgba(0, 210, 255, 0.3)';
+ ctx.fill();
+
+ ctx.strokeStyle = '#00d2ff';
+ ctx.lineWidth = 2;
+ ctx.stroke();
+
+ // Sea Bed Base
+ ctx.fillStyle = '#c2a649';
+ ctx.fillRect(0, seabedY, canvas.width, canvas.height - seabedY);
+
+ ctx.fillStyle = '#8e7427';
+ ctx.fillRect(0, seabedY, canvas.width, 4);
+ }
+
+ function drawCoralsAndPlants() {
+ corals.forEach(c => {
+ ctx.save();
+ ctx.fillStyle = `hsl(${c.hue}, 70%, 50%)`;
+ ctx.strokeStyle = `hsl(${c.hue}, 70%, 40%)`;
+ ctx.lineWidth = 2;
+
+ if (c.type === 0) {
+ // Swaying Kelp / Seaweed
+ ctx.beginPath();
+ ctx.moveTo(c.x, seabedY);
+ const sway = Math.sin(waveOffset + c.x) * 8;
+ ctx.quadraticCurveTo(c.x + sway, seabedY - c.height / 2, c.x + sway / 2, seabedY - c.height);
+ ctx.lineWidth = 4;
+ ctx.stroke();
+ } else if (c.type === 1) {
+ // Branching Coral
+ ctx.beginPath();
+ ctx.moveTo(c.x, seabedY);
+ ctx.lineTo(c.x, seabedY - c.height);
+ ctx.lineTo(c.x - 8, seabedY - c.height - 10);
+ ctx.moveTo(c.x, seabedY - c.height + 5);
+ ctx.lineTo(c.x + 8, seabedY - c.height - 8);
+ ctx.stroke();
+ } else {
+ // Cluster / Brain Coral
+ ctx.beginPath();
+ ctx.arc(c.x, seabedY - 10, 12, Math.PI, 0);
+ ctx.fill();
+ ctx.stroke();
+ }
+ ctx.restore();
+ });
+ }
+
+ function drawWreckedShip() {
+ if (!wreckedShip) return;
+
+ ctx.save();
+ const sx = wreckedShip.x;
+ const sy = seabedY;
+
+ // Hull
+ ctx.fillStyle = '#3d2314';
+ ctx.strokeStyle = '#21120a';
+ ctx.lineWidth = 2;
+
+ ctx.beginPath();
+ ctx.moveTo(sx, sy);
+ ctx.lineTo(sx + 10, sy - 30);
+ ctx.lineTo(sx + 90, sy - 35);
+ ctx.lineTo(sx + 110, sy);
+ ctx.closePath();
+ ctx.fill();
+ ctx.stroke();
+
+ // Broken Mast
+ ctx.strokeStyle = '#4a2c19';
+ ctx.lineWidth = 5;
+ ctx.beginPath();
+ ctx.moveTo(sx + 50, sy - 33);
+ ctx.lineTo(sx + 65, sy - 80); // Tilted mast
+ ctx.stroke();
+
+ // Crossbeam & Shredded Sail
+ ctx.lineWidth = 3;
+ ctx.beginPath();
+ ctx.moveTo(sx + 45, sy - 65);
+ ctx.lineTo(sx + 75, sy - 60);
+ ctx.stroke();
+
+ ctx.fillStyle = 'rgba(200, 200, 200, 0.3)';
+ ctx.beginPath();
+ ctx.moveTo(sx + 50, sy - 64);
+ ctx.lineTo(sx + 70, sy - 60);
+ ctx.lineTo(sx + 58, sy - 45);
+ ctx.closePath();
+ ctx.fill();
+
+ ctx.restore();
+ }
+
+ function drawChests() {
+ chests.forEach(chest => {
+ ctx.save();
+ if (chest.opened) {
+ // Open Chest
+ ctx.fillStyle = '#8b5a2b';
+ ctx.fillRect(chest.x - 12, chest.y - 8, 24, 14);
+ // Gold glow/treasure inside
+ ctx.fillStyle = '#ffd700';
+ ctx.fillRect(chest.x - 10, chest.y - 12, 20, 6);
+ ctx.strokeStyle = '#ffffff';
+ ctx.strokeRect(chest.x - 10, chest.y - 12, 20, 6);
+ } else {
+ // Closed Chest
+ ctx.fillStyle = '#cd853f';
+ ctx.strokeStyle = '#5c3a21';
+ ctx.lineWidth = 2;
+ ctx.fillRect(chest.x - 12, chest.y - 12, 24, 16);
+ ctx.strokeRect(chest.x - 12, chest.y - 12, 24, 16);
+
+ // Gold Lock / Trim
+ ctx.fillStyle = '#ffd700';
+ ctx.fillRect(chest.x - 3, chest.y - 6, 6, 6);
+ }
+ ctx.restore();
+ });
+ }
+
+ function drawBubbles() {
+ ctx.save();
+ ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+ ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+ bubbles.forEach(b => {
+ ctx.beginPath();
+ ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.stroke();
+ });
+ ctx.restore();
+ }
+
+ function drawStickman(x, y, facing, walkFrame) {
+ ctx.save();
+ ctx.strokeStyle = '#ffffff';
+ ctx.fillStyle = '#ffffff';
+ ctx.lineWidth = 1.8;
+ ctx.lineCap = 'round';
+ ctx.lineJoin = 'round';
+
+ const headRadius = 5;
+ const bodyLength = 15;
+ const legLength = 11;
+ const neckY = y - bodyLength;
+ const headY = neckY - headRadius;
+ const shoulderY = neckY + 4;
+
+ // Swimming tilt angle
+ const swimTilt = (keys['KeyW'] || keys['w']) ? -0.2 : 0;
+ ctx.translate(x, y);
+ ctx.rotate(swimTilt * facing);
+ ctx.translate(-x, -y);
+
+ // 1. Head & Diving Goggles
+ ctx.beginPath();
+ ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+ ctx.stroke();
+
+ // Goggles
+ ctx.fillStyle = '#00d2ff';
+ ctx.fillRect(x + facing * 1, headY - 2, facing * 4, 3);
+
+ // 2. Torso
+ ctx.beginPath();
+ ctx.moveTo(x, neckY);
+ ctx.lineTo(x, y);
+ ctx.stroke();
+
+ // 3. Swimming Leg Kick
+ const legSwing = Math.sin(walkFrame) * 7;
+ ctx.beginPath();
+ ctx.moveTo(x, y);
+ ctx.lineTo(x - legSwing, y + legLength);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.moveTo(x, y);
+ ctx.lineTo(x + legSwing, y + legLength);
+ ctx.stroke();
+
+ // 4. Arms (Swimming Stroke)
+ const armSwing = Math.sin(walkFrame + Math.PI) * 6;
+ ctx.beginPath();
+ ctx.moveTo(x, shoulderY);
+ ctx.lineTo(x - facing * 5 - armSwing, shoulderY + 5);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.moveTo(x, shoulderY);
+ ctx.lineTo(x + facing * 5 + armSwing, shoulderY + 5);
+ ctx.stroke();
+
+ ctx.restore();
+ }
+
+ function drawOxygenMeter() {
+ const barWidth = 180;
+ const barHeight = 12;
+ const x = 16;
+ const y = surfaceY + 16;
+ const pct = Math.max(0, currentOxygen / maxOxygen);
+
+ ctx.save();
+ // Label
+ ctx.fillStyle = '#ffffff';
+ ctx.font = 'bold 11px Courier New';
+ ctx.fillText('OXYGEN SUPPLY:', x, y - 5);
+
+ // Bar Background
+ ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+ ctx.strokeStyle = '#00d2ff';
+ ctx.lineWidth = 1;
+ ctx.fillRect(x, y, barWidth, barHeight);
+ ctx.strokeRect(x, y, barWidth, barHeight);
+
+ // Bar Fill
+ ctx.fillStyle = pct > 0.3 ? '#00d2ff' : '#ff4d4d';
+ ctx.fillRect(x + 1, y + 1, (barWidth - 2) * pct, barHeight - 2);
+ ctx.restore();
+ }
+
+ function drawAlerts() {
+ if (alertTimer > 0) {
+ alertTimer--;
+ ctx.save();
+ ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+ ctx.fillRect(canvas.width / 2 - 220, canvas.height / 2 - 20, 440, 40);
+ ctx.strokeStyle = '#ffd700';
+ ctx.strokeRect(canvas.width / 2 - 220, canvas.height / 2 - 20, 440, 40);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = 'bold 13px Courier New';
+ ctx.textAlign = 'center';
+ ctx.fillText(alertMessage, canvas.width / 2, canvas.height / 2 + 5);
+ ctx.restore();
+ }
+ }
+
+ function draw() {
+ drawBackground();
+ drawWreckedShip();
+ drawCoralsAndPlants();
+ drawChests();
+ drawBubbles();
+ drawStickman(player.x, player.y, player.facing, player.walkFrame);
+ drawOxygenMeter();
+ drawAlerts();
+ }
+
+ function animate() {
+ updatePhysics();
+ draw();
+ requestAnimationFrame(animate);
+ }
+
+ window.onload = function() {
+ resizeCanvas();
+ animate();
+ };
+ </script>
 </body>
 </html>
