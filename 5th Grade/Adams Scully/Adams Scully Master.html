@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stickman: Aztec Jungle Edition</title>
+  <title>Stickman Engine: Vibrant Aztec Jungle</title>
   <style>
     * {
       box-sizing: border-box;
@@ -14,7 +14,7 @@
     }
 
     body {
-      background-color: #050b05;
+      background-color: #0b1d0e;
       color: #ffffff;
       display: flex;
       flex-direction: column;
@@ -22,7 +22,7 @@
       justify-content: flex-start;
       height: 100vh;
       overflow: hidden;
-      padding: 16px;
+      padding: 12px;
     }
 
     /* Top Header Bar */
@@ -31,10 +31,10 @@
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      max-width: 1100px;
-      margin-bottom: 12px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #4caf50;
+      max-width: 1200px;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #4caf50;
     }
 
     h1 {
@@ -51,28 +51,29 @@
     }
 
     .btn {
-      background: transparent;
-      color: #81c784;
+      background: #1b5e20;
+      color: #e8f5e9;
       border: 1px solid #81c784;
       padding: 6px 16px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: bold;
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 1px;
+      border-radius: 4px;
       transition: all 0.15s ease-in-out;
     }
 
     .btn:hover {
       background: #81c784;
-      color: #050b05;
+      color: #0b1d0e;
     }
 
     /* Main Canvas Container */
     #canvas-wrapper {
       position: relative;
       width: 100%;
-      max-width: 1100px;
+      max-width: 1200px;
       flex-grow: 1;
       display: flex;
       justify-content: center;
@@ -80,18 +81,21 @@
     }
 
     canvas {
-      background-color: #0a150a;
-      border: 1px solid #2e7d32;
+      background-color: #81d4fa;
+      border: 2px solid #2e7d32;
+      border-radius: 6px;
       display: block;
       width: 100%;
       height: 100%;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     }
 
     .instructions {
-      margin-top: 8px;
-      font-size: 11px;
-      color: #a5d6a7;
+      margin-top: 6px;
+      font-size: 12px;
+      color: #c8e6c9;
       text-align: center;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -99,7 +103,7 @@
 
   <!-- Header Section -->
   <div id="header">
-    <h1>Stickman: Aztec Jungle</h1>
+    <h1>Stickman: Vibrant Aztec Jungle</h1>
     <div class="btn-group">
       <button class="btn" onclick="playIntro()">Replay Intro</button>
       <button class="btn" onclick="resetSimulation()">Reset</button>
@@ -119,7 +123,7 @@
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
 
-    // KEYBOARD INPUT STATE - WASD Only
+    // KEYBOARD INPUT STATE - Exclusive WASD
     const keys = {};
 
     // GAME STATE MACHINE
@@ -128,7 +132,7 @@
     let introTimer = 0;
     let zapParticles = [];
 
-    // STICKMAN PLAYER STATE (Baseline generic stickman)[cite: 1]
+    // STICKMAN PLAYER STATE (Baseline Generic Stickman)[cite: 1]
     const player = {
       x: 0,
       y: 0,
@@ -140,10 +144,11 @@
     // ENVIRONMENT ANIMATED ELEMENTS
     const birds = [];
     const monkeys = [];
+    const flowers = [];
     const jaguar = {
-      x: -100,
+      x: -120,
       y: 0,
-      speed: 2.5,
+      speed: 2.8,
       active: false,
       timer: 0,
       frame: 0
@@ -161,9 +166,8 @@
 
     window.addEventListener('resize', resizeCanvas);
 
-    // CONTROLS HANDLERS - Strictly WASD (Arrow keys disabled)
+    // CONTROLS HANDLERS - STRICTLY WASD (Arrow keys intercepted and disabled)
     window.addEventListener('keydown', (e) => {
-      // Intercept and prevent default scrolling/movement for Arrow Keys
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
         e.preventDefault();
         return; // Explicitly block arrow keys
@@ -193,27 +197,46 @@
       player.facing = 1;
       player.walkFrame = 0;
       
-      // Initialize Birds
+      // Initialize Exotic Birds
       birds.length = 0;
-      for (let i = 0; i < 4; i++) {
+      const birdColors = [
+        { body: '#ff1744', wing: '#ffea00' }, // Scarlet Macaw
+        { body: '#00e5ff', wing: '#ff9100' }, // Tropical Turquoise
+        { body: '#d500f9', wing: '#00e676' }, // Orchid Purple
+        { body: '#ffea00', wing: '#ff3d00' }  // Sunburst Yellow
+      ];
+
+      for (let i = 0; i < 6; i++) {
         birds.push({
           x: Math.random() * canvas.width,
-          y: 40 + Math.random() * 120,
-          speed: 1 + Math.random() * 2,
+          y: 30 + Math.random() * 110,
+          speed: 1.2 + Math.random() * 2.2,
           wing: Math.random() * Math.PI,
-          color: i % 2 === 0 ? '#ff5252' : '#ffeb3b'
+          palette: birdColors[i % birdColors.length]
         });
       }
 
-      // Initialize Monkeys
+      // Initialize Playful Monkeys
       monkeys.length = 0;
-      monkeys.push({ x: canvas.width * 0.18, y: canvas.height * 0.4, swing: 0 });
-      monkeys.push({ x: canvas.width * 0.82, y: canvas.height * 0.35, swing: Math.PI });
+      monkeys.push({ x: canvas.width * 0.16, y: canvas.height * 0.38, swing: 0 });
+      monkeys.push({ x: canvas.width * 0.84, y: canvas.height * 0.34, swing: Math.PI });
+
+      // Initialize Tropical Ground Flowers
+      flowers.length = 0;
+      const flowerColors = ['#ff1744', '#ffea00', '#e040fb', '#00e676', '#ff9100'];
+      for (let i = 0; i < 22; i++) {
+        flowers.push({
+          x: Math.random() * canvas.width,
+          y: canvas.height * 0.58 + Math.random() * (canvas.height * 0.38),
+          color: flowerColors[i % flowerColors.length],
+          size: 3 + Math.random() * 4
+        });
+      }
 
       // Reset Jaguar
       jaguar.active = false;
       jaguar.timer = 0;
-      jaguar.x = -100;
+      jaguar.x = -120;
     }
 
     function updatePhysics() {
@@ -240,7 +263,7 @@
 
       // Keep stickman inside canvas boundaries
       const margin = 20;
-      const minY = canvas.height * 0.55; // Keep player on jungle floor
+      const minY = canvas.height * 0.55; // Ground playing field boundary
       player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
       player.y = Math.max(minY, Math.min(canvas.height - margin - 10, player.y));
 
@@ -254,41 +277,44 @@
       // Update Birds
       birds.forEach(b => {
         b.x += b.speed;
-        b.wing += 0.15;
-        if (b.x > canvas.width + 20) b.x = -20;
+        b.wing += 0.18;
+        if (b.x > canvas.width + 30) {
+          b.x = -30;
+          b.y = 30 + Math.random() * 110;
+        }
       });
 
       // Update Monkeys
       monkeys.forEach(m => {
-        m.swing += 0.05;
+        m.swing += 0.06;
       });
 
-      // Update Jaguar (Occasional Appearance)
+      // Update Occasional Jaguar
       jaguar.timer++;
-      if (!jaguar.active && jaguar.timer > 350) {
+      if (!jaguar.active && jaguar.timer > 320) {
         jaguar.active = true;
-        jaguar.x = -80;
-        jaguar.y = canvas.height * 0.65 + Math.random() * (canvas.height * 0.2);
+        jaguar.x = -100;
+        jaguar.y = canvas.height * 0.62 + Math.random() * (canvas.height * 0.22);
         jaguar.timer = 0;
       }
 
       if (jaguar.active) {
         jaguar.x += jaguar.speed;
-        jaguar.frame += 0.2;
-        if (jaguar.x > canvas.width + 100) {
+        jaguar.frame += 0.22;
+        if (jaguar.x > canvas.width + 120) {
           jaguar.active = false;
         }
       }
     }
 
-    /* ---------------- DRAWING FUNCTIONS ---------------- */
+    /* ---------------- DRAWING ROUTINES ---------------- */
 
     function drawBlondHair(headX, headY, facing) {
       ctx.fillStyle = '#ffee58';
       ctx.strokeStyle = '#fbc02d';
       ctx.lineWidth = 1.2;
 
-      // Long blond flowing hair
+      // Long blond hair flow
       ctx.beginPath();
       ctx.moveTo(headX - facing * 3, headY - 4);
       ctx.quadraticCurveTo(headX - facing * 8, headY + 4, headX - facing * 7, headY + 16);
@@ -297,7 +323,7 @@
       ctx.fill();
       ctx.stroke();
 
-      // Top hair bump
+      // Top hair crown
       ctx.beginPath();
       ctx.arc(headX, headY - 1, 6, Math.PI, Math.PI * 1.8);
       ctx.fill();
@@ -305,9 +331,13 @@
 
     // Baseline Generic Stickman Drawing Routine[cite: 1]
     function drawGenericStickman(x, y, facing, walkFrame) {
+      // Dark drop shadow outline for strong contrast against bright ground
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+      ctx.shadowBlur = 4;
+
       ctx.strokeStyle = '#ffffff';
       ctx.fillStyle = '#ffffff';
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 2.2;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
@@ -318,7 +348,7 @@
       const headY = neckY - headRadius;
       const shoulderY = neckY + 4;
 
-      // Head
+      // 1. Head
       ctx.beginPath();
       ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
       ctx.stroke();
@@ -328,13 +358,13 @@
       ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
       ctx.fill();
 
-      // Torso
+      // 2. Torso
       ctx.beginPath();
       ctx.moveTo(x, neckY);
       ctx.lineTo(x, y);
       ctx.stroke();
 
-      // Legs
+      // 3. Legs
       const legSwing = Math.sin(walkFrame) * 6;
       ctx.beginPath();
       ctx.moveTo(x, y);
@@ -346,7 +376,7 @@
       ctx.lineTo(x + legSwing, y + legLength);
       ctx.stroke();
 
-      // Arms
+      // 4. Arms
       const armSwing = Math.sin(walkFrame + Math.PI) * 4;
       ctx.beginPath();
       ctx.moveTo(x, shoulderY);
@@ -357,9 +387,12 @@
       ctx.moveTo(x, shoulderY);
       ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
       ctx.stroke();
+
+      // Reset shadow effect
+      ctx.shadowBlur = 0;
     }
 
-    // Teacher Stickman (used only in classroom opening scene)
+    // Teacher Stickman (Opening Scene Classroom)
     function drawTeacherStickman(x, y, facing) {
       drawGenericStickman(x, y, facing, 0);
       const neckY = y - 15;
@@ -368,65 +401,80 @@
     }
 
     function drawClassroomScene() {
-      // Chalkboard background
-      ctx.fillStyle = '#1c2a23';
+      // Chalkboard Room Background
+      ctx.fillStyle = '#1e3a2b';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Floor line
-      const floorY = canvas.height * 0.75;
-      ctx.fillStyle = '#3e2723';
+      // Wooden Floor
+      const floorY = canvas.height * 0.72;
+      ctx.fillStyle = '#4e270e';
       ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
 
-      // Chalkboard
-      const boardW = canvas.width * 0.6;
-      const boardH = canvas.height * 0.35;
-      const boardX = (canvas.width - boardW) / 2;
-      const boardY = canvas.height * 0.15;
-      ctx.fillStyle = '#0d1b1e';
-      ctx.fillRect(boardX, boardY, boardW, boardH);
-      ctx.strokeStyle = '#8d6e63';
-      ctx.lineWidth = 6;
-      ctx.strokeRect(boardX, boardY, boardW, boardH);
-
-      // Chalkboard text
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '16px "Courier New"';
-      ctx.textAlign = 'center';
-      ctx.fillText('WELCOME CLASS!', canvas.width / 2, boardY + 40);
-      ctx.fillText('Today: Aztec History Lesson', canvas.width / 2, boardY + 75);
-
-      // Teachers & Desks
-      const teacher1X = canvas.width * 0.35;
-      const teacher2X = canvas.width * 0.65;
-
-      function drawDesk(deskX) {
-        ctx.fillStyle = '#5d4037';
-        ctx.fillRect(deskX - 45, floorY - 25, 90, 25);
-        ctx.fillStyle = '#3e2723';
-        ctx.fillRect(deskX - 40, floorY - 25, 10, 25);
-        ctx.fillRect(deskX + 30, floorY - 25, 10, 25);
-        
-        ctx.fillStyle = '#b0bec5';
-        ctx.fillRect(deskX - 15, floorY - 35, 20, 10);
+      // Floor Planks Detail
+      ctx.strokeStyle = '#381a08';
+      ctx.lineWidth = 2;
+      for (let x = 0; x < canvas.width; x += 80) {
+        ctx.beginPath();
+        ctx.moveTo(x, floorY);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
       }
 
-      // Teachers with long blond hair sitting behind desks
+      // Large Chalkboard
+      const boardW = canvas.width * 0.62;
+      const boardH = canvas.height * 0.36;
+      const boardX = (canvas.width - boardW) / 2;
+      const boardY = canvas.height * 0.12;
+      ctx.fillStyle = '#0f261c';
+      ctx.fillRect(boardX, boardY, boardW, boardH);
+      ctx.strokeStyle = '#a17445';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(boardX, boardY, boardW, boardH);
+
+      // Chalkboard Text
+      ctx.fillStyle = '#f1f8e9';
+      ctx.font = 'bold 18px "Courier New"';
+      ctx.textAlign = 'center';
+      ctx.fillText('WELCOME CLASS!', canvas.width / 2, boardY + 45);
+      ctx.fillStyle = '#81c784';
+      ctx.font = '14px "Courier New"';
+      ctx.fillText('Today: Lesson on Aztec History', canvas.width / 2, boardY + 80);
+
+      // Teachers & Desks
+      const teacher1X = canvas.width * 0.33;
+      const teacher2X = canvas.width * 0.67;
+
+      function drawDesk(deskX) {
+        ctx.fillStyle = '#6d4c41';
+        ctx.fillRect(deskX - 50, floorY - 26, 100, 26);
+        ctx.fillStyle = '#4e342e';
+        ctx.fillRect(deskX - 44, floorY - 26, 12, 26);
+        ctx.fillRect(deskX + 32, floorY - 26, 12, 26);
+        
+        // Laptop
+        ctx.fillStyle = '#cfd8dc';
+        ctx.fillRect(deskX - 16, floorY - 36, 24, 10);
+        ctx.fillStyle = '#00bcd4';
+        ctx.fillRect(deskX - 14, floorY - 34, 20, 6);
+      }
+
+      // Sitting Teachers with long blond hair behind desks
       drawTeacherStickman(teacher1X, floorY - 20, 1);
       drawDesk(teacher1X);
 
       drawTeacherStickman(teacher2X, floorY - 20, -1);
       drawDesk(teacher2X);
 
-      // Speech bubble
+      // Speech Bubble
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(canvas.width / 2 - 140, boardY + boardH + 15, 280, 30);
+      ctx.fillRect(canvas.width / 2 - 150, boardY + boardH + 18, 300, 32);
       ctx.fillStyle = '#000000';
-      ctx.font = '12px "Courier New"';
-      ctx.fillText('Pay attention, or get zapped...', canvas.width / 2, boardY + boardH + 34);
+      ctx.font = 'bold 12px "Courier New"';
+      ctx.fillText('Pay attention students, or else...', canvas.width / 2, boardY + boardH + 38);
 
       introTimer++;
 
-      if (introTimer > 120) {
+      if (introTimer > 110) {
         gameState = 'ZAPPING';
         introTimer = 0;
       }
@@ -437,36 +485,36 @@
 
       introTimer++;
 
-      const beam1X = canvas.width * 0.35;
-      const beam2X = canvas.width * 0.65;
+      const beam1X = canvas.width * 0.33;
+      const beam2X = canvas.width * 0.67;
 
-      // Energy Beams
+      // Electric Zap Laser Beams
       ctx.strokeStyle = '#00e5ff';
       ctx.shadowColor = '#00e5ff';
-      ctx.shadowBlur = 15;
-      ctx.lineWidth = Math.random() * 12 + 6;
+      ctx.shadowBlur = 20;
+      ctx.lineWidth = Math.random() * 14 + 6;
 
       ctx.beginPath();
-      ctx.moveTo(beam1X + (Math.random() - 0.5) * 20, 0);
-      ctx.lineTo(beam1X, canvas.height * 0.7);
+      ctx.moveTo(beam1X + (Math.random() - 0.5) * 24, 0);
+      ctx.lineTo(beam1X, canvas.height * 0.68);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(beam2X + (Math.random() - 0.5) * 20, 0);
-      ctx.lineTo(beam2X, canvas.height * 0.7);
+      ctx.moveTo(beam2X + (Math.random() - 0.5) * 24, 0);
+      ctx.lineTo(beam2X, canvas.height * 0.68);
       ctx.stroke();
 
       ctx.shadowBlur = 0;
 
-      // Zap Particles
-      for (let i = 0; i < 8; i++) {
+      // Particle explosions
+      for (let i = 0; i < 10; i++) {
         zapParticles.push({
-          x: (Math.random() > 0.5 ? beam1X : beam2X) + (Math.random() - 0.5) * 40,
+          x: (Math.random() > 0.5 ? beam1X : beam2X) + (Math.random() - 0.5) * 50,
           y: canvas.height * 0.65 + (Math.random() - 0.5) * 40,
-          vx: (Math.random() - 0.5) * 8,
-          vy: (Math.random() - 0.5) * 8,
-          size: Math.random() * 5 + 2,
-          color: Math.random() > 0.5 ? '#00e5ff' : '#ffff00'
+          vx: (Math.random() - 0.5) * 10,
+          vy: (Math.random() - 0.5) * 10,
+          size: Math.random() * 6 + 2,
+          color: Math.random() > 0.5 ? '#00e5ff' : '#ffea00'
         });
       }
 
@@ -475,17 +523,17 @@
         ctx.fillRect(p.x, p.y, p.size, p.size);
         p.x += p.vx;
         p.y += p.vy;
-        p.size *= 0.95;
+        p.size *= 0.94;
         if (p.size < 0.5) zapParticles.splice(index, 1);
       });
 
-      // Screen Flash
+      // Bright Screen Strobe Flash
       if (introTimer % 4 < 2) {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      if (introTimer > 80) {
+      if (introTimer > 75) {
         gameState = 'PLAYING';
         resetSimulation();
       }
@@ -494,155 +542,225 @@
     function drawAztecTemple() {
       const centerX = canvas.width / 2;
       const baseY = canvas.height * 0.52;
-      
-      // Distant mountain haze
-      ctx.fillStyle = '#1b381e';
+
+      // Distant Lush Mountain Ridge Behind Temple
+      ctx.fillStyle = '#388e3c';
       ctx.beginPath();
-      ctx.arc(centerX, baseY, 220, Math.PI, 0);
+      ctx.arc(centerX - 120, baseY, 180, Math.PI, 0);
+      ctx.arc(centerX + 120, baseY, 200, Math.PI, 0);
       ctx.fill();
 
-      // Aztec Step Pyramid
-      ctx.fillStyle = '#4a5d4e';
-      ctx.strokeStyle = '#2d3a2e';
+      // Aztec Step Pyramid - Warm Sandstone / Gold Stone Colors
+      ctx.fillStyle = '#d7ccc8';
+      ctx.strokeStyle = '#795548';
       ctx.lineWidth = 2;
 
-      // Tiers
-      ctx.fillRect(centerX - 100, baseY - 30, 200, 30);
-      ctx.strokeRect(centerX - 100, baseY - 30, 200, 30);
+      // Tier 1 (Base)
+      ctx.fillRect(centerX - 110, baseY - 35, 220, 35);
+      ctx.strokeRect(centerX - 110, baseY - 35, 220, 35);
 
-      ctx.fillRect(centerX - 75, baseY - 60, 150, 30);
-      ctx.strokeRect(centerX - 75, baseY - 60, 150, 30);
+      // Tier 2
+      ctx.fillRect(centerX - 82, baseY - 68, 164, 33);
+      ctx.strokeRect(centerX - 82, baseY - 68, 164, 33);
 
-      ctx.fillRect(centerX - 50, baseY - 85, 100, 25);
-      ctx.strokeRect(centerX - 50, baseY - 85, 100, 25);
+      // Tier 3
+      ctx.fillRect(centerX - 55, baseY - 96, 110, 28);
+      ctx.strokeRect(centerX - 55, baseY - 96, 110, 28);
 
-      // Shrine Top
-      ctx.fillRect(centerX - 25, baseY - 110, 50, 25);
-      ctx.strokeRect(centerX - 25, baseY - 110, 50, 25);
+      // Top Temple Shrine
+      ctx.fillStyle = '#ffecb3';
+      ctx.fillRect(centerX - 28, baseY - 124, 56, 28);
+      ctx.strokeRect(centerX - 28, baseY - 124, 56, 28);
+
+      // Golden Sun Glyph ornament on top
+      ctx.fillStyle = '#ffa000';
+      ctx.beginPath();
+      ctx.arc(centerX, baseY - 110, 6, 0, Math.PI * 2);
+      ctx.fill();
 
       // Central Staircase
-      ctx.fillStyle = '#37473f';
+      ctx.fillStyle = '#bcaaa4';
       ctx.beginPath();
-      ctx.moveTo(centerX - 18, baseY);
-      ctx.lineTo(centerX - 10, baseY - 110);
-      ctx.lineTo(centerX + 10, baseY - 110);
-      ctx.lineTo(centerX + 18, baseY);
+      ctx.moveTo(centerX - 20, baseY);
+      ctx.lineTo(centerX - 12, baseY - 124);
+      ctx.lineTo(centerX + 12, baseY - 124);
+      ctx.lineTo(centerX + 20, baseY);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
+
+      // Vines on Temple Steps
+      ctx.fillStyle = '#4caf50';
+      ctx.fillRect(centerX - 80, baseY - 30, 25, 6);
+      ctx.fillRect(centerX + 50, baseY - 60, 20, 5);
+      ctx.fillRect(centerX - 40, baseY - 90, 15, 5);
     }
 
     function drawJungleEnvironment() {
-      // Sky Gradient
-      const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      skyGradient.addColorStop(0, '#1b5e20');
-      skyGradient.addColorStop(0.5, '#33691e');
-      skyGradient.addColorStop(1, '#050b05');
+      // 1. Bright Sunny Blue Sky
+      const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.55);
+      skyGradient.addColorStop(0, '#29b6f6');   // Bright Cerulean Blue
+      skyGradient.addColorStop(0.6, '#81d4fa'); // Light Sunny Cyan
+      skyGradient.addColorStop(1, '#e8f5e9');   // Sunny Golden Horizon Haze
       ctx.fillStyle = skyGradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Bright Glowing Sun & Sunbeams
+      const sunX = canvas.width * 0.78;
+      const sunY = canvas.height * 0.16;
+      ctx.fillStyle = 'rgba(255, 238, 88, 0.3)';
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, 55, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#fff59d';
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, 32, 0, Math.PI * 2);
+      ctx.fill();
 
       // Distant Aztec Temple
       drawAztecTemple();
 
-      // Background Jungle Canopy
-      ctx.fillStyle = '#0f2d12';
-      for (let x = -20; x < canvas.width + 40; x += 60) {
+      // 2. Dense Bright Background Canopy (Emerald Greens)
+      ctx.fillStyle = '#2e7d32';
+      for (let x = -30; x < canvas.width + 60; x += 55) {
         ctx.beginPath();
-        ctx.arc(x, canvas.height * 0.48, 50, 0, Math.PI * 2);
+        ctx.arc(x, canvas.height * 0.48, 55, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Midground Trees
-      ctx.fillStyle = '#1b431e';
-      for (let x = 10; x < canvas.width + 60; x += 110) {
-        ctx.fillRect(x - 8, canvas.height * 0.35, 16, canvas.height * 0.3);
+      // Midground Palm & Tropical Trees (Vivid Leafy Greens)
+      for (let x = 15; x < canvas.width + 70; x += 110) {
+        // Brown Tree Trunks
+        ctx.fillStyle = '#5d4037';
+        ctx.fillRect(x - 9, canvas.height * 0.32, 18, canvas.height * 0.28);
+
+        // Vivid Green Leaves
+        ctx.fillStyle = '#4caf50';
         ctx.beginPath();
-        ctx.arc(x, canvas.height * 0.35, 45, 0, Math.PI * 2);
+        ctx.arc(x, canvas.height * 0.32, 48, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Lime Green Highlights
+        ctx.fillStyle = '#81c784';
+        ctx.beginPath();
+        ctx.arc(x - 12, canvas.height * 0.30, 26, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Ground
-      ctx.fillStyle = '#0a1d0d';
-      ctx.fillRect(0, canvas.height * 0.55, canvas.width, canvas.height * 0.45);
+      // 3. Bright Sunny Jungle Ground
+      const groundY = canvas.height * 0.54;
+      const groundGradient = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+      groundGradient.addColorStop(0, '#558b2f'); // Bright Grass Green
+      groundGradient.addColorStop(0.3, '#33691e'); // Rich Jungle Moss
+      groundGradient.addColorStop(1, '#1b5e20');   // Deep Soil Green
+      ctx.fillStyle = groundGradient;
+      ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
 
-      // Vines
-      ctx.strokeStyle = '#2e7d32';
-      ctx.lineWidth = 3;
-      for (let x = 30; x < canvas.width; x += 90) {
+      // Tropical Ground Flowers
+      flowers.forEach(f => {
+        ctx.fillStyle = f.color;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Hanging Jungle Vines with Colorful Blossoms
+      ctx.strokeStyle = '#43a047';
+      ctx.lineWidth = 3.5;
+      for (let x = 40; x < canvas.width; x += 95) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
-        ctx.quadraticCurveTo(x + 15, canvas.height * 0.15, x - 10, canvas.height * 0.28);
+        ctx.quadraticCurveTo(x + 20, canvas.height * 0.16, x - 12, canvas.height * 0.32);
         ctx.stroke();
+
+        // Vine Flowers
+        ctx.fillStyle = (x % 2 === 0) ? '#ff1744' : '#ffea00';
+        ctx.beginPath();
+        ctx.arc(x - 12, canvas.height * 0.32, 4, 0, Math.PI * 2);
+        ctx.fill();
       }
 
-      // Birds
+      // 4. Multi-Colored Exotic Birds
       birds.forEach(b => {
-        ctx.fillStyle = b.color;
+        // Body
+        ctx.fillStyle = b.palette.body;
         ctx.beginPath();
-        ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
+        ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = b.color;
-        ctx.lineWidth = 1.5;
+        // Flapping Wings
+        ctx.strokeStyle = b.palette.wing;
+        ctx.lineWidth = 2.2;
         ctx.beginPath();
         ctx.moveTo(b.x, b.y);
-        ctx.lineTo(b.x - 6, b.y - Math.sin(b.wing) * 6);
+        ctx.lineTo(b.x - 7, b.y - Math.sin(b.wing) * 7);
         ctx.moveTo(b.x, b.y);
-        ctx.lineTo(b.x + 6, b.y - Math.sin(b.wing) * 6);
+        ctx.lineTo(b.x + 7, b.y - Math.sin(b.wing) * 7);
         ctx.stroke();
       });
 
-      // Monkeys
+      // 5. Monkeys in Trees
       monkeys.forEach(m => {
-        const swingX = m.x + Math.sin(m.swing) * 12;
-        ctx.fillStyle = '#4e342e';
+        const swingX = m.x + Math.sin(m.swing) * 14;
+        ctx.fillStyle = '#6d4c41'; // Warm Monkey Brown
         ctx.beginPath();
-        ctx.arc(swingX, m.y, 7, 0, Math.PI * 2);
-        ctx.arc(swingX, m.y - 8, 4, 0, Math.PI * 2);
+        ctx.arc(swingX, m.y, 8, 0, Math.PI * 2); // Body
+        ctx.arc(swingX, m.y - 9, 5, 0, Math.PI * 2); // Head
         ctx.fill();
 
-        ctx.strokeStyle = '#4e342e';
-        ctx.lineWidth = 2;
+        // Face Highlight
+        ctx.fillStyle = '#d7ccc8';
+        ctx.beginPath();
+        ctx.arc(swingX + 2, m.y - 9, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tail attached to Vine
+        ctx.strokeStyle = '#5d4037';
+        ctx.lineWidth = 2.2;
         ctx.beginPath();
         ctx.moveTo(swingX, m.y);
-        ctx.lineTo(m.x, m.y - 25);
+        ctx.lineTo(m.x, m.y - 28);
         ctx.stroke();
       });
 
-      // Occasional Jaguar
+      // 6. Vibrant Golden-Orange Jaguar
       if (jaguar.active) {
         const jx = jaguar.x;
         const jy = jaguar.y;
-        const legAnim = Math.sin(jaguar.frame) * 6;
+        const legAnim = Math.sin(jaguar.frame) * 7;
 
-        ctx.fillStyle = '#ffb300';
-        ctx.strokeStyle = '#ffb300';
-        ctx.lineWidth = 3;
+        ctx.fillStyle = '#ff9800'; // Vibrant Golden Jaguar Coat
+        ctx.strokeStyle = '#ff9800';
+        ctx.lineWidth = 3.5;
 
-        ctx.fillRect(jx, jy - 10, 32, 14);
-        ctx.fillRect(jx + 28, jy - 16, 10, 10);
+        // Body & Head
+        ctx.fillRect(jx, jy - 12, 36, 16);
+        ctx.fillRect(jx + 32, jy - 18, 12, 12);
 
+        // Tail
         ctx.beginPath();
         ctx.moveTo(jx, jy - 8);
-        ctx.quadraticCurveTo(jx - 12, jy - 15, jx - 10, jy - 2);
+        ctx.quadraticCurveTo(jx - 14, jy - 18, jx - 12, jy - 2);
         ctx.stroke();
 
+        // Running Legs
         ctx.beginPath();
-        ctx.moveTo(jx + 4, jy + 4);
-        ctx.lineTo(jx + 4 + legAnim, jy + 14);
-        ctx.moveTo(jx + 12, jy + 4);
-        ctx.lineTo(jx + 12 - legAnim, jy + 14);
-        ctx.moveTo(jx + 22, jy + 4);
-        ctx.lineTo(jx + 22 + legAnim, jy + 14);
-        ctx.moveTo(jx + 28, jy + 4);
-        ctx.lineTo(jx + 28 - legAnim, jy + 14);
+        ctx.moveTo(jx + 5, jy + 4);
+        ctx.lineTo(jx + 5 + legAnim, jy + 16);
+        ctx.moveTo(jx + 14, jy + 4);
+        ctx.lineTo(jx + 14 - legAnim, jy + 16);
+        ctx.moveTo(jx + 24, jy + 4);
+        ctx.lineTo(jx + 24 + legAnim, jy + 16);
+        ctx.moveTo(jx + 31, jy + 4);
+        ctx.lineTo(jx + 31 - legAnim, jy + 16);
         ctx.stroke();
 
-        // Jaguar Spots
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(jx + 8, jy - 6, 3, 3);
-        ctx.fillRect(jx + 18, jy - 4, 3, 3);
-        ctx.fillRect(jx + 24, jy - 8, 3, 3);
+        // Dark Rosette Spots
+        ctx.fillStyle = '#3e2723';
+        ctx.fillRect(jx + 8, jy - 8, 4, 4);
+        ctx.fillRect(jx + 18, jy - 5, 4, 4);
+        ctx.fillRect(jx + 26, jy - 9, 4, 4);
       }
     }
 
@@ -657,7 +775,7 @@
         drawZapEffect();
       } else if (gameState === 'PLAYING') {
         drawJungleEnvironment();
-        // Uses generic stickman baseline drawing for the playable character[cite: 1]
+        // Uses baseline generic stickman drawing routine for playable character[cite: 1]
         drawGenericStickman(player.x, player.y, player.facing, player.walkFrame);
       }
     }

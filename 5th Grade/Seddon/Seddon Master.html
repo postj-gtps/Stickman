@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Stickman Engine - Candyland Quest</title>
+ <style>
+ * {
+ box-sizing: border-box;
+ user-select: none;
+ margin: 0;
+ padding: 0;
+ font-family: 'Courier New', Courier, monospace, sans-serif;
+ }
+
+ body {
+ background-color: #0b1d3a;
+ color: #ffffff;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: flex-start;
+ height: 100vh;
+ overflow: hidden;
+ padding: 12px;
+ }
+
+ /* Top Header Bar */
+ #header {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ width: 100%;
+ max-width: 1200px;
+ margin-bottom: 8px;
+ padding-bottom: 6px;
+ border-bottom: 2px solid #38b6ff;
+ }
+
+ h1 {
+ font-size: 18px;
+ letter-spacing: 2px;
+ text-transform: uppercase;
+ font-weight: bold;
+ color: #38b6ff;
+ text-shadow: 0 0 8px rgba(56, 182, 255, 0.4);
+ }
+
+ .btn-reset {
+ background: #38b6ff;
+ color: #0b1d3a;
+ border: 2px solid #38b6ff;
+ padding: 6px 16px;
+ font-size: 13px;
+ font-weight: bold;
+ cursor: pointer;
+ text-transform: uppercase;
+ letter-spacing: 1px;
+ transition: all 0.15s ease-in-out;
+ border-radius: 4px;
+ }
+
+ .btn-reset:hover {
+ background: #ffffff;
+ color: #0b1d3a;
+ border-color: #ffffff;
+ }
+
+ /* Main Canvas Container */
+ #canvas-wrapper {
+ position: relative;
+ width: 100%;
+ max-width: 1200px;
+ flex-grow: 1;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ }
+
+ canvas {
+ background-color: #38b6ff;
+ border: 2px solid #38b6ff;
+ border-radius: 8px;
+ display: block;
+ width: 100%;
+ height: 100%;
+ box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+ }
+
+ .instructions {
+ margin-top: 6px;
+ font-size: 12px;
+ color: #b3e5fc;
+ text-align: center;
+ font-weight: bold;
+ }
+
+ .warning-flash {
+ position: absolute;
+ top: 16px;
+ font-size: 14px;
+ background: rgba(210, 45, 45, 0.9);
+ color: white;
+ padding: 6px 18px;
+ border-radius: 20px;
+ display: none;
+ font-weight: bold;
+ letter-spacing: 1px;
+ pointer-events: none;
+ box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+ }
+ </style>
+</head>
+<body>
+
+ <!-- Header Section -->
+ <div id="header">
+ <h1>Stickman Engine: Candyland Quest</h1>
+ <button class="btn-reset" onclick="resetSimulation()">Reset Game</button>
+ </div>
+
+ <!-- Canvas Container -->
+ <div id="canvas-wrapper">
+ <canvas id="simCanvas"></canvas>
+ <div id="riverWarning" class="warning-flash">Sunk in the Chocolate River! Press SPACE to jump across!</div>
+ </div>
+
+ <div class="instructions">
+ [WASD] Move (Arrow Keys Disabled) | [SPACEBAR] Jump Chocolate Rivers
+ </div>
+
+ <script>
+ const canvas = document.getElementById('simCanvas');
+ const ctx = canvas.getContext('2d');
+ const riverWarning = document.getElementById('riverWarning');
+
+ // WORLD CONSTANTS
+ const WORLD_WIDTH = 4200;
+ let cameraX = 0;
+ let gameWon = false;
+
+ // KEYBOARD INPUT STATE
+ const keys = {};
+
+ // STICKMAN PLAYER STATE
+ const player = {
+ x: 100,
+ y: 0,
+ jumpZ: 0,
+ jumpVy: 0,
+ isJumping: false,
+ speed: 5.2,
+ facing: 1, // 1 = Right, -1 = Left
+ walkFrame: 0,
+ radius: 10
+ };
+
+ // CHOCOLATE RIVERS DATA (X Ranges)
+ const rivers = [
+ { x1: 950, x2: 1060 },
+ { x1: 1950, x2: 2060 },
+ { x1: 2950, x2: 3060 }
+ ];
+
+ // RANDOM OBSTACLES ARRAY
+ let obstacles = [];
+
+ // CANDY PALETTE FOR RANDOM GENERATION
+ const candyColors = ['#ff3366', '#33cc66', '#9933ff', '#ff9900', '#ff3399', '#00ccff', '#ff1493'];
+ const topColors = ['#ff99b3', '#99ffb3', '#d8b3ff', '#ffe0b3', '#ffb3d9', '#b3f0ff', '#ffb6c1'];
+
+ function generateRandomObstacles() {
+ obstacles = [];
+ const totalObstacles = 32;
+ const startX = 400;
+ const endX = WORLD_WIDTH - 500;
+ 
+ // Full playable vertical range across the middle and lower 1/3 of the screen
+ const minY = canvas.height * 0.42;
+ const maxY = canvas.height * 0.92;
+
+ const types = ['gumdrop', 'peppermint', 'candycane'];
+
+ for (let i = 0; i < totalObstacles; i++) {
+ let randX = startX + Math.random() * (endX - startX);
+ let randY = minY + Math.random() * (maxY - minY);
+
+ // Ensure obstacles do not spawn directly inside chocolate river channels
+ let insideRiver = false;
+ for (let river of rivers) {
+ if (randX > river.x1 - 40 && randX < river.x2 + 40) {
+ insideRiver = true;
+ break;
+ }
+ }
+
+ if (insideRiver) {
+ i--; // Retry generation
+ continue;
+ }
+
+ const type = types[Math.floor(Math.random() * types.length)];
+ const colorIdx = Math.floor(Math.random() * candyColors.length);
+
+ obstacles.push({
+ x: randX,
+ y: randY,
+ radius: 16 + Math.random() * 8,
+ type: type,
+ color: candyColors[colorIdx],
+ topColor: topColors[colorIdx],
+ stripeColor: candyColors[(colorIdx + 2) % candyColors.length]
+ });
+ }
+ }
+
+ function resizeCanvas() {
+ const wrapper = document.getElementById('canvas-wrapper');
+ canvas.width = wrapper.clientWidth;
+ canvas.height = wrapper.clientHeight;
+ 
+ if (player.y === 0 || obstacles.length === 0) {
+ resetSimulation();
+ }
+ }
+
+ window.addEventListener('resize', resizeCanvas);
+
+ // STRICT SOFTWARE BASELINE REQUIREMENT: WASD ONLY (ARROW KEYS BLOCKED)
+ window.addEventListener('keydown', (e) => {
+ // Strictly catch and disable Arrow Keys so students get used to WASD
+ if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+ e.preventDefault();
+ return;
+ }
+
+ // Reserve WASD for movement and Spacebar for action (Jumping)
+ if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) {
+ e.preventDefault();
+ keys[e.code] = true;
+ }
+ });
+
+ window.addEventListener('keyup', (e) => {
+ if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) {
+ keys[e.code] = false;
+ }
+ });
+
+ function resetSimulation() {
+ player.x = 100;
+ player.y = canvas.height * 0.65; // Start centered in playable area
+ player.jumpZ = 0;
+ player.jumpVy = 0;
+ player.isJumping = false;
+ player.facing = 1;
+ player.walkFrame = 0;
+ cameraX = 0;
+ gameWon = false;
+ riverWarning.style.display = 'none';
+
+ generateRandomObstacles();
+ }
+
+ function triggerRiverSplash(safeX) {
+ riverWarning.style.display = 'block';
+ player.x = safeX;
+ player.jumpZ = 0;
+ player.isJumping = false;
+ setTimeout(() => {
+ riverWarning.style.display = 'none';
+ }, 1500);
+ }
+
+ function checkObstacleCollision(newX, newY) {
+ for (let obs of obstacles) {
+ const dx = newX - obs.x;
+ const dy = newY - obs.y;
+ const distance = Math.sqrt(dx * dx + dy * dy);
+ 
+ if (distance < player.radius + obs.radius) {
+ return true; // Collision detected
+ }
+ }
+ return false;
+ }
+
+ function updatePhysics() {
+ if (gameWon) return;
+
+ let dx = 0;
+ let dy = 0;
+
+ // WASD Movement Controls
+ if (keys['KeyW']) dy -= 1;
+ if (keys['KeyS']) dy += 1;
+ if (keys['KeyA']) { dx -= 1; player.facing = -1; }
+ if (keys['KeyD']) { dx += 1; player.facing = 1; }
+
+ // Normalize diagonal movement speed
+ if (dx !== 0 && dy !== 0) {
+ dx *= 0.7071;
+ dy *= 0.7071;
+ }
+
+ // Jump Mechanics (Spacebar) - Tuned to always easily jump across rivers
+ if (keys['Space'] && !player.isJumping) {
+ player.isJumping = true;
+ player.jumpVy = 11.5; // High launch velocity ensuring clean river jumps
+ }
+
+ if (player.isJumping) {
+ player.jumpZ += player.jumpVy;
+ player.jumpVy -= 0.52; // Smooth gravity trajectory
+ if (player.jumpZ <= 0) {
+ player.jumpZ = 0;
+ player.isJumping = false;
+ player.jumpVy = 0;
+ }
+ }
+
+ const moveX = dx * player.speed;
+ const moveY = dy * player.speed;
+
+ let nextX = player.x + moveX;
+ let nextY = player.y + moveY;
+
+ // Expanded Vertical Boundary: Allows Stickman to travel through the middle AND lower 1/3 of the screen
+ const minY = canvas.height * 0.42;
+ const maxY = canvas.height * 0.92;
+ nextX = Math.max(30, Math.min(WORLD_WIDTH - 60, nextX));
+ nextY = Math.max(minY, Math.min(maxY, nextY));
+
+ // Movement obstacle collision checking
+ if (!checkObstacleCollision(nextX, player.y)) {
+ player.x = nextX;
+ }
+ if (!checkObstacleCollision(player.x, nextY)) {
+ player.y = nextY;
+ }
+
+ // Chocolate River Collision Check
+ for (let river of rivers) {
+ if (player.x > river.x1 && player.x < river.x2) {
+ // Require active jump altitude to clear the river stream
+ if (player.jumpZ < 10) {
+ triggerRiverSplash(river.x1 - 40);
+ break;
+ }
+ }
+ }
+
+ // Walk animation frame update
+ if (dx !== 0 || dy !== 0) {
+ player.walkFrame += 0.25;
+ } else {
+ player.walkFrame = 0;
+ }
+
+ // Smooth parallax camera tracking
+ const targetCameraX = player.x - canvas.width * 0.35;
+ cameraX = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, targetCameraX));
+
+ // Win Condition Check (Reaching Castle Entrance)
+ if (player.x >= WORLD_WIDTH - 380) {
+ gameWon = true;
+ }
+ }
+
+ // PARALLAX BACKGROUND & ENVIRONMENT DRAWING FUNCTIONS
+ function drawBackground() {
+ const playableTopY = canvas.height * 0.40;
+
+ // 1. Bright Blue Sky Gradient
+ const skyGrad = ctx.createLinearGradient(0, 0, 0, playableTopY);
+ skyGrad.addColorStop(0, '#1ea7fd'); // Vibrant bright blue
+ skyGrad.addColorStop(0.6, '#70cfff');
+ skyGrad.addColorStop(1, '#e0f4ff');
+ ctx.fillStyle = skyGrad;
+ ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+ // 2. Far Parallax Layer: Fluffy Cotton Candy Clouds (Parallax Speed: 0.08)
+ ctx.fillStyle = 'rgba(255, 245, 250, 0.9)';
+ for (let i = 0; i < 20; i++) {
+ const cloudX = (i * 320 - cameraX * 0.08) % (canvas.width + 300) - 150;
+ const cloudY = 25 + (i % 4) * 20;
+ ctx.beginPath();
+ ctx.arc(cloudX, cloudY, 26, 0, Math.PI * 2);
+ ctx.arc(cloudX + 22, cloudY - 12, 32, 0, Math.PI * 2);
+ ctx.arc(cloudX + 48, cloudY, 24, 0, Math.PI * 2);
+ ctx.fill();
+ }
+
+ // 3. Far Parallax Layer: Sugar Mountains with Tiny Candy (Parallax Speed: 0.18)
+ const farOffset = cameraX * 0.18;
+ for (let x = -200; x < WORLD_WIDTH; x += 320) {
+ const screenX = x - farOffset;
+ if (screenX > -350 && screenX < canvas.width + 350) {
+ // Mountain Base
+ ctx.fillStyle = (x % 640 === 0) ? '#f48fb1' : '#ce93d8';
+ ctx.beginPath();
+ ctx.ellipse(screenX, playableTopY, 200, 150, 0, Math.PI, 0);
+ ctx.fill();
+
+ // Frosting Snowcaps
+ ctx.fillStyle = '#ffffff';
+ ctx.beginPath();
+ ctx.ellipse(screenX, playableTopY - 120, 60, 30, 0, Math.PI, 0);
+ ctx.fill();
+
+ // Tiny Candies on Far Sugar Mountains
+ const mountainCandies = ['#ff4081', '#00e676', '#ffea00', '#ab47bc', '#00e5ff'];
+ for (let c = -110; c <= 110; c += 22) {
+ const candyX = screenX + c;
+ const heightFactor = Math.sqrt(Math.max(0, 1 - (c * c) / (200 * 200)));
+ const candyY = playableTopY - heightFactor * 150;
+
+ ctx.fillStyle = mountainCandies[Math.abs(x + c) % mountainCandies.length];
+ ctx.beginPath();
+ ctx.arc(candyX, candyY - 3, 3.5, 0, Math.PI * 2);
+ ctx.fill();
+ }
+ }
+ }
+
+ // 4. Midground Parallax Layer: Rolling Hills with Tiny Candy & Lollipop Trees (Parallax Speed: 0.4)
+ const midOffset = cameraX * 0.4;
+ for (let x = -100; x < WORLD_WIDTH; x += 170) {
+ const screenX = x - midOffset;
+ if (screenX > -200 && screenX < canvas.width + 200) {
+ const hillRadiusX = 110;
+ const hillRadiusY = 75;
+
+ ctx.fillStyle = (x % 340 === 0) ? '#81c784' : '#ffb74d';
+ ctx.beginPath();
+ ctx.ellipse(screenX, playableTopY, hillRadiusX, hillRadiusY, 0, Math.PI, 0);
+ ctx.fill();
+
+ // Tiny Candy Spawned on Midground Hills
+ const hillCandyColors = ['#ff1744', '#ffc107', '#00e676', '#d500f9', '#29b6f6', '#ffffff'];
+ for (let c = -80; c <= 80; c += 16) {
+ const candyX = screenX + c;
+ const heightFactor = Math.sqrt(Math.max(0, 1 - (c * c) / (hillRadiusX * hillRadiusX)));
+ const candyY = playableTopY - heightFactor * hillRadiusY;
+
+ ctx.fillStyle = hillCandyColors[Math.abs(x + c) % hillCandyColors.length];
+ if (c % 32 === 0) {
+ // Tiny Gumdrop
+ ctx.beginPath();
+ ctx.ellipse(candyX, candyY - 2, 4, 5, 0, Math.PI, 0);
+ ctx.fill();
+ } else {
+ // Tiny Sprinkle Dot
+ ctx.beginPath();
+ ctx.arc(candyX, candyY - 2, 2.8, 0, Math.PI * 2);
+ ctx.fill();
+ }
+ }
+
+ // Midground Lollipop Tree
+ const popX = screenX + 35;
+ const popY = playableTopY - 70;
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 4;
+ ctx.beginPath();
+ ctx.moveTo(popX, playableTopY);
+ ctx.lineTo(popX, popY);
+ ctx.stroke();
+
+ const popColors = ['#ff5252', '#ff4081', '#7c4dff', '#00e676', '#ffea00'];
+ ctx.fillStyle = popColors[Math.abs(x) % popColors.length];
+ ctx.beginPath();
+ ctx.arc(popX, popY, 18, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 2;
+ ctx.beginPath();
+ ctx.arc(popX, popY, 9, 0, Math.PI, false);
+ ctx.stroke();
+ }
+ }
+
+ // 5. Playable World Floor (Extends through middle AND lower 1/3 of the screen)
+ const pathGrad = ctx.createLinearGradient(0, playableTopY, 0, canvas.height);
+ pathGrad.addColorStop(0, '#f8bbd0');
+ pathGrad.addColorStop(0.2, '#f48fb1');
+ pathGrad.addColorStop(1, '#ad1457');
+ ctx.fillStyle = pathGrad;
+ ctx.fillRect(0, playableTopY, canvas.width, canvas.height - playableTopY);
+
+ // Frosting Path Border Line
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 4;
+ ctx.beginPath();
+ ctx.setLineDash([20, 15]);
+ ctx.moveTo(0 - (cameraX % 35), playableTopY + 2);
+ ctx.lineTo(canvas.width, playableTopY + 2);
+ ctx.stroke();
+ ctx.setLineDash([]);
+ }
+
+ function drawChocolateRivers() {
+ const playableTopY = canvas.height * 0.40;
+ const riverHeight = canvas.height - playableTopY;
+
+ rivers.forEach(river => {
+ const screenX1 = river.x1 - cameraX;
+ const screenX2 = river.x2 - cameraX;
+ const width = screenX2 - screenX1;
+
+ if (screenX2 > -50 && screenX1 < canvas.width + 50) {
+ // River Bed (Liquid Chocolate)
+ const chocGrad = ctx.createLinearGradient(screenX1, 0, screenX2, 0);
+ chocGrad.addColorStop(0, '#3e2723');
+ chocGrad.addColorStop(0.5, '#5d4037');
+ chocGrad.addColorStop(1, '#3e2723');
+ ctx.fillStyle = chocGrad;
+ ctx.fillRect(screenX1, playableTopY, width, riverHeight);
+
+ // Animated Waves
+ ctx.strokeStyle = '#8d6e63';
+ ctx.lineWidth = 3;
+ const timeOffset = Date.now() * 0.003;
+ for (let yOffset = 15; yOffset < riverHeight; yOffset += 22) {
+ ctx.beginPath();
+ for (let x = screenX1; x <= screenX2; x += 8) {
+ const waveY = playableTopY + yOffset + Math.sin(x * 0.06 + timeOffset) * 3;
+ if (x === screenX1) ctx.moveTo(x, waveY);
+ else ctx.lineTo(x, waveY);
+ }
+ ctx.stroke();
+ }
+
+ // Wafer Danger Markers at Banks
+ ctx.fillStyle = '#d7ccc8';
+ ctx.fillRect(screenX1 - 5, playableTopY - 12, 6, 24);
+ ctx.fillRect(screenX2 - 1, playableTopY - 12, 6, 24);
+ ctx.fillStyle = '#ff3366';
+ ctx.fillRect(screenX1 - 5, playableTopY - 12, 6, 6);
+ ctx.fillRect(screenX2 - 1, playableTopY - 12, 6, 6);
+ }
+ });
+ }
+
+ function drawObstacles() {
+ obstacles.forEach(obs => {
+ const screenX = obs.x - cameraX;
+ const screenY = obs.y;
+
+ if (screenX > -60 && screenX < canvas.width + 60) {
+ if (obs.type === 'gumdrop') {
+ ctx.fillStyle = obs.color;
+ ctx.beginPath();
+ ctx.ellipse(screenX, screenY, obs.radius, obs.radius * 1.1, 0, Math.PI, 0);
+ ctx.fill();
+
+ ctx.fillStyle = obs.topColor;
+ ctx.beginPath();
+ ctx.arc(screenX - 3, screenY - obs.radius * 0.5, obs.radius * 0.35, 0, Math.PI * 2);
+ ctx.fill();
+ } 
+ else if (obs.type === 'peppermint') {
+ ctx.save();
+ ctx.translate(screenX, screenY);
+ ctx.fillStyle = '#ffffff';
+ ctx.beginPath();
+ ctx.arc(0, 0, obs.radius, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.fillStyle = obs.stripeColor;
+ for (let i = 0; i < 6; i++) {
+ ctx.beginPath();
+ ctx.moveTo(0, 0);
+ ctx.arc(0, 0, obs.radius, (i * Math.PI) / 3, ((i + 0.5) * Math.PI) / 3);
+ ctx.fill();
+ }
+ ctx.restore();
+ } 
+ else if (obs.type === 'candycane') {
+ ctx.strokeStyle = obs.color;
+ ctx.lineWidth = 8;
+ ctx.lineCap = 'round';
+ ctx.beginPath();
+ ctx.moveTo(screenX, screenY + obs.radius);
+ ctx.lineTo(screenX, screenY - obs.radius);
+ ctx.arc(screenX + 8, screenY - obs.radius, 8, Math.PI, 0, false);
+ ctx.stroke();
+
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 2.5;
+ ctx.beginPath();
+ ctx.moveTo(screenX - 2, screenY + 8);
+ ctx.lineTo(screenX + 2, screenY + 2);
+ ctx.moveTo(screenX - 2, screenY - 6);
+ ctx.lineTo(screenX + 2, screenY - 12);
+ ctx.stroke();
+ }
+ }
+ });
+ }
+
+ function drawCastleAndPrincess() {
+ const castleX = (WORLD_WIDTH - 320) - cameraX;
+ const playableTopY = canvas.height * 0.40;
+
+ if (castleX > -400 && castleX < canvas.width + 400) {
+ ctx.fillStyle = '#fff0f5';
+ ctx.strokeStyle = '#d87093';
+ ctx.lineWidth = 3;
+
+ // Central Keep
+ ctx.fillRect(castleX, playableTopY - 130, 160, 140);
+ ctx.strokeRect(castleX, playableTopY - 130, 160, 140);
+
+ // Left & Right Turrets
+ ctx.fillRect(castleX - 35, playableTopY - 160, 45, 170);
+ ctx.strokeRect(castleX - 35, playableTopY - 160, 45, 170);
+ ctx.fillRect(castleX + 150, playableTopY - 160, 45, 170);
+ ctx.strokeRect(castleX + 150, playableTopY - 160, 45, 170);
+
+ // Conical Roofs
+ ctx.fillStyle = '#ff69b4';
+ ctx.beginPath();
+ ctx.moveTo(castleX - 42, playableTopY - 160);
+ ctx.lineTo(castleX - 12, playableTopY - 210);
+ ctx.lineTo(castleX + 15, playableTopY - 160);
+ ctx.fill();
+
+ ctx.beginPath();
+ ctx.moveTo(castleX + 143, playableTopY - 160);
+ ctx.lineTo(castleX + 172, playableTopY - 210);
+ ctx.lineTo(castleX + 200, playableTopY - 160);
+ ctx.fill();
+
+ // Castle Entrance Doorway
+ ctx.fillStyle = '#4a233b';
+ ctx.beginPath();
+ ctx.arc(castleX + 80, playableTopY + 10, 28, Math.PI, 0);
+ ctx.fill();
+
+ // PRINCESS ON THE BALCONY
+ const princessX = castleX + 80;
+ const princessY = playableTopY - 130;
+
+ // Balcony
+ ctx.fillStyle = '#ff1493';
+ ctx.fillRect(princessX - 25, princessY, 50, 12);
+
+ // Dress
+ ctx.fillStyle = '#ff69b4';
+ ctx.beginPath();
+ ctx.moveTo(princessX, princessY - 20);
+ ctx.lineTo(princessX - 12, princessY);
+ ctx.lineTo(princessX + 12, princessY);
+ ctx.fill();
+
+ // Head
+ ctx.strokeStyle = '#000000';
+ ctx.fillStyle = '#ffffff';
+ ctx.lineWidth = 2;
+ ctx.beginPath();
+ ctx.arc(princessX, princessY - 26, 6, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.stroke();
+
+ // Crown
+ ctx.fillStyle = '#ffd700';
+ ctx.beginPath();
+ ctx.moveTo(princessX - 5, princessY - 32);
+ ctx.lineTo(princessX - 5, princessY - 37);
+ ctx.lineTo(princessX, princessY - 33);
+ ctx.lineTo(princessX + 5, princessY - 37);
+ ctx.lineTo(princessX + 5, princessY - 32);
+ ctx.fill();
+
+ // Waving Arm
+ const wave = Math.sin(Date.now() * 0.008) * 5;
+ ctx.beginPath();
+ ctx.moveTo(princessX + 3, princessY - 22);
+ ctx.lineTo(princessX + 12, princessY - 28 + wave);
+ ctx.stroke();
+ }
+ }
+
+ function drawStickman(x, y, jumpZ, facing, walkFrame) {
+ const screenX = x - cameraX;
+ const screenY = y - jumpZ;
+
+ ctx.strokeStyle = '#000000';
+ ctx.fillStyle = '#000000';
+ ctx.lineWidth = 2.2;
+ ctx.lineCap = 'round';
+ ctx.lineJoin = 'round';
+
+ const headRadius = 5;
+ const bodyLength = 15;
+ const legLength = 11;
+ const neckY = screenY - bodyLength;
+ const headY = neckY - headRadius;
+ const shoulderY = neckY + 4;
+
+ // Ground Shadow when airborne
+ if (jumpZ > 0) {
+ ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+ ctx.beginPath();
+ ctx.ellipse(screenX, y + legLength, Math.max(3, 11 - jumpZ * 0.12), 3.5, 0, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.fillStyle = '#000000';
+ }
+
+ // 1. Head
+ ctx.beginPath();
+ ctx.arc(screenX, headY, headRadius, 0, Math.PI * 2);
+ ctx.stroke();
+
+ // Eye direction indicator
+ ctx.beginPath();
+ ctx.arc(screenX + facing * 2, headY - 0.5, 0.9, 0, Math.PI * 2);
+ ctx.fill();
+
+ // 2. Torso
+ ctx.beginPath();
+ ctx.moveTo(screenX, neckY);
+ ctx.lineTo(screenX, screenY);
+ ctx.stroke();
+
+ // 3. Legs
+ const legSwing = (jumpZ > 0) ? 7 : Math.sin(walkFrame) * 6;
+
+ ctx.beginPath();
+ ctx.moveTo(screenX, screenY);
+ ctx.lineTo(screenX - legSwing, screenY + legLength);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.moveTo(screenX, screenY);
+ ctx.lineTo(screenX + legSwing, screenY + legLength);
+ ctx.stroke();
+
+ // 4. Arms
+ const armSwing = (jumpZ > 0) ? -7 : Math.sin(walkFrame + Math.PI) * 4;
+ ctx.beginPath();
+ ctx.moveTo(screenX, shoulderY);
+ ctx.lineTo(screenX - facing * 4 - armSwing, shoulderY + (jumpZ > 0 ? -4 : 6));
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.moveTo(screenX, shoulderY);
+ ctx.lineTo(screenX + facing * 4 + armSwing, shoulderY + (jumpZ > 0 ? -4 : 6));
+ ctx.stroke();
+ }
+
+ function drawVictoryOverlay() {
+ if (!gameWon) return;
+
+ ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+ ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+ ctx.textAlign = 'center';
+ ctx.fillStyle = '#ffd700';
+ ctx.font = 'bold 28px "Courier New", monospace';
+ ctx.fillText('VICTORY! PRINCESS RESCUED!', canvas.width / 2, canvas.height / 2 - 20);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = '16px "Courier New", monospace';
+ ctx.fillText('You conquered the Candyland kingdom!', canvas.width / 2, canvas.height / 2 + 20);
+ }
+
+ function draw() {
+ drawBackground();
+ drawChocolateRivers();
+ drawObstacles();
+ drawCastleAndPrincess();
+
+ // Render Stickman Player
+ drawStickman(player.x, player.y, player.jumpZ, player.facing, player.walkFrame);
+
+ // Victory Screen
+ drawVictoryOverlay();
+ }
+
+ function animate() {
+ updatePhysics();
+ draw();
+ requestAnimationFrame(animate);
+ }
+
+ window.onload = function() {
+ resizeCanvas();
+ animate();
+ };
+ </script>
+</body>
+</html>

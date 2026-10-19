@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman Engine - Sunlit Pine Forest & Treasure Hunt</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #1b261e;
+      color: #2c3e50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 12px;
+    }
+
+    /* Top Header Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1280px;
+      margin-bottom: 6px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #52b788;
+    }
+
+    .title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h1 {
+      font-size: 18px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #d8f3dc;
+    }
+
+    .score-badge {
+      background: #ffb703;
+      color: #1b261e;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .btn-reset {
+      background: #40916c;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: background 0.2s ease-in-out;
+    }
+
+    .btn-reset:hover {
+      background: #52b788;
+    }
+
+    /* Distance Meter HUD */
+    #hud {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      max-width: 1280px;
+      margin-bottom: 6px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 8px 16px;
+      border-radius: 6px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .meter-label {
+      font-size: 13px;
+      font-weight: 800;
+      color: #1b4332;
+      white-space: nowrap;
+      letter-spacing: 1px;
+    }
+
+    .meter-container {
+      flex-grow: 1;
+      height: 18px;
+      background-color: #d8f3dc;
+      border: 1px solid #74c69d;
+      border-radius: 9px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .meter-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #e63946, #f4a261, #ffb703, #2a9d8f);
+      transition: width 0.08s ease-out;
+      border-radius: 9px;
+    }
+
+    .meter-text {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1b4332;
+      min-width: 210px;
+      text-align: right;
+    }
+
+    /* Main Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1280px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      background-color: #87ceeb;
+      border: 2px solid #40916c;
+      border-radius: 6px;
+      display: block;
+      width: 100%;
+      height: 100%;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+    }
+
+    /* On-Screen Touch Overlay Controls for Chromebook Touch Screens */
+    .touch-controls {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .touch-cluster {
+      display: grid;
+      grid-template-columns: repeat(3, 48px);
+      grid-template-rows: repeat(2, 48px);
+      gap: 6px;
+      pointer-events: auto;
+    }
+
+    .touch-btn {
+      background: rgba(255, 255, 255, 0.7);
+      border: 2px solid #2d6a4f;
+      border-radius: 8px;
+      color: #1b4332;
+      font-weight: 900;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    .touch-btn:active {
+      background: #52b788;
+      color: #ffffff;
+    }
+
+    .touch-btn-action {
+      pointer-events: auto;
+      width: 110px;
+      height: 48px;
+      background: rgba(255, 183, 3, 0.85);
+      border: 2px solid #b45309;
+      border-radius: 8px;
+      color: #1b261e;
+      font-weight: 800;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: flex-end;
+      touch-action: manipulation;
+    }
+
+    .touch-btn-action:active {
+      background: #ffb703;
+      transform: scale(0.96);
+    }
+
+    .instructions {
+      margin-top: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #b7e4c7;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <div id="header">
+    <div class="title-group">
+      <h1>Stickman Engine</h1>
+      <div id="scoreBadge" class="score-badge">Gold: 0</div>
+    </div>
+    <button class="btn-reset" onclick="resetSimulation()">Reset Level</button>
+  </div>
+
+  <!-- HUD Distance Meter Bar -->
+  <div id="hud">
+    <span class="meter-label">TREASURE DETECTOR:</span>
+    <div class="meter-container">
+      <div id="meterBar" class="meter-bar"></div>
+    </div>
+    <span id="meterText" class="meter-text">Distance: ---</span>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+
+    <!-- On-screen controls for Chromebook touch screens -->
+    <div class="touch-controls">
+      <div class="touch-cluster">
+        <div></div>
+        <div class="touch-btn" id="btnW">W</div>
+        <div></div>
+        <div class="touch-btn" id="btnA">A</div>
+        <div class="touch-btn" id="btnS">S</div>
+        <div class="touch-btn" id="btnD">D</div>
+      </div>
+      <div class="touch-btn-action" id="btnAction">SPACE</div>
+    </div>
+  </div>
+
+  <div class="instructions">
+    [WASD] Exclusive Movement | [SPACEBAR] Dig / Open Chest & Collect Gold
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // WORLD CONFIGURATION
+    const WORLD_WIDTH = 3800;
+
+    // KEYBOARD INPUT STATE (STRICTLY WASD & Spacebar)
+    const keys = {};
+
+    // CAMERA STATE
+    const camera = {
+      x: 0,
+      y: 0
+    };
+
+    // STICKMAN PLAYER STATE
+    const player = {
+      x: 250,
+      y: 0,
+      speed: 5.5,
+      facing: 1, // 1 = Right, -1 = Left
+      walkFrame: 0,
+      isDigging: false,
+      digTimer: 0,
+      score: 0
+    };
+
+    // TREASURE STATE
+    // states: 'hidden' -> 'uncovered' -> 'opened'
+    const treasure = {
+      x: 0,
+      y: 0,
+      state: 'hidden',
+      digRadius: 42,
+      totalCoins: 25
+    };
+
+    // ENTITIES & PARTICLES
+    let coins = [];
+    let clouds = [];
+    let backgroundTrees = [];
+    let worldTrees = [];
+    let foregroundTrees = [];
+    let birds = [];
+    let squirrels = [];
+    let particles = [];
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+
+      if (player.y === 0) {
+        resetSimulation();
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // KEYBOARD INPUT - STRICT WASD REQUIREMENT (Arrow Keys Explicitly Blocked)
+    window.addEventListener('keydown', (e) => {
+      // Prevent page scrolling on WASD & Spacebar
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) {
+        e.preventDefault();
+      }
+
+      // ONLY WASD allowed for movement
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        keys[e.code] = true;
+      }
+
+      // Spacebar action
+      if (e.code === 'Space' && !player.isDigging) {
+        handleActionKey();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        keys[e.code] = false;
+      }
+    });
+
+    // TOUCH CONTROL SUPPORT FOR CHROMEBOOK TOUCH SCREENS
+    function setupTouchControls() {
+      const bindTouch = (id, keyCode) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        const start = (e) => {
+          e.preventDefault();
+          if (keyCode === 'Space') {
+            if (!player.isDigging) handleActionKey();
+          } else {
+            keys[keyCode] = true;
+          }
+        };
+
+        const end = (e) => {
+          e.preventDefault();
+          if (keyCode !== 'Space') {
+            keys[keyCode] = false;
+          }
+        };
+
+        el.addEventListener('touchstart', start, { passive: false });
+        el.addEventListener('touchend', end, { passive: false });
+        el.addEventListener('mousedown', start);
+        el.addEventListener('mouseup', end);
+      };
+
+      bindTouch('btnW', 'KeyW');
+      bindTouch('btnA', 'KeyA');
+      bindTouch('btnS', 'KeyS');
+      bindTouch('btnD', 'KeyD');
+      bindTouch('btnAction', 'Space');
+    }
+
+    function resetSimulation() {
+      const groundY = canvas.height * 0.72;
+
+      player.x = 250;
+      player.y = groundY;
+      player.facing = 1;
+      player.walkFrame = 0;
+      player.isDigging = false;
+      player.digTimer = 0;
+      player.score = 0;
+
+      // Randomize treasure location across world map
+      treasure.x = 750 + Math.random() * (WORLD_WIDTH - 1000);
+      treasure.y = groundY + Math.random() * (canvas.height * 0.16);
+      treasure.state = 'hidden';
+
+      coins = [];
+
+      // Clouds
+      clouds = [];
+      for (let i = 0; i < 22; i++) {
+        clouds.push({
+          x: Math.random() * WORLD_WIDTH,
+          y: 20 + Math.random() * (canvas.height * 0.22),
+          scale: 0.7 + Math.random() * 0.8,
+          speed: 0.2 + Math.random() * 0.3
+        });
+      }
+
+      // Far Background Pine Trees
+      backgroundTrees = [];
+      for (let x = 0; x < WORLD_WIDTH; x += 70 + Math.random() * 40) {
+        backgroundTrees.push({
+          x: x,
+          y: canvas.height * 0.58,
+          scale: 0.75 + Math.random() * 0.35
+        });
+      }
+
+      // World Trees
+      worldTrees = [];
+      for (let x = 80; x < WORLD_WIDTH; x += 110 + Math.random() * 70) {
+        worldTrees.push({
+          x: x,
+          y: groundY - 10 + Math.random() * (canvas.height * 0.18),
+          scale: 1.0 + Math.random() * 0.45
+        });
+      }
+
+      // Foreground Trees
+      foregroundTrees = [];
+      for (let x = 150; x < WORLD_WIDTH; x += 320 + Math.random() * 220) {
+        foregroundTrees.push({
+          x: x,
+          y: canvas.height * 0.88,
+          scale: 1.9 + Math.random() * 0.5
+        });
+      }
+
+      // Birds
+      birds = [];
+      for (let i = 0; i < 10; i++) {
+        birds.push({
+          x: Math.random() * WORLD_WIDTH,
+          y: 35 + Math.random() * (canvas.height * 0.3),
+          vx: 1.2 + Math.random() * 1.8,
+          wingPhase: Math.random() * Math.PI * 2,
+          size: 5 + Math.random() * 3.5
+        });
+      }
+
+      // Squirrels
+      squirrels = [];
+      for (let i = 0; i < 12; i++) {
+        squirrels.push({
+          x: 200 + Math.random() * (WORLD_WIDTH - 300),
+          y: groundY + Math.random() * (canvas.height * 0.15),
+          vx: (Math.random() - 0.5) * 1.6,
+          stateTimer: Math.random() * 100,
+          tailPhase: Math.random() * Math.PI
+        });
+      }
+
+      particles = [];
+      updateScoreUI();
+    }
+
+    function handleActionKey() {
+      const dist = Math.hypot(player.x - treasure.x, player.y - treasure.y);
+
+      if (treasure.state === 'hidden') {
+        player.isDigging = true;
+        player.digTimer = 22;
+
+        // Dirt particle burst
+        for (let i = 0; i < 16; i++) {
+          particles.push({
+            x: player.x,
+            y: player.y + 10,
+            vx: (Math.random() - 0.5) * 5,
+            vy: -Math.random() * 4 - 2,
+            color: Math.random() > 0.5 ? '#7f5539' : '#b08968',
+            life: 25
+          });
+        }
+
+        // Uncover treasure chest
+        if (dist <= treasure.digRadius) {
+          treasure.state = 'uncovered';
+          // Sparkles on discovery
+          for (let i = 0; i < 20; i++) {
+            particles.push({
+              x: treasure.x,
+              y: treasure.y,
+              vx: (Math.random() - 0.5) * 6,
+              vy: -Math.random() * 4 - 2,
+              color: '#ffb703',
+              life: 35
+            });
+          }
+        }
+      } else if (treasure.state === 'uncovered') {
+        if (dist <= treasure.digRadius + 15) {
+          // Open Treasure Chest & Fountain Gold
+          treasure.state = 'opened';
+          spawnGoldFountain();
+        }
+      } else {
+        // General shovel action when digging ground
+        player.isDigging = true;
+        player.digTimer = 18;
+        for (let i = 0; i < 8; i++) {
+          particles.push({
+            x: player.x,
+            y: player.y + 10,
+            vx: (Math.random() - 0.5) * 4,
+            vy: -Math.random() * 3 - 1,
+            color: '#7f5539',
+            life: 20
+          });
+        }
+      }
+    }
+
+    function spawnGoldFountain() {
+      coins = [];
+      for (let i = 0; i < treasure.totalCoins; i++) {
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.2;
+        const speed = 6 + Math.random() * 7;
+        coins.push({
+          x: treasure.x,
+          y: treasure.y - 10,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          groundY: treasure.y + (Math.random() - 0.5) * 20,
+          bounceCount: 0,
+          collected: false,
+          rotation: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 0.3
+        });
+      }
+
+      // Sparkle burst
+      for (let i = 0; i < 35; i++) {
+        particles.push({
+          x: treasure.x,
+          y: treasure.y - 10,
+          vx: (Math.random() - 0.5) * 8,
+          vy: -Math.random() * 6 - 3,
+          color: '#ffd700',
+          life: 45
+        });
+      }
+    }
+
+    function updatePhysics() {
+      // WASD ONLY Movement Processing
+      let dx = 0;
+      let dy = 0;
+
+      if (keys['KeyW']) dy -= 1;
+      if (keys['KeyS']) dy += 1;
+      if (keys['KeyA']) { dx -= 1; player.facing = -1; }
+      if (keys['KeyD']) { dx += 1; player.facing = 1; }
+
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.7071;
+        dy *= 0.7071;
+      }
+
+      player.x += dx * player.speed;
+      player.y += dy * player.speed;
+
+      // Keep within world boundaries
+      const minPlayableY = canvas.height * 0.52;
+      const maxPlayableY = canvas.height * 0.92;
+      player.x = Math.max(20, Math.min(WORLD_WIDTH - 20, player.x));
+      player.y = Math.max(minPlayableY, Math.min(maxPlayableY, player.y));
+
+      if (dx !== 0 || dy !== 0) {
+        player.walkFrame += 0.28;
+      } else {
+        player.walkFrame = 0;
+      }
+
+      if (player.digTimer > 0) {
+        player.digTimer--;
+        if (player.digTimer === 0) player.isDigging = false;
+      }
+
+      // Camera Smooth Scrolling
+      const targetCameraX = player.x - canvas.width / 2;
+      camera.x += (targetCameraX - camera.x) * 0.1;
+      camera.x = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, camera.x));
+
+      // Update Clouds
+      clouds.forEach(c => {
+        c.x += c.speed;
+        if (c.x > WORLD_WIDTH + 100) c.x = -100;
+      });
+
+      // Update Birds
+      birds.forEach(b => {
+        b.x += b.vx;
+        b.wingPhase += 0.2;
+        if (b.x > WORLD_WIDTH + 50) {
+          b.x = -50;
+          b.y = 35 + Math.random() * (canvas.height * 0.3);
+        }
+      });
+
+      // Update Squirrels
+      squirrels.forEach(s => {
+        s.stateTimer--;
+        if (s.stateTimer <= 0) {
+          s.vx = (Math.random() - 0.5) * 2;
+          s.stateTimer = 40 + Math.random() * 120;
+        }
+        s.x += s.vx;
+        s.tailPhase += 0.12;
+        s.x = Math.max(40, Math.min(WORLD_WIDTH - 40, s.x));
+      });
+
+      // Update Gold Coin Fountain & Collection Physics
+      coins.forEach(coin => {
+        if (!coin.collected) {
+          coin.x += coin.vx;
+          coin.y += coin.vy;
+          coin.vy += 0.38; // Gravity
+          coin.rotation += coin.rotSpeed;
+
+          // Bounce on forest ground
+          if (coin.y >= coin.groundY) {
+            coin.y = coin.groundY;
+            if (coin.bounceCount < 2) {
+              coin.vy = -coin.vy * 0.45;
+              coin.vx *= 0.6;
+              coin.bounceCount++;
+            } else {
+              coin.vy = 0;
+              coin.vx = 0;
+            }
+          }
+
+          // Player collection pickup check
+          const distToPlayer = Math.hypot(player.x - coin.x, player.y - coin.y);
+          if (distToPlayer < 28) {
+            coin.collected = true;
+            player.score++;
+            updateScoreUI();
+
+            // Gold Sparkles on Collection
+            for (let i = 0; i < 6; i++) {
+              particles.push({
+                x: coin.x,
+                y: coin.y,
+                vx: (Math.random() - 0.5) * 4,
+                vy: -Math.random() * 3 - 1,
+                color: '#ffd700',
+                life: 20
+              });
+            }
+          }
+        }
+      });
+
+      // Update Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.2;
+        p.life--;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      updateHUD();
+    }
+
+    function updateScoreUI() {
+      document.getElementById('scoreBadge').textContent = `Gold: ${player.score} / ${treasure.totalCoins}`;
+    }
+
+    function updateHUD() {
+      const dist = Math.hypot(player.x - treasure.x, player.y - treasure.y);
+      const maxDist = WORLD_WIDTH;
+      let proximityPct = Math.max(0, Math.min(100, (1 - (dist / maxDist)) * 100));
+
+      const meterBar = document.getElementById('meterBar');
+      const meterText = document.getElementById('meterText');
+
+      meterBar.style.width = proximityPct.toFixed(1) + '%';
+
+      if (treasure.state === 'hidden') {
+        if (dist <= treasure.digRadius) {
+          meterText.textContent = "PRESS [SPACE] TO DIG!";
+          meterText.style.color = "#e63946";
+        } else {
+          meterText.textContent = `Distance to Treasure: ${Math.round(dist)}m`;
+          meterText.style.color = "#1b4332";
+        }
+      } else if (treasure.state === 'uncovered') {
+        if (dist <= treasure.digRadius + 15) {
+          meterText.textContent = "PRESS [SPACE] TO OPEN CHEST!";
+          meterText.style.color = "#d4af37";
+        } else {
+          meterText.textContent = "CHEST UNCOVERED! GO TO CHEST!";
+          meterText.style.color = "#2a9d8f";
+        }
+      } else if (treasure.state === 'opened') {
+        if (player.score >= treasure.totalCoins) {
+          meterText.textContent = "ALL GOLD COLLECTED! 🎉";
+          meterText.style.color = "#2a9d8f";
+        } else {
+          meterText.textContent = `COLLECT THE GOLD! (${player.score}/${treasure.totalCoins})`;
+          meterText.style.color = "#f4a261";
+        }
+      }
+    }
+
+    // DRAWING FUNCTIONS
+    function drawDaylightSky() {
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      skyGrad.addColorStop(0, '#3a86ff');
+      skyGrad.addColorStop(0.45, '#70d6ff');
+      skyGrad.addColorStop(1, '#e0f7fa');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Bright Sun
+      ctx.fillStyle = '#ffbe0b';
+      ctx.beginPath();
+      ctx.arc(canvas.width * 0.82, 70, 36, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Sun halo glow
+      ctx.fillStyle = 'rgba(255, 230, 109, 0.35)';
+      ctx.beginPath();
+      ctx.arc(canvas.width * 0.82, 70, 54, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawClouds(parallaxFactor) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+      clouds.forEach(c => {
+        const renderX = c.x - camera.x * parallaxFactor;
+        if (renderX > -150 && renderX < canvas.width + 150) {
+          ctx.beginPath();
+          ctx.arc(renderX, c.y, 22 * c.scale, 0, Math.PI * 2);
+          ctx.arc(renderX + 20 * c.scale, c.y - 12 * c.scale, 28 * c.scale, 0, Math.PI * 2);
+          ctx.arc(renderX + 44 * c.scale, c.y, 22 * c.scale, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+
+    // LOOMING MEDIEVAL CASTLE (PROMINENTLY VISIBLE IN DISTANT HORIZON)
+    function drawLoomingCastle(parallaxFactor) {
+      // Anchored so it is looming right in view when starting!
+      const castleWorldX = 750;
+      const renderX = castleWorldX - camera.x * parallaxFactor;
+      const castleY = canvas.height * 0.52;
+
+      if (renderX > -300 && renderX < canvas.width + 300) {
+        ctx.save();
+        ctx.translate(renderX, castleY);
+
+        // Stone Texture Base Wall
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(-110, -80, 220, 80);
+
+        // Main Keep Structure
+        ctx.fillStyle = '#95a5a6';
+        ctx.fillRect(-65, -125, 130, 45);
+
+        // Towers (Left, Right, Center)
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(-140, -130, 50, 130); // Left Tower
+        ctx.fillRect(90, -130, 50, 130);   // Right Tower
+        ctx.fillRect(-30, -165, 60, 40);   // Center Spire Tower
+
+        // Battlements / Crenellations
+        ctx.fillStyle = '#34495e';
+        for (let bx = -140; bx <= -90; bx += 12) ctx.fillRect(bx, -138, 7, 8);
+        for (let bx = 90; bx <= 135; bx += 12) ctx.fillRect(bx, -138, 7, 8);
+        for (let bx = -110; bx <= 100; bx += 15) ctx.fillRect(bx, -88, 8, 8);
+
+        // Conical Roofs (Royal Red)
+        ctx.fillStyle = '#c0392b';
+        // Left Conical Roof
+        ctx.beginPath();
+        ctx.moveTo(-145, -130);
+        ctx.lineTo(-115, -185);
+        ctx.lineTo(-85, -130);
+        ctx.fill();
+
+        // Right Conical Roof
+        ctx.beginPath();
+        ctx.moveTo(85, -130);
+        ctx.lineTo(115, -185);
+        ctx.lineTo(145, -130);
+        ctx.fill();
+
+        // Center Roof
+        ctx.beginPath();
+        ctx.moveTo(-35, -165);
+        ctx.lineTo(0, -215);
+        ctx.lineTo(35, -165);
+        ctx.fill();
+
+        // Flying Banners / Flags
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillRect(-115, -198, 16, 10);
+        ctx.fillRect(115, -198, 16, 10);
+        ctx.fillRect(0, -228, 18, 11);
+
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-115, -185); ctx.lineTo(-115, -202);
+        ctx.moveTo(115, -185); ctx.lineTo(115, -202);
+        ctx.moveTo(0, -215); ctx.lineTo(0, -232);
+        ctx.stroke();
+
+        // Arched Gateway & Portcullis Door
+        ctx.fillStyle = '#2c3e50';
+        ctx.beginPath();
+        ctx.arc(0, -15, 24, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(-24, -15, 48, 15);
+
+        // Wooden Gate Details
+        ctx.fillStyle = '#5c3d2e';
+        ctx.fillRect(-20, -15, 40, 15);
+
+        // Arrow Slit Windows
+        ctx.fillStyle = '#1a252f';
+        ctx.fillRect(-120, -100, 10, 22);
+        ctx.fillRect(110, -100, 10, 22);
+        ctx.fillRect(-18, -105, 10, 20);
+        ctx.fillRect(8, -105, 10, 20);
+
+        ctx.restore();
+      }
+    }
+
+    function drawPineTree(x, y, scale, trunkColor, needleColor) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Trunk
+      ctx.fillStyle = trunkColor;
+      ctx.fillRect(-4 * scale, -12 * scale, 8 * scale, 18 * scale);
+
+      // Needles
+      ctx.fillStyle = needleColor;
+      const layers = 3;
+      for (let i = 0; i < layers; i++) {
+        const layerY = -12 * scale - i * 16 * scale;
+        const width = (26 - i * 5) * scale;
+        ctx.beginPath();
+        ctx.moveTo(0, layerY - 22 * scale);
+        ctx.lineTo(-width, layerY);
+        ctx.lineTo(width, layerY);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawBackgroundTrees(parallaxFactor) {
+      backgroundTrees.forEach(t => {
+        const renderX = t.x - camera.x * parallaxFactor;
+        if (renderX > -100 && renderX < canvas.width + 100) {
+          drawPineTree(renderX, t.y, t.scale, '#5c3d2e', '#2d6a4f');
+        }
+      });
+    }
+
+    function drawGround() {
+      const groundY = canvas.height * 0.52;
+
+      // Vibrant Green Forest Floor Gradient
+      const grassGrad = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+      grassGrad.addColorStop(0, '#52b788');
+      grassGrad.addColorStop(0.15, '#40916c');
+      grassGrad.addColorStop(1, '#1b4332');
+
+      ctx.fillStyle = grassGrad;
+      ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+      // Top Highlight Grass Strip
+      ctx.fillStyle = '#74c69d';
+      ctx.fillRect(0, groundY, canvas.width, 5);
+    }
+
+    function drawWorldTrees(parallaxFactor) {
+      const sortedTrees = [...worldTrees].sort((a, b) => a.y - b.y);
+      sortedTrees.forEach(t => {
+        const renderX = t.x - camera.x * parallaxFactor;
+        if (renderX > -120 && renderX < canvas.width + 120) {
+          drawPineTree(renderX, t.y, t.scale, '#4a2e1b', '#1b4332');
+        }
+      });
+    }
+
+    function drawWildlife(parallaxFactor) {
+      // Birds
+      ctx.strokeStyle = '#1d3557';
+      ctx.lineWidth = 2;
+      birds.forEach(b => {
+        const renderX = b.x - camera.x * parallaxFactor;
+        if (renderX > -50 && renderX < canvas.width + 50) {
+          const wing = Math.sin(b.wingPhase) * b.size;
+          ctx.beginPath();
+          ctx.moveTo(renderX - b.size, b.y + wing);
+          ctx.quadraticCurveTo(renderX, b.y - wing, renderX + b.size, b.y + wing);
+          ctx.stroke();
+        }
+      });
+
+      // Squirrels
+      squirrels.forEach(s => {
+        const renderX = s.x - camera.x * parallaxFactor;
+        if (renderX > -50 && renderX < canvas.width + 50) {
+          ctx.fillStyle = '#e67e22';
+          // Body
+          ctx.beginPath();
+          ctx.ellipse(renderX, s.y, 6, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // Head
+          ctx.beginPath();
+          ctx.arc(renderX + (s.vx >= 0 ? 5 : -5), s.y - 3, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          // Bushy Tail
+          const tailSway = Math.sin(s.tailPhase) * 2;
+          ctx.strokeStyle = '#d35400';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(renderX - (s.vx >= 0 ? 5 : -5), s.y);
+          ctx.quadraticCurveTo(renderX - (s.vx >= 0 ? 10 : -10), s.y - 10 + tailSway, renderX - (s.vx >= 0 ? 4 : -4), s.y - 12);
+          ctx.stroke();
+        }
+      });
+    }
+
+    function drawTreasureChest(parallaxFactor) {
+      const renderX = treasure.x - camera.x * parallaxFactor;
+      if (renderX < -100 || renderX > canvas.width + 100) return;
+
+      if (treasure.state === 'uncovered' || treasure.state === 'opened') {
+        // Dig Hole Ground Cutout
+        ctx.fillStyle = '#3a2312';
+        ctx.beginPath();
+        ctx.ellipse(renderX, treasure.y + 6, 18, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Chest Body (Wood & Iron Straps)
+        ctx.fillStyle = '#8b5a2b';
+        ctx.fillRect(renderX - 14, treasure.y - 10, 28, 16);
+
+        ctx.fillStyle = '#2c3e50'; // Metal Trim
+        ctx.fillRect(renderX - 14, treasure.y - 10, 4, 16);
+        ctx.fillRect(renderX + 10, treasure.y - 10, 4, 16);
+
+        if (treasure.state === 'uncovered') {
+          // Closed Lid
+          ctx.fillStyle = '#a0522d';
+          ctx.fillRect(renderX - 14, treasure.y - 15, 28, 6);
+          ctx.fillStyle = '#ffd700'; // Lock
+          ctx.fillRect(renderX - 3, treasure.y - 8, 6, 6);
+        } else {
+          // Open Lid (Flipped Backwards)
+          ctx.fillStyle = '#a0522d';
+          ctx.fillRect(renderX - 14, treasure.y - 20, 28, 5);
+
+          // Glowing Inside Gold Glow
+          ctx.fillStyle = '#ffd700';
+          ctx.fillRect(renderX - 10, treasure.y - 10, 20, 6);
+        }
+      }
+    }
+
+    function drawCoins(parallaxFactor) {
+      coins.forEach(coin => {
+        if (!coin.collected) {
+          const renderX = coin.x - camera.x * parallaxFactor;
+          if (renderX > -30 && renderX < canvas.width + 30) {
+            ctx.save();
+            ctx.translate(renderX, coin.y);
+            ctx.rotate(coin.rotation);
+
+            // Shiny Gold Coin
+            ctx.fillStyle = '#ffd700';
+            ctx.strokeStyle = '#b8860b';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 5, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Inner shine highlight
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(-1.5, -1.5, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+          }
+        }
+      });
+    }
+
+    function drawParticles(parallaxFactor) {
+      particles.forEach(p => {
+        const renderX = p.x - camera.x * parallaxFactor;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(renderX, p.y, 3, 3);
+      });
+    }
+
+    function drawStickman(x, y, facing, walkFrame, isDigging, parallaxFactor) {
+      const renderX = x - camera.x * parallaxFactor;
+
+      ctx.strokeStyle = '#000000';
+      ctx.fillStyle = '#000000';
+      ctx.lineWidth = 2.4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const headRadius = 6;
+      const bodyLength = 17;
+      const legLength = 13;
+      const neckY = y - bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 4;
+
+      // 1. Head
+      ctx.beginPath();
+      ctx.arc(renderX, headY, headRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Eye
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(renderX + facing * 2.5, headY - 1, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Torso
+      ctx.strokeStyle = '#000000';
+      ctx.beginPath();
+      ctx.moveTo(renderX, neckY);
+      ctx.lineTo(renderX, y);
+      ctx.stroke();
+
+      // 3. Legs
+      const legSwing = Math.sin(walkFrame) * 7;
+      ctx.beginPath();
+      ctx.moveTo(renderX, y);
+      ctx.lineTo(renderX - legSwing, y + legLength);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(renderX, y);
+      ctx.lineTo(renderX + legSwing, y + legLength);
+      ctx.stroke();
+
+      // 4. Arms & Digging Action
+      if (isDigging) {
+        ctx.beginPath();
+        ctx.moveTo(renderX, shoulderY);
+        ctx.lineTo(renderX + facing * 9, shoulderY + 9);
+        ctx.stroke();
+
+        // Shovel Handle & Metal Blade
+        ctx.strokeStyle = '#7f5539';
+        ctx.beginPath();
+        ctx.moveTo(renderX + facing * 4, shoulderY + 3);
+        ctx.lineTo(renderX + facing * 14, y + legLength);
+        ctx.stroke();
+
+        ctx.fillStyle = '#6c757d';
+        ctx.fillRect(renderX + facing * 12, y + legLength - 2, 6, 6);
+      } else {
+        const armSwing = Math.sin(walkFrame + Math.PI) * 5;
+        ctx.beginPath();
+        ctx.moveTo(renderX, shoulderY);
+        ctx.lineTo(renderX - facing * 5 - armSwing, shoulderY + 7);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(renderX, shoulderY);
+        ctx.lineTo(renderX + facing * 5 + armSwing, shoulderY + 7);
+        ctx.stroke();
+      }
+    }
+
+    function drawForegroundTrees(parallaxFactor) {
+      foregroundTrees.forEach(t => {
+        const renderX = t.x - camera.x * parallaxFactor;
+        if (renderX > -200 && renderX < canvas.width + 200) {
+          drawPineTree(renderX, t.y, t.scale, '#2d1810', '#081c15');
+        }
+      });
+    }
+
+    function draw() {
+      // Clear Screen & Parallax Layer Rendering
+      drawDaylightSky();
+      drawClouds(0.15);             // Sky Parallax
+      drawLoomingCastle(0.25);      // Horizon Looming Medieval Castle
+      drawBackgroundTrees(0.45);    // Mid-background Ridge
+      drawGround();                 // Playable Forest Floor
+      drawWildlife(1.0);            // Birds & Squirrels
+      drawTreasureChest(1.0);       // Treasure Chest Entity
+      drawCoins(1.0);               // Collectible Gold Coins
+
+      // Render Stickman Character
+      drawStickman(player.x, player.y, player.facing, player.walkFrame, player.isDigging, 1.0);
+
+      drawWorldTrees(1.0);          // Playfield Pine Trees
+      drawParticles(1.0);           // Dirt & Sparkle Effects
+      drawForegroundTrees(1.35);    // Foreground Framing Trees
+    }
+
+    function animate() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+      setupTouchControls();
+      resizeCanvas();
+      animate();
+    };
+  </script>
+</body>
+</html>

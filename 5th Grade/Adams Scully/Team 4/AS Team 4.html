@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman Birthday Party Exploration</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', Courier, monospace, sans-serif;
+    }
+
+    body {
+      background-color: #0d0d11;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 12px;
+    }
+
+    /* Top Header Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1100px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #ff4081;
+    }
+
+    .title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    h1 {
+      font-size: 18px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: bold;
+      color: #ffeb3b;
+      text-shadow: 0 0 8px rgba(255, 235, 59, 0.4);
+    }
+
+    .stats {
+      font-size: 13px;
+      color: #00e676;
+      font-weight: bold;
+    }
+
+    .btn-reset {
+      background: transparent;
+      color: #ffffff;
+      border: 1px solid #ffffff;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.15s ease-in-out;
+      border-radius: 4px;
+    }
+
+    .btn-reset:hover {
+      background: #ff4081;
+      border-color: #ff4081;
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
+    }
+
+    /* Main Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    canvas {
+      background-color: #000000;
+      border: 2px solid #333344;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Level Complete Banner */
+    #toast-overlay {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 64, 129, 0.95);
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: 20px;
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      display: none;
+      pointer-events: none;
+      box-shadow: 0 0 15px rgba(255, 64, 129, 0.8);
+      animation: pulse 1s infinite alternate;
+      z-index: 20;
+    }
+
+    @keyframes pulse {
+      from { transform: translateX(-50%) scale(1); }
+      to { transform: translateX(-50%) scale(1.05); }
+    }
+
+    /* Onscreen Touch Controls for Chromebook Touchscreens */
+    #touch-controls {
+      display: none;
+      position: absolute;
+      bottom: 15px;
+      right: 15px;
+      grid-template-columns: repeat(3, 45px);
+      grid-template-rows: repeat(2, 45px);
+      gap: 5px;
+      z-index: 10;
+    }
+
+    .touch-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      color: white;
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 18px;
+      font-weight: bold;
+      touch-action: manipulation;
+    }
+
+    .touch-btn:active {
+      background: rgba(255, 64, 129, 0.6);
+    }
+
+    .instructions {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #aaaabb;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <div id="header">
+    <div class="title-group">
+      <h1>Stickman Birthday Party</h1>
+      <div class="stats">
+        LEVEL: <span id="level-display">1</span> | ROOMS: <span id="rooms-display">2</span> | PRESENTS LEFT: <span id="presents-display">0</span>
+      </div>
+    </div>
+    <button class="btn-reset" onclick="resetGame()">Reset Game</button>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+    <div id="toast-overlay">🎉 ALL PRESENTS COLLECTED! ADVANCING LEVEL... 🎉</div>
+
+    <!-- Onscreen WASD Touch Controls -->
+    <div id="touch-controls">
+      <div></div>
+      <div class="touch-btn" id="btn-w">W</div>
+      <div></div>
+      <div class="touch-btn" id="btn-a">A</div>
+      <div class="touch-btn" id="btn-s">S</div>
+      <div class="touch-btn" id="btn-d">D</div>
+    </div>
+  </div>
+
+  <div class="instructions">
+    Use [WASD] Keys to Move (Arrow Keys Disabled) | Find High-Visibility Doorways & Collect All Presents
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // UI Elements
+    const levelDisplay = document.getElementById('level-display');
+    const roomsDisplay = document.getElementById('rooms-display');
+    const presentsDisplay = document.getElementById('presents-display');
+    const toastOverlay = document.getElementById('toast-overlay');
+
+    // GAME STATE
+    let currentLevel = 1;
+    let presents = [];
+    let rooms = [];
+    let doors = [];
+    let totalPresentsCount = 0;
+    let presentsRemaining = 0;
+    let currentRoomIndex = 0;
+    let scaleFactor = 1;
+
+    // KEYBOARD INPUT STATE (Strictly WASD)
+    const keys = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
+
+    // PLAYER STATE
+    const player = {
+      x: 0,
+      y: 0,
+      baseSpeed: 4.2,
+      speed: 4.2,
+      facing: 1, // 1 = Right, -1 = Left
+      walkFrame: 0,
+      radius: 10
+    };
+
+    // Color Themes for Birthday Rooms
+    const roomThemes = [
+      { bg: '#2b1e3a', wall: '#e040fb', name: 'Berry Purple' },
+      { bg: '#1a2e3b', wall: '#00e5ff', name: 'Ocean Blue' },
+      { bg: '#1b3a2b', wall: '#00e676', name: 'Party Mint' },
+      { bg: '#3a2e1b', wall: '#ffb300', name: 'Festive Gold' },
+      { bg: '#3a1b2e', wall: '#ff4081', name: 'Birthday Pink' },
+      { bg: '#281b3a', wall: '#7c4dff', name: 'Deep Violet' },
+      { bg: '#1b3a3a', wall: '#1de9b6', name: 'Confetti Teal' }
+    ];
+
+    // Detect Touchscreen to enable onscreen controls
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+      document.getElementById('touch-controls').style.display = 'grid';
+    }
+
+    function setupTouchButton(id, code) {
+      const btn = document.getElementById(id);
+      btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[code] = true; });
+      btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[code] = false; });
+      btn.addEventListener('mousedown', () => { keys[code] = true; });
+      btn.addEventListener('mouseup', () => { keys[code] = false; });
+    }
+    setupTouchButton('btn-w', 'KeyW');
+    setupTouchButton('btn-a', 'KeyA');
+    setupTouchButton('btn-s', 'KeyS');
+    setupTouchButton('btn-d', 'KeyD');
+
+    // STRICT WASD CONTROLS ONLY (Arrow Keys Suppressed)
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+        e.preventDefault();
+      }
+
+      if (e.code === 'KeyW' || e.code === 'Keyw') keys['KeyW'] = true;
+      if (e.code === 'KeyA' || e.code === 'Keya') keys['KeyA'] = true;
+      if (e.code === 'KeyS' || e.code === 'Keys') keys['KeyS'] = true;
+      if (e.code === 'KeyD' || e.code === 'Keyd') keys['KeyD'] = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'KeyW' || e.code === 'Keyw') keys['KeyW'] = false;
+      if (e.code === 'KeyA' || e.code === 'Keya') keys['KeyA'] = false;
+      if (e.code === 'KeyS' || e.code === 'Keys') keys['KeyS'] = false;
+      if (e.code === 'KeyD' || e.code === 'Keyd') keys['KeyD'] = false;
+    });
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+      buildLevel(currentLevel);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // Dynamic House Generation with Irregular Room Sizes & Sparse Door Connections
+    function buildLevel(lvl) {
+      const numRooms = lvl + 1; // Level 1 = 2 rooms, +1 room per level
+      rooms = [];
+      doors = [];
+      presents = [];
+
+      const margin = 20;
+      const playableW = canvas.width - margin * 2;
+      const playableH = canvas.height - margin * 2;
+
+      // 1. Binary Space Partitioning (BSP) to create varied room sizes
+      let regions = [{ x: margin, y: margin, w: playableW, h: playableH }];
+
+      while (regions.length < numRooms) {
+        // Find region with largest area/dimension to split
+        let maxIdx = 0;
+        let maxDim = 0;
+        for (let i = 0; i < regions.length; i++) {
+          let dim = Math.max(regions[i].w, regions[i].h);
+          if (dim > maxDim) {
+            maxDim = dim;
+            maxIdx = i;
+          }
+        }
+
+        let parent = regions.splice(maxIdx, 1)[0];
+        let splitHoriz = parent.w < parent.h;
+        if (parent.w === parent.h) splitHoriz = Math.random() < 0.5;
+
+        // Randomized split ratio between 35% and 65% for non-uniform room dimensions
+        let ratio = 0.35 + Math.random() * 0.3;
+
+        if (splitHoriz) {
+          let splitY = Math.floor(parent.h * ratio);
+          regions.push({ x: parent.x, y: parent.y, w: parent.w, h: splitY });
+          regions.push({ x: parent.x, y: parent.y + splitY, w: parent.w, h: parent.h - splitY });
+        } else {
+          let splitX = Math.floor(parent.w * ratio);
+          regions.push({ x: parent.x, y: parent.y, w: splitX, h: parent.h });
+          regions.push({ x: parent.x + splitX, y: parent.y, w: parent.w - splitX, h: parent.h });
+        }
+      }
+
+      // Estimate scale factor based on smallest room dimension
+      let minRoomDim = Infinity;
+      regions.forEach(r => {
+        minRoomDim = Math.min(minRoomDim, r.w, r.h);
+      });
+      scaleFactor = Math.max(0.35, Math.min(1.0, minRoomDim / 150));
+      player.speed = player.baseSpeed * scaleFactor;
+      player.radius = 12 * scaleFactor;
+
+      // Populate room structures
+      for (let i = 0; i < regions.length; i++) {
+        const r = regions[i];
+        const balloons = [];
+        for (let b = 0; b < 4; b++) {
+          balloons.push({
+            rx: 0.15 + Math.random() * 0.7,
+            ry: 0.15 + Math.random() * 0.7,
+            color: ['#ff4081', '#00e5ff', '#ffeb3b', '#7c4dff', '#00e676'][Math.floor(Math.random() * 5)]
+          });
+        }
+
+        rooms.push({
+          id: i,
+          x: r.x,
+          y: r.y,
+          w: r.w,
+          h: r.h,
+          theme: roomThemes[i % roomThemes.length],
+          balloons: balloons
+        });
+      }
+
+      // 2. Identify shared wall boundaries between adjacent rooms
+      let adjEdges = [];
+      for (let i = 0; i < rooms.length; i++) {
+        for (let j = i + 1; j < rooms.length; j++) {
+          let r1 = rooms[i];
+          let r2 = rooms[j];
+
+          // Vertical Shared Wall Check
+          if (Math.abs((r1.x + r1.w) - r2.x) < 2 || Math.abs((r2.x + r2.w) - r1.x) < 2) {
+            let sharedX = Math.abs((r1.x + r1.w) - r2.x) < 2 ? r2.x : r1.x;
+            let yMin = Math.max(r1.y, r2.y);
+            let yMax = Math.min(r1.y + r1.h, r2.y + r2.h);
+            if (yMax - yMin > 30) {
+              adjEdges.push({
+                r1: i, r2: j, type: 'vertical',
+                x: sharedX, y: (yMin + yMax) / 2,
+                maxSpan: yMax - yMin
+              });
+            }
+          }
+
+          // Horizontal Shared Wall Check
+          if (Math.abs((r1.y + r1.h) - r2.y) < 2 || Math.abs((r2.y + r2.h) - r1.y) < 2) {
+            let sharedY = Math.abs((r1.y + r1.h) - r2.y) < 2 ? r2.y : r1.y;
+            let xMin = Math.max(r1.x, r2.x);
+            let xMax = Math.min(r1.x + r1.w, r2.x + r2.w);
+            if (xMax - xMin > 30) {
+              adjEdges.push({
+                r1: i, r2: j, type: 'horizontal',
+                y: sharedY, x: (xMin + xMax) / 2,
+                maxSpan: xMax - xMin
+              });
+            }
+          }
+        }
+      }
+
+      // 3. Generate Minimal Spanning Tree Doorways so every room is connected without maximizing all walls
+      adjEdges.sort(() => Math.random() - 0.5); // Shuffle edges randomly
+      let parentSet = rooms.map((_, idx) => idx);
+
+      function findRoot(i) {
+        if (parentSet[i] === i) return i;
+        return parentSet[i] = findRoot(parentSet[i]);
+      }
+
+      adjEdges.forEach(edge => {
+        let root1 = findRoot(edge.r1);
+        let root2 = findRoot(edge.r2);
+
+        // Always connect if disconnected (Spanning Tree), plus 15% chance for occasional extra door loop
+        if (root1 !== root2 || Math.random() < 0.15) {
+          if (root1 !== root2) parentSet[root1] = root2;
+
+          let doorSize = Math.min(edge.maxSpan - 12, Math.max(30 * scaleFactor, 22));
+          doors.push({
+            x: edge.x,
+            y: edge.y,
+            type: edge.type,
+            size: doorSize,
+            roomA: edge.r1,
+            roomB: edge.r2
+          });
+        }
+      });
+
+      // 4. Spawn Birthday Presents: (level number) + random(0-3)
+      totalPresentsCount = lvl + Math.floor(Math.random() * 4);
+      presentsRemaining = totalPresentsCount;
+
+      for (let p = 0; p < totalPresentsCount; p++) {
+        const targetRoom = rooms[p % rooms.length];
+        const padding = Math.min(25 * scaleFactor, targetRoom.w * 0.2);
+        const px = targetRoom.x + padding + Math.random() * (targetRoom.w - padding * 2);
+        const py = targetRoom.y + padding + Math.random() * (targetRoom.h - padding * 2);
+
+        presents.push({
+          x: px,
+          y: py,
+          size: 14 * scaleFactor,
+          collected: false,
+          roomId: targetRoom.id,
+          color: ['#ff4081', '#00e5ff', '#ffc107', '#e040fb', '#ff5722'][p % 5]
+        });
+      }
+
+      // Place Stickman in Center of Room 0
+      player.x = rooms[0].x + rooms[0].w / 2;
+      player.y = rooms[0].y + rooms[0].h / 2;
+      currentRoomIndex = 0;
+
+      // Update UI Text
+      levelDisplay.innerText = currentLevel;
+      roomsDisplay.innerText = numRooms;
+      presentsDisplay.innerText = presentsRemaining;
+    }
+
+    function resetGame() {
+      currentLevel = 1;
+      buildLevel(currentLevel);
+    }
+
+    // Identify which room Stickman is inside
+    function updateCurrentRoom() {
+      for (let i = 0; i < rooms.length; i++) {
+        const r = rooms[i];
+        if (player.x >= r.x && player.x <= r.x + r.w &&
+            player.y >= r.y && player.y <= r.y + r.h) {
+          currentRoomIndex = i;
+          break;
+        }
+      }
+    }
+
+    // MOVEMENT & COLLISION LOGIC
+    function updatePhysics() {
+      let dx = 0;
+      let dy = 0;
+
+      if (keys['KeyW']) dy -= 1;
+      if (keys['KeyS']) dy += 1;
+      if (keys['KeyA']) { dx -= 1; player.facing = -1; }
+      if (keys['KeyD']) { dx += 1; player.facing = 1; }
+
+      // Normalize diagonal velocity
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.7071;
+        dy *= 0.7071;
+      }
+
+      let nextX = player.x + dx * player.speed;
+      let nextY = player.y + dy * player.speed;
+
+      // Wall & Door Passage Collision
+      const currentRoom = rooms[currentRoomIndex];
+      if (currentRoom) {
+        const pR = player.radius;
+        const wallThick = 4;
+
+        let allowX = false;
+        let allowY = false;
+
+        // Horizontal Movement Wall Check
+        if (nextX - pR > currentRoom.x + wallThick && nextX + pR < currentRoom.x + currentRoom.w - wallThick) {
+          allowX = true;
+        } else {
+          // Check vertical doorway passage
+          for (let d of doors) {
+            if (d.type === 'vertical' && Math.abs(nextX - d.x) < pR + 6 && Math.abs(nextY - d.y) < d.size / 2 - 2) {
+              allowX = true;
+              break;
+            }
+          }
+        }
+
+        // Vertical Movement Wall Check
+        if (nextY - pR > currentRoom.y + wallThick && nextY + pR < currentRoom.y + currentRoom.h - wallThick) {
+          allowY = true;
+        } else {
+          // Check horizontal doorway passage
+          for (let d of doors) {
+            if (d.type === 'horizontal' && Math.abs(nextY - d.y) < pR + 6 && Math.abs(nextX - d.x) < d.size / 2 - 2) {
+              allowY = true;
+              break;
+            }
+          }
+        }
+
+        if (allowX) player.x = nextX;
+        if (allowY) player.y = nextY;
+      } else {
+        player.x = nextX;
+        player.y = nextY;
+      }
+
+      updateCurrentRoom();
+
+      // Walking Leg Swing Animation
+      if (dx !== 0 || dy !== 0) {
+        player.walkFrame += 0.25;
+      } else {
+        player.walkFrame = 0;
+      }
+
+      // Present Pickups
+      presents.forEach(p => {
+        if (!p.collected) {
+          const dist = Math.hypot(player.x - p.x, player.y - p.y);
+          if (dist < player.radius + p.size / 2) {
+            p.collected = true;
+            presentsRemaining--;
+            presentsDisplay.innerText = presentsRemaining;
+
+            if (presentsRemaining === 0) {
+              triggerLevelComplete();
+            }
+          }
+        }
+      });
+    }
+
+    function triggerLevelComplete() {
+      toastOverlay.style.display = 'block';
+      setTimeout(() => {
+        toastOverlay.style.display = 'none';
+        currentLevel++;
+        buildLevel(currentLevel);
+      }, 1400);
+    }
+
+    // DRAWING FUNCTIONS
+    function drawHouse() {
+      // Render Rooms
+      rooms.forEach((r) => {
+        // Floor
+        ctx.fillStyle = r.theme.bg;
+        ctx.fillRect(r.x, r.y, r.w, r.h);
+
+        // Party Confetti Pattern
+        ctx.fillStyle = r.theme.wall;
+        ctx.globalAlpha = 0.15;
+        for (let c = 12; c < r.w; c += 28) {
+          for (let rpx = 12; rpx < r.h; rpx += 28) {
+            ctx.fillRect(r.x + c, r.y + rpx, 3, 3);
+          }
+        }
+        ctx.globalAlpha = 1.0;
+
+        // Floor Balloons
+        r.balloons.forEach(b => {
+          ctx.fillStyle = b.color;
+          ctx.beginPath();
+          ctx.arc(r.x + r.w * b.rx, r.y + r.h * b.ry, Math.max(3, 5 * scaleFactor), 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // Room Wall Borders
+        ctx.strokeStyle = r.theme.wall;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(r.x, r.y, r.w, r.h);
+      });
+
+      // Render Distinct Doorways
+      doors.forEach(d => {
+        const thickness = 10;
+
+        if (d.type === 'vertical') {
+          // Yellow Floor Mat
+          ctx.fillStyle = '#ffea00';
+          ctx.fillRect(d.x - thickness / 2, d.y - d.size / 2, thickness, d.size);
+
+          // Cyan Frame Endposts
+          ctx.fillStyle = '#00e5ff';
+          ctx.fillRect(d.x - thickness / 2 - 2, d.y - d.size / 2 - 3, thickness + 4, 4);
+          ctx.fillRect(d.x - thickness / 2 - 2, d.y + d.size / 2 - 1, thickness + 4, 4);
+        } else {
+          // Yellow Floor Mat
+          ctx.fillStyle = '#ffea00';
+          ctx.fillRect(d.x - d.size / 2, d.y - thickness / 2, d.size, thickness);
+
+          // Cyan Frame Endposts
+          ctx.fillStyle = '#00e5ff';
+          ctx.fillRect(d.x - d.size / 2 - 3, d.y - thickness / 2 - 2, 4, thickness + 4);
+          ctx.fillRect(d.x + d.size / 2 - 1, d.y - thickness / 2 - 2, 4, thickness + 4);
+        }
+      });
+    }
+
+    // Fog of War: Conceals all unvisited/inactive rooms
+    function drawFogOfWar() {
+      rooms.forEach((r, idx) => {
+        if (idx !== currentRoomIndex) {
+          ctx.fillStyle = 'rgba(5, 5, 8, 0.97)';
+          ctx.fillRect(r.x - 2, r.y - 2, r.w + 4, r.h + 4);
+
+          // Dark Room Label
+          ctx.fillStyle = '#444455';
+          ctx.font = `${Math.max(10, 12 * scaleFactor)}px Courier New`;
+          ctx.textAlign = 'center';
+          ctx.fillText('???', r.x + r.w / 2, r.y + r.h / 2);
+        }
+      });
+
+      // Highlight doors connected to current room on top of fog
+      doors.forEach(d => {
+        if (d.roomA === currentRoomIndex || d.roomB === currentRoomIndex) {
+          const thickness = 8;
+          ctx.fillStyle = '#ffea00';
+          ctx.shadowColor = '#ffea00';
+          ctx.shadowBlur = 8;
+
+          if (d.type === 'vertical') {
+            ctx.fillRect(d.x - thickness / 2, d.y - d.size / 2, thickness, d.size);
+          } else {
+            ctx.fillRect(d.x - d.size / 2, d.y - thickness / 2, d.size, thickness);
+          }
+          ctx.shadowBlur = 0;
+        }
+      });
+    }
+
+    function drawPresents() {
+      presents.forEach(p => {
+        // Render presents only if inside the current active room
+        if (!p.collected && p.roomId === currentRoomIndex) {
+          const s = p.size;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
+
+          // Present Ribbon Cross
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(p.x - s / 2, p.y - 1.5, s, 3);
+          ctx.fillRect(p.x - 1.5, p.y - s / 2, 3, s);
+
+          // Ribbon Bow
+          ctx.fillStyle = '#ffeb3b';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, Math.max(1.5, 2.5 * scaleFactor), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+
+    function drawStickman(x, y, facing, walkFrame) {
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = Math.max(1.2, 1.8 * scaleFactor);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const headRadius = 5 * scaleFactor;
+      const bodyLength = 14 * scaleFactor;
+      const legLength = 10 * scaleFactor;
+      const neckY = y - bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 4 * scaleFactor;
+
+      // Head
+      ctx.beginPath();
+      ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Birthday Party Hat
+      ctx.fillStyle = '#ff4081';
+      ctx.beginPath();
+      ctx.moveTo(x - headRadius, headY - 2);
+      ctx.lineTo(x + headRadius, headY - 2);
+      ctx.lineTo(x, headY - headRadius * 2.2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Eye
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(x + facing * (2 * scaleFactor), headY - 0.5, 0.8 * scaleFactor, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Torso
+      ctx.beginPath();
+      ctx.moveTo(x, neckY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+
+      // Legs
+      const legSwing = Math.sin(walkFrame) * (5 * scaleFactor);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - legSwing, y + legLength);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + legSwing, y + legLength);
+      ctx.stroke();
+
+      // Arms
+      const armSwing = Math.sin(walkFrame + Math.PI) * (4 * scaleFactor);
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x - facing * (4 * scaleFactor) - armSwing, shoulderY + 5 * scaleFactor);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x + facing * (4 * scaleFactor) + armSwing, shoulderY + 5 * scaleFactor);
+      ctx.stroke();
+    }
+
+    function draw() {
+      // Clear Background
+      ctx.fillStyle = '#0a0a0f';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Render Simulation Layers
+      drawHouse();
+      drawPresents();
+      drawStickman(player.x, player.y, player.facing, player.walkFrame);
+      drawFogOfWar();
+    }
+
+    function animate() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+      resizeCanvas();
+      animate();
+    };
+  </script>
+</body>
+</html>
