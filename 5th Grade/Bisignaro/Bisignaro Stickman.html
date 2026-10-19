@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman Parkour Adventure</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            overflow: hidden;
+            padding: 12px;
+        }
+
+        /* Top Header Bar */
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1100px;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #ffffff;
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .stat-box {
+            color: #00ffcc;
+        }
+
+        h1 {
+            font-size: 18px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            padding: 6px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .btn-reset:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        /* Main Canvas Container */
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 1100px;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #000000;
+            border: 1px solid #ffffff;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Instructions Footer */
+        .instructions {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #aaaaaa;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        .highlight {
+            color: #ffcc00;
+            font-weight: bold;
+        }
+
+        /* Touch Controls for Chromebook Touchscreens */
+        #touch-controls {
+            display: none;
+            width: 100%;
+            max-width: 1100px;
+            justify-content: space-between;
+            margin-top: 6px;
+            gap: 10px;
+        }
+
+        @media (pointer: coarse), (max-width: 1024px) {
+            #touch-controls {
+                display: flex;
+            }
+        }
+
+        .touch-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #ffffff;
+            color: #ffffff;
+            padding: 12px 18px;
+            font-weight: bold;
+            font-size: 13px;
+            border-radius: 4px;
+            touch-action: manipulation;
+            flex: 1;
+            text-align: center;
+        }
+
+        .touch-btn:active {
+            background: #ffffff;
+            color: #000000;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div id="header">
+        <h1>Stickman Engine</h1>
+        <div class="stats-container">
+            <div>LEVEL: <span id="level-display" class="stat-box">1</span></div>
+            <div>TRAPPED ENEMIES: <span id="score-display" class="stat-box">0</span></div>
+        </div>
+        <button class="btn-reset" onclick="resetGame(true)">Reset</button>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvas-wrapper">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+    <!-- Instructions Bar -->
+    <div class="instructions">
+        [A/D] Move &nbsp;|&nbsp; <span class="highlight">[LEFT SHIFT]</span> Jump &nbsp;|&nbsp; <span class="highlight">[SPACEBAR]</span> Pencil Box Trap
+    </div>
+
+    <!-- Touchscreen Quick Controls for Chromebooks -->
+    <div id="touch-controls">
+        <button class="touch-btn" id="btn-left">◄ LEFT</button>
+        <button class="touch-btn" id="btn-right">RIGHT ►</button>
+        <button class="touch-btn" id="btn-jump">JUMP (SHIFT)</button>
+        <button class="touch-btn" id="btn-trap">TRAP (SPACE)</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // GAME STATE
+        let currentLevel = 1;
+        let trappedEnemies = 0;
+        const keys = {};
+
+        // CONSTANTS
+        const GRAVITY = 0.45;
+        const JUMP_FORCE = -10.5;
+
+        // STICKMAN PLAYER STATE
+        const player = {
+            x: 50,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            speed: 4.8,
+            facing: 1, // 1 = Right, -1 = Left
+            walkFrame: 0,
+            isGrounded: false,
+            boxOpen: false,
+            boxTimer: 0
+        };
+
+        // GOAL EXIT PORTAL
+        const exitGoal = {
+            x: 0,
+            y: 0,
+            width: 45,
+            height: 60
+        };
+
+        // PLATFORMS & ENEMIES ARRAYS
+        let platforms = [];
+        let enemies = [];
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            const oldWidth = canvas.width;
+            const oldHeight = canvas.height;
+
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+
+            // Re-generate layout if canvas size changed or initial setup
+            if (oldWidth !== canvas.width || oldHeight !== canvas.height) {
+                generateLevel();
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // KEYBOARD INPUT HANDLERS
+        window.addEventListener('keydown', (e) => {
+            if (['KeyA', 'KeyD', 'KeyW', 'KeyS', 'ShiftLeft', 'ShiftRight', 'Space', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+                e.preventDefault();
+            }
+            keys[e.code] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        // TOUCH CONTROLS SETUP FOR CHROMEBOOKS
+        function setupTouchControls() {
+            const bindTouch = (btnId, keyName) => {
+                const btn = document.getElementById(btnId);
+                btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
+                btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
+                btn.addEventListener('mousedown', () => { keys[keyName] = true; });
+                btn.addEventListener('mouseup', () => { keys[keyName] = false; });
+            };
+
+            bindTouch('btn-left', 'KeyA');
+            bindTouch('btn-right', 'KeyD');
+            bindTouch('btn-jump', 'ShiftLeft');
+            bindTouch('btn-trap', 'Space');
+        }
+
+        // GENERATE PROCEDURAL PLATFORM COURSE & ENEMIES
+        function generateLevel() {
+            platforms = [];
+            enemies = [];
+
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Ground Floor Platform
+            platforms.push({ x: 0, y: h - 20, width: w, height: 20 });
+
+            // Set Goal Exit at Upper Right
+            exitGoal.x = w - 65;
+            exitGoal.y = 25;
+
+            // Spawn Player at Bottom Left
+            player.x = 45;
+            player.y = h - 35;
+            player.vx = 0;
+            player.vy = 0;
+
+            // Create Stepping Platforms from Bottom-Left up to Exit
+            const numTiers = 5;
+            const tierHeight = (h - 100) / numTiers;
+
+            let currentX = 80;
+            let currentY = h - 80;
+
+            for (let i = 0; i < numTiers; i++) {
+                const platWidth = Math.random() * 60 + 110; // Width between 110-170px
+                platforms.push({
+                    x: Math.max(20, Math.min(w - platWidth - 20, currentX)),
+                    y: currentY,
+                    width: platWidth,
+                    height: 14
+                });
+
+                // Advance coordinates towards Upper Right
+                currentX += Math.random() * 120 + 80;
+                if (currentX > w - 180) currentX = w - 220;
+                currentY -= tierHeight;
+            }
+
+            // Additional random bonus platforms
+            for (let j = 0; j < 3; j++) {
+                platforms.push({
+                    x: Math.random() * (w - 200) + 50,
+                    y: Math.random() * (h - 200) + 100,
+                    width: Math.random() * 50 + 90,
+                    height: 14
+                });
+            }
+
+            // Exit Landing Pad
+            platforms.push({
+                x: exitGoal.x - 10,
+                y: exitGoal.y + exitGoal.height,
+                width: exitGoal.width + 20,
+                height: 14
+            });
+
+            // Spawn Enemies (Increases with level)
+            const enemyTypes = ['sharpener', 'eraser', 'desk'];
+            const enemyCount = Math.min(3 + currentLevel, 8);
+
+            for (let k = 0; k < enemyCount; k++) {
+                const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+                enemies.push({
+                    type: type,
+                    x: Math.random() * (w - 300) + 200,
+                    y: Math.random() * (h - 150) + 50,
+                    speed: 1.2 + Math.random() * 0.8 + (currentLevel * 0.15),
+                    vx: 0,
+                    vy: 0,
+                    width: type === 'desk' ? 32 : (type === 'sharpener' ? 24 : 26),
+                    height: type === 'desk' ? 28 : (type === 'sharpener' ? 22 : 20),
+                    facing: -1
+                });
+            }
+
+            document.getElementById('level-display').innerText = currentLevel;
+            document.getElementById('score-display').innerText = trappedEnemies;
+        }
+
+        function resetGame(fullReset = false) {
+            if (fullReset) {
+                currentLevel = 1;
+                trappedEnemies = 0;
+            }
+            generateLevel();
+        }
+
+        // PHYSICS & GAME LOGIC UPDATE
+        function updatePhysics() {
+            // Horizontal Movement Controls
+            let moveX = 0;
+            if (keys['KeyA'] || keys['Keya'] || keys['ArrowLeft']) { moveX -= 1; player.facing = -1; }
+            if (keys['KeyD'] || keys['Keyd'] || keys['ArrowRight']) { moveX += 1; player.facing = 1; }
+
+            player.vx = moveX * player.speed;
+
+            // Jump Action (Left Shift / Right Shift)
+            if ((keys['ShiftLeft'] || keys['ShiftRight'] || keys['Shift']) && player.isGrounded) {
+                player.vy = JUMP_FORCE;
+                player.isGrounded = false;
+            }
+
+            // Apply Gravity
+            player.vy += GRAVITY;
+
+            // Pencil Box Trap Toggle (Spacebar)
+            if (keys['Space']) {
+                player.boxOpen = true;
+            } else {
+                player.boxOpen = false;
+            }
+
+            // Previous foot position for collision check
+            const prevY = player.y;
+
+            // Apply velocities
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // Keep Stickman inside horizontal bounds
+            player.x = Math.max(15, Math.min(canvas.width - 15, player.x));
+
+            // Platform Collision Detection
+            player.isGrounded = false;
+            const legLength = 11;
+            const feetY = player.y + legLength;
+            const prevFeetY = prevY + legLength;
+
+            for (let plat of platforms) {
+                // Landing on platform from above
+                if (
+                    player.x >= plat.x - 8 &&
+                    player.x <= plat.x + plat.width + 8 &&
+                    prevFeetY <= plat.y + 5 &&
+                    feetY >= plat.y &&
+                    player.vy >= 0
+                ) {
+                    player.y = plat.y - legLength;
+                    player.vy = 0;
+                    player.isGrounded = true;
+                    break;
+                }
+            }
+
+            // Walk Frame Animation Cycle
+            if (player.vx !== 0 && player.isGrounded) {
+                player.walkFrame += 0.25;
+            } else if (!player.isGrounded) {
+                player.walkFrame = 1.2; // Jump posture frame
+            } else {
+                player.walkFrame = 0;
+            }
+
+            // Check Goal Reached (Exit Door)
+            if (
+                player.x >= exitGoal.x &&
+                player.x <= exitGoal.x + exitGoal.width &&
+                player.y >= exitGoal.y &&
+                player.y <= exitGoal.y + exitGoal.height + 15
+            ) {
+                currentLevel++;
+                generateLevel();
+                return;
+            }
+
+            // Pencil Box Capture Box Boundaries
+            const trapBox = {
+                x: player.facing === 1 ? player.x + 8 : player.x - 45,
+                y: player.y - 25,
+                width: 38,
+                height: 32
+            };
+
+            // Enemy Physics & Chasing AI
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+
+                // Chasing direction towards Stickman
+                const dx = player.x - enemy.x;
+                const dy = (player.y - 15) - enemy.y;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist > 0) {
+                    enemy.vx = (dx / dist) * enemy.speed;
+                    enemy.vy = (dy / dist) * enemy.speed * 0.6; // Slight vertical tracking
+                }
+
+                enemy.x += enemy.vx;
+                enemy.y += enemy.vy;
+                enemy.facing = enemy.vx >= 0 ? 1 : -1;
+
+                // Check Trap Capture by Pencil Box
+                if (
+                    player.boxOpen &&
+                    enemy.x + enemy.width > trapBox.x &&
+                    enemy.x < trapBox.x + trapBox.width &&
+                    enemy.y + enemy.height > trapBox.y &&
+                    enemy.y < trapBox.y + trapBox.height
+                ) {
+                    // Enemy Trapped inside pencil box!
+                    enemies.splice(i, 1);
+                    trappedEnemies++;
+                    document.getElementById('score-display').innerText = trappedEnemies;
+                    continue;
+                }
+
+                // Collision with Stickman (Resets level position)
+                const playerHitbox = { x: player.x - 8, y: player.y - 25, width: 16, height: 35 };
+                if (
+                    enemy.x < playerHitbox.x + playerHitbox.width &&
+                    enemy.x + enemy.width > playerHitbox.x &&
+                    enemy.y < playerHitbox.y + playerHitbox.height &&
+                    enemy.y + enemy.height > playerHitbox.y
+                ) {
+                    // Respawn Stickman on hit
+                    player.x = 45;
+                    player.y = canvas.height - 35;
+                    player.vx = 0;
+                    player.vy = 0;
+                }
+            }
+        }
+
+        // DRAW FUNCTIONS
+        function drawStickman(x, y, facing, walkFrame) {
+            ctx.strokeStyle = '#ffffff';
+            ctx.fillStyle = '#ffffff';
+            ctx.lineWidth = 1.8;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const headRadius = 5;
+            const bodyLength = 15;
+            const legLength = 11;
+            const neckY = y - bodyLength;
+            const headY = neckY - headRadius;
+            const shoulderY = neckY + 4;
+
+            // 1. Head
+            ctx.beginPath();
+            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Eye direction indicator
+            ctx.beginPath();
+            ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Torso
+            ctx.beginPath();
+            ctx.moveTo(x, neckY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            // 3. Legs
+            const legSwing = Math.sin(walkFrame) * 6;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - legSwing, y + legLength);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + legSwing, y + legLength);
+            ctx.stroke();
+
+            // 4. Arms & Pencil Box Holding Pose
+            if (player.boxOpen) {
+                // Extended arm holding open pencil box
+                ctx.beginPath();
+                ctx.moveTo(x, shoulderY);
+                ctx.lineTo(x + facing * 12, shoulderY - 2);
+                ctx.stroke();
+
+                // Draw Pencil Box Trap
+                const boxX = facing === 1 ? x + 8 : x - 45;
+                const boxY = y - 25;
+
+                ctx.strokeStyle = '#ffcc00';
+                ctx.fillStyle = '#111111';
+                ctx.lineWidth = 2;
+                ctx.fillRect(boxX, boxY, 38, 30);
+                ctx.strokeRect(boxX, boxY, 38, 30);
+
+                // Open Box Lid
+                ctx.beginPath();
+                ctx.moveTo(boxX, boxY);
+                ctx.lineTo(boxX + (facing === 1 ? -8 : 46), boxY - 12);
+                ctx.stroke();
+
+                // Decorative Pencils inside box
+                ctx.fillStyle = '#ff3333';
+                ctx.fillRect(boxX + 5, boxY + 12, 28, 4);
+                ctx.fillStyle = '#3399ff';
+                ctx.fillRect(boxX + 5, boxY + 20, 28, 4);
+
+                // TRAP ACTIVE text label
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = '9px monospace';
+                ctx.fillText('TRAP!', boxX + 4, boxY - 14);
+
+            } else {
+                // Standard Arm Animation
+                const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+                ctx.beginPath();
+                ctx.moveTo(x, shoulderY);
+                ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(x, shoulderY);
+                ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
+                ctx.stroke();
+            }
+        }
+
+        function drawPlatforms() {
+            ctx.strokeStyle = '#ffffff';
+            ctx.fillStyle = '#222222';
+            ctx.lineWidth = 1.5;
+
+            for (let plat of platforms) {
+                ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
+                ctx.strokeRect(plat.x, plat.y, plat.width, plat.height);
+
+                // Top highlight line for platforms
+                ctx.beginPath();
+                ctx.strokeStyle = '#00ffcc';
+                ctx.moveTo(plat.x, plat.y);
+                ctx.lineTo(plat.x + plat.width, plat.y);
+                ctx.stroke();
+                ctx.strokeStyle = '#ffffff';
+            }
+        }
+
+        function drawExit() {
+            // Exit Door Frame
+            ctx.strokeStyle = '#00ffcc';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(exitGoal.x, exitGoal.y, exitGoal.width, exitGoal.height);
+
+            // Glowing Interior
+            ctx.fillStyle = 'rgba(0, 255, 204, 0.15)';
+            ctx.fillRect(exitGoal.x, exitGoal.y, exitGoal.width, exitGoal.height);
+
+            // Exit Text & Arrow
+            ctx.fillStyle = '#00ffcc';
+            ctx.font = 'bold 10px monospace';
+            ctx.fillText('EXIT ►', exitGoal.x + 4, exitGoal.y + 34);
+        }
+
+        function drawEnemies() {
+            for (let enemy of enemies) {
+                ctx.save();
+                ctx.translate(enemy.x, enemy.y);
+
+                if (enemy.type === 'sharpener') {
+                    // EVIL PENCIL SHARPENER
+                    ctx.strokeStyle = '#ff3366';
+                    ctx.fillStyle = '#2a0a12';
+                    ctx.lineWidth = 1.8;
+
+                    ctx.fillRect(0, 0, enemy.width, enemy.height);
+                    ctx.strokeRect(0, 0, enemy.width, enemy.height);
+
+                    // Blade slot & teeth
+                    ctx.fillStyle = '#ff3366';
+                    ctx.fillRect(enemy.width / 4, 4, 10, 10);
+
+                    // Crank handle
+                    ctx.beginPath();
+                    ctx.moveTo(enemy.facing === 1 ? 0 : enemy.width, enemy.height / 2);
+                    ctx.lineTo(enemy.facing === 1 ? -6 : enemy.width + 6, enemy.height / 2 - 4);
+                    ctx.stroke();
+
+                } else if (enemy.type === 'eraser') {
+                    // FIENDISH ERASER
+                    ctx.strokeStyle = '#ff66cc';
+                    ctx.fillStyle = '#330022';
+                    ctx.lineWidth = 1.8;
+
+                    // Angled Parallelogram Shape
+                    ctx.beginPath();
+                    ctx.moveTo(6, 0);
+                    ctx.lineTo(enemy.width, 0);
+                    ctx.lineTo(enemy.width - 6, enemy.height);
+                    ctx.lineTo(0, enemy.height);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Angry Eyes
+                    ctx.fillStyle = '#ff66cc';
+                    ctx.fillRect(8, 5, 4, 3);
+                    ctx.fillRect(16, 5, 4, 3);
+
+                } else if (enemy.type === 'desk') {
+                    // PSYCHO STUDENT DESK
+                    ctx.strokeStyle = '#ff9900';
+                    ctx.fillStyle = '#261700';
+                    ctx.lineWidth = 1.8;
+
+                    // Desk Top
+                    ctx.fillRect(0, 0, enemy.width, 10);
+                    ctx.strokeRect(0, 0, enemy.width, 10);
+
+                    // Desk Legs
+                    ctx.beginPath();
+                    ctx.moveTo(4, 10); ctx.lineTo(2, enemy.height);
+                    ctx.moveTo(enemy.width - 4, 10); ctx.lineTo(enemy.width - 2, enemy.height);
+                    ctx.stroke();
+
+                    // Chair backrest attached
+                    ctx.fillRect(enemy.facing === 1 ? 2 : enemy.width - 8, -8, 6, 8);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        function draw() {
+            // Clear Canvas
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Render Game Elements
+            drawPlatforms();
+            drawExit();
+            drawEnemies();
+            drawStickman(player.x, player.y, player.facing, player.walkFrame);
+        }
+
+        function animate() {
+            updatePhysics();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function() {
+            setupTouchControls();
+            resizeCanvas();
+            animate();
+        };
+    </script>
+</body>
+</html>
