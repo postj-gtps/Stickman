@@ -184,9 +184,9 @@
  });
  }
 
- // Generate Flowers
+ // Generate Flowers (Yellow removed to prevent visual overlap with gold coins)
  flowers = [];
- const colors = ['#ff4d6d', '#ff007f', '#ffb703', '#00f5d4', '#e0aaff'];
+ const colors = ['#ff4d6d', '#ff007f', '#00f5d4', '#e0aaff', '#ff6b35'];
  for (let i = 0; i < 25; i++) {
  flowers.push({
  x: Math.random() * (w - 40) + 20,
@@ -384,13 +384,13 @@
  ctx.fillStyle = groundGrad;
  ctx.fillRect(0, groundTop, w, h - groundTop);
 
- // Jungle Flowers
+ // Jungle Flowers (Inner center set to white to avoid yellow coin resemblance)
  flowers.forEach(flower => {
  ctx.fillStyle = flower.color;
  ctx.beginPath();
  ctx.arc(flower.x, flower.y, flower.radius, 0, Math.PI * 2);
  ctx.fill();
- ctx.fillStyle = '#ffff55';
+ ctx.fillStyle = '#ffffff';
  ctx.beginPath();
  ctx.arc(flower.x, flower.y, flower.radius * 0.4, 0, Math.PI * 2);
  ctx.fill();
