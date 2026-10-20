@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman Moon Mission 🚀</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap');
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Fredoka', 'Comic Sans MS', cursive, sans-serif;
+    }
+
+    body {
+      background: #0d0926;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 12px;
+    }
+
+    /* Top Header Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1100px;
+      margin-bottom: 8px;
+      padding: 10px 18px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(8px);
+    }
+
+    h1 {
+      font-size: 22px;
+      letter-spacing: 1px;
+      font-weight: 700;
+      color: #ffd166;
+      text-shadow: 0 0 10px rgba(255, 209, 102, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hud-info {
+      font-size: 18px;
+      font-weight: 700;
+      color: #06d6a0;
+      background: rgba(6, 214, 160, 0.15);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid #06d6a0;
+    }
+
+    .btn-reset {
+      background: #ef476f;
+      color: #ffffff;
+      border: none;
+      padding: 8px 18px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #b82d4f;
+      transition: all 0.1s ease;
+    }
+
+    .btn-reset:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 #b82d4f;
+    }
+
+    .btn-reset:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #b82d4f;
+    }
+
+    /* Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(79, 172, 254, 0.2);
+      border: 3px solid #3a3b68;
+    }
+
+    canvas {
+      background-color: #0b091a;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .instructions {
+      margin-top: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #a0a5c0;
+      text-align: center;
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+    }
+
+    .key-badge {
+      background: #2b2d42;
+      color: #ffd166;
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid #4a4e69;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <div id="header">
+    <h1>🌙 MOON MISSION 🚀</h1>
+    <div class="hud-info" id="partsCounter">PARTS: 0 / 4</div>
+    <button class="btn-reset" onclick="resetSimulation()">RESET MISSION</button>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+  </div>
+
+  <div class="instructions">
+    <span>Controls: <span class="key-badge">W</span> <span class="key-badge">A</span> <span class="key-badge">S</span> <span class="key-badge">D</span> to Move (Arrow keys disabled)</span>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const partsCounterEl = document.getElementById('partsCounter');
+
+    // KEYBOARD INPUT STATE
+    const keys = {};
+
+    // GAMEPLAY STATE
+    let gameState = 'PLAYING'; // 'PLAYING' or 'LAUNCHING' or 'WON'
+    let launchTimer = 0;
+
+    // STICKMAN PLAYER STATE
+    const player = {
+      x: 0,
+      y: 0,
+      speed: 4.2,
+      facing: 1, // 1 = Right, -1 = Left
+      walkFrame: 0,
+      bobOffset: 0
+    };
+
+    // ROCKET PARTS DEFINITION
+    let rocketParts = [];
+    const totalParts = 4;
+
+    // SCENERY DECORATIONS
+    let stars = [];
+    let craters = [];
+    let particles = [];
+    let notifications = [];
+
+    function initScenery() {
+      // Stars
+      stars = [];
+      for (let i = 0; i < 70; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * (canvas.height * 0.65),
+          radius: Math.random() * 2 + 1,
+          alpha: Math.random(),
+          speed: Math.random() * 0.02 + 0.005,
+          color: ['#ffffff', '#ffd166', '#4cc9f0', '#ff85a1'][Math.floor(Math.random() * 4)]
+        });
+      }
+
+      // Craters on Moon floor
+      craters = [];
+      const moonTop = canvas.height * 0.45;
+      for (let i = 0; i < 12; i++) {
+        craters.push({
+          x: Math.random() * canvas.width,
+          y: moonTop + Math.random() * (canvas.height - moonTop - 40),
+          rx: Math.random() * 30 + 15,
+          ry: Math.random() * 12 + 6
+        });
+      }
+    }
+
+    function initRocketParts() {
+      const partNames = ['Rocket Cone', 'Fuel Tank', 'Side Wings', 'Main Engine'];
+      const partColors = ['#ef476f', '#06d6a0', '#118ab2', '#ffd166'];
+      
+      rocketParts = [];
+      const margin = 80;
+      const spawnWidth = canvas.width - margin * 2;
+      const spawnHeight = canvas.height * 0.4 - 100;
+      const startY = canvas.height * 0.55;
+
+      for (let i = 0; i < totalParts; i++) {
+        rocketParts.push({
+          id: i,
+          name: partNames[i],
+          x: margin + Math.random() * spawnWidth,
+          y: startY + Math.random() * spawnHeight,
+          color: partColors[i],
+          collected: false,
+          floatOffset: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+      
+      initScenery();
+      if (player.x === 0 && player.y === 0) {
+        resetSimulation();
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // CONTROLS HANDLERS (STRICTLY WASD ONLY - NO ARROWS FOR MOVEMENT)
+    window.addEventListener('keydown', (e) => {
+      // Exclusively allow WASD keys for movement
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+        e.preventDefault();
+        keys[e.code] = true;
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+        keys[e.code] = false;
+      }
+    });
+
+    function addNotification(text, x, y, color) {
+      notifications.push({
+        text, x, y, color, alpha: 1, life: 60
+      });
+    }
+
+    function addParticles(x, y, color, count = 15) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 4 + 1;
+        particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: Math.random() * 4 + 2,
+          color,
+          alpha: 1,
+          decay: Math.random() * 0.03 + 0.01
+        });
+      }
+    }
+
+    function resetSimulation() {
+      gameState = 'PLAYING';
+      launchTimer = 0;
+      player.x = canvas.width * 0.15;
+      player.y = canvas.height * 0.75;
+      player.facing = 1;
+      player.walkFrame = 0;
+      particles = [];
+      notifications = [];
+      initRocketParts();
+      updateHUD();
+    }
+
+    function updateHUD() {
+      const count = rocketParts.filter(p => p.collected).length;
+      partsCounterEl.innerText = `PARTS: ${count} / ${totalParts}`;
+      if (count === totalParts && gameState === 'PLAYING') {
+        partsCounterEl.innerText = "PARTS READY! GO TO LAUNCHPAD 🚀";
+      }
+    }
+
+    function updatePhysics() {
+      if (gameState === 'WON') return;
+
+      if (gameState === 'LAUNCHING') {
+        launchTimer += 1;
+        // Fire particles from rocket base
+        addParticles(canvas.width * 0.85, canvas.height * 0.7 - launchTimer * 3, '#ff9f1c', 4);
+        addParticles(canvas.width * 0.85, canvas.height * 0.7 - launchTimer * 3, '#ef476f', 3);
+        if (launchTimer > 180) {
+          gameState = 'WON';
+        }
+        return;
+      }
+
+      // Movement Direction Calculation (WASD Only)
+      let dx = 0;
+      let dy = 0;
+
+      if (keys['KeyW'] || keys['Keyw']) dy -= 1;
+      if (keys['KeyS'] || keys['Keys']) dy += 1;
+      if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
+      if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+
+      // Normalize diagonal movement vector speed
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.7071;
+        dy *= 0.7071;
+      }
+
+      // Update stickman position
+      player.x += dx * player.speed;
+      player.y += dy * player.speed;
+
+      // Keep stickman inside Moon boundaries
+      const minX = 20;
+      const maxX = canvas.width - 20;
+      const minY = canvas.height * 0.52; // Keep on moon surface
+      const maxY = canvas.height - 25;
+
+      player.x = Math.max(minX, Math.min(maxX, player.x));
+      player.y = Math.max(minY, Math.min(maxY, player.y));
+
+      // Low-gravity floaty walk animation updates
+      if (dx !== 0 || dy !== 0) {
+        player.walkFrame += 0.18;
+        player.bobOffset = Math.sin(player.walkFrame * 2) * 3;
+      } else {
+        player.walkFrame = 0;
+        player.bobOffset = 0;
+      }
+
+      // Check collision with Rocket Parts
+      rocketParts.forEach(part => {
+        if (!part.collected) {
+          const dist = Math.hypot(player.x - part.x, player.y - part.y);
+          if (dist < 32) {
+            part.collected = true;
+            addParticles(part.x, part.y, part.color, 20);
+            addNotification(`Found ${part.name}! 🎉`, part.x, part.y - 20, part.color);
+            updateHUD();
+          }
+        }
+      });
+
+      // Check if all parts collected and player reached Launchpad
+      const collectedCount = rocketParts.filter(p => p.collected).length;
+      const launchpadX = canvas.width * 0.85;
+      const launchpadY = canvas.height * 0.72;
+
+      if (collectedCount === totalParts) {
+        const distTopad = Math.hypot(player.x - launchpadX, player.y - launchpadY);
+        if (distTopad < 50) {
+          gameState = 'LAUNCHING';
+          addParticles(launchpadX, launchpadY, '#06d6a0', 40);
+        }
+      }
+
+      // Update particles & notifications
+      particles.forEach((p, idx) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= p.decay;
+        if (p.alpha <= 0) particles.splice(idx, 1);
+      });
+
+      notifications.forEach((n, idx) => {
+        n.y -= 0.8;
+        n.alpha -= 0.018;
+        if (n.alpha <= 0) notifications.splice(idx, 1);
+      });
+    }
+
+    // DRAWING FUNCTIONS
+    function drawBackground() {
+      // Space Sky Gradient
+      const spaceGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      spaceGrad.addColorStop(0, '#060412');
+      spaceGrad.addColorStop(0.5, '#120d31');
+      spaceGrad.addColorStop(1, '#1d1647');
+      ctx.fillStyle = spaceGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Twinkling Stars
+      stars.forEach(star => {
+        star.alpha += star.speed;
+        const currentAlpha = (Math.sin(star.alpha) + 1) / 2;
+        ctx.fillStyle = star.color;
+        ctx.globalAlpha = currentAlpha * 0.8 + 0.2;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+
+      // Draw Earth in top right background
+      const earthX = canvas.width * 0.8;
+      const earthY = canvas.height * 0.2;
+      ctx.beginPath();
+      ctx.arc(earthX, earthY, 35, 0, Math.PI * 2);
+      ctx.fillStyle = '#118ab2';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(earthX - 8, earthY - 5, 18, 0, Math.PI * 2);
+      ctx.fillStyle = '#06d6a0';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(earthX + 12, earthY + 8, 12, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = 0.4;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Moon Floor Curve
+      const moonTop = canvas.height * 0.5;
+      const moonGrad = ctx.createLinearGradient(0, moonTop, 0, canvas.height);
+      moonGrad.addColorStop(0, '#8d99ae');
+      moonGrad.addColorStop(0.3, '#6c757d');
+      moonGrad.addColorStop(1, '#343a40');
+
+      ctx.beginPath();
+      ctx.moveTo(0, moonTop);
+      ctx.quadraticCurveTo(canvas.width / 2, moonTop - 30, canvas.width, moonTop + 20);
+      ctx.lineTo(canvas.width, canvas.height);
+      ctx.lineTo(0, canvas.height);
+      ctx.closePath();
+      ctx.fillStyle = moonGrad;
+      ctx.fill();
+
+      // Craters
+      craters.forEach(c => {
+        ctx.beginPath();
+        ctx.ellipse(c.x, c.y, c.rx, c.ry, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#495057';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#ADB5BD';
+        ctx.stroke();
+      });
+    }
+
+    function drawLaunchPad() {
+      const padX = canvas.width * 0.85;
+      const padY = canvas.height * 0.73;
+
+      // Launchpad Base
+      ctx.fillStyle = '#2b2d42';
+      ctx.beginPath();
+      ctx.ellipse(padX, padY, 55, 18, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Launch Pad Glowing Rings
+      ctx.strokeStyle = '#06d6a0';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(padX, padY, 40, 12, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Text hint
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 12px Fredoka';
+      ctx.textAlign = 'center';
+      ctx.fillText('LAUNCHPAD', padX, padY + 32);
+
+      // Draw Assembled Rocket on Pad according to progress
+      const collectedCount = rocketParts.filter(p => p.collected).length;
+      let rocketY = padY - 25;
+
+      if (gameState === 'LAUNCHING') {
+        rocketY -= launchTimer * 3;
+      }
+
+      if (collectedCount > 0) {
+        // Base / Thruster
+        ctx.fillStyle = '#ef476f';
+        ctx.fillRect(padX - 12, rocketY - 15, 24, 15);
+      }
+      if (collectedCount > 1) {
+        // Hull Body
+        ctx.fillStyle = '#f8f9fa';
+        ctx.fillRect(padX - 15, rocketY - 45, 30, 30);
+        // Window
+        ctx.fillStyle = '#118ab2';
+        ctx.beginPath();
+        ctx.arc(padX, rocketY - 30, 7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (collectedCount > 2) {
+        // Wings
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath();
+        ctx.moveTo(padX - 15, rocketY - 15);
+        ctx.lineTo(padX - 25, rocketY);
+        ctx.lineTo(padX - 15, rocketY - 35);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(padX + 15, rocketY - 15);
+        ctx.lineTo(padX + 25, rocketY);
+        ctx.lineTo(padX + 15, rocketY - 35);
+        ctx.fill();
+      }
+      if (collectedCount > 3) {
+        // Nose Cone
+        ctx.fillStyle = '#ef476f';
+        ctx.beginPath();
+        ctx.moveTo(padX - 15, rocketY - 45);
+        ctx.lineTo(padX, rocketY - 70);
+        ctx.lineTo(padX + 15, rocketY - 45);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    function drawRocketParts() {
+      const time = Date.now() * 0.003;
+
+      rocketParts.forEach((part, i) => {
+        if (!part.collected) {
+          const floatY = part.y + Math.sin(time + part.floatOffset) * 6;
+
+          // Glowing aura
+          ctx.beginPath();
+          ctx.arc(part.x, floatY, 22, 0, Math.PI * 2);
+          ctx.fillStyle = part.color;
+          ctx.globalAlpha = 0.25;
+          ctx.fill();
+          ctx.globalAlpha = 1.0;
+
+          // Part Item Graphic
+          ctx.fillStyle = part.color;
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+
+          ctx.beginPath();
+          if (i === 0) { // Nose Cone
+            ctx.moveTo(part.x, floatY - 14);
+            ctx.lineTo(part.x - 10, floatY + 10);
+            ctx.lineTo(part.x + 10, floatY + 10);
+            ctx.closePath();
+          } else if (i === 1) { // Fuel Tank
+            ctx.roundRect(part.x - 10, floatY - 12, 20, 24, 6);
+          } else if (i === 2) { // Wings
+            ctx.moveTo(part.x - 12, floatY + 10);
+            ctx.lineTo(part.x, floatY - 10);
+            ctx.lineTo(part.x + 12, floatY + 10);
+            ctx.closePath();
+          } else { // Engine
+            ctx.arc(part.x, floatY, 12, 0, Math.PI * 2);
+          }
+          ctx.fill();
+          ctx.stroke();
+
+          // Label
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 11px Fredoka';
+          ctx.textAlign = 'center';
+          ctx.fillText(part.name, part.x, floatY + 24);
+        }
+      });
+    }
+
+    function drawAstronautStickman(x, y, facing, walkFrame, bob) {
+      if (gameState === 'LAUNCHING' || gameState === 'WON') return; // Inside rocket!
+
+      const currY = y + bob;
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const headRadius = 9;
+      const bodyLength = 18;
+      const legLength = 14;
+      const neckY = currY - bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 5;
+
+      // Backpack / Oxygen Tank
+      ctx.fillStyle = '#adb5bd';
+      ctx.fillRect(x - facing * 12 - 4, neckY, 8, 16);
+
+      // 1. Head & Bubble Helmet
+      ctx.beginPath();
+      ctx.arc(x, headY, headRadius + 3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(76, 201, 240, 0.45)';
+      ctx.fill();
+      ctx.strokeStyle = '#4cc9f0';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Stick Head Inside
+      ctx.beginPath();
+      ctx.arc(x, headY, headRadius - 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+
+      // Eye visor indicator
+      ctx.fillStyle = '#2b2d42';
+      ctx.beginPath();
+      ctx.arc(x + facing * 3, headY - 1, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Torso
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(x, neckY);
+      ctx.lineTo(x, currY);
+      ctx.stroke();
+
+      // 3. Legs (Walking animation)
+      const legSwing = Math.sin(walkFrame) * 8;
+
+      ctx.beginPath();
+      ctx.moveTo(x, currY);
+      ctx.lineTo(x - legSwing, currY + legLength);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, currY);
+      ctx.lineTo(x + legSwing, currY + legLength);
+      ctx.stroke();
+
+      // 4. Arms
+      const armSwing = Math.sin(walkFrame + Math.PI) * 6;
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x - facing * 6 - armSwing, shoulderY + 8);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x + facing * 6 + armSwing, shoulderY + 8);
+      ctx.stroke();
+    }
+
+    function drawUIOverlay() {
+      // Particles
+      particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1.0;
+
+      // Floating Notifications
+      notifications.forEach(n => {
+        ctx.fillStyle = n.color;
+        ctx.globalAlpha = n.alpha;
+        ctx.font = 'bold 16px Fredoka';
+        ctx.textAlign = 'center';
+        ctx.fillText(n.text, n.x, n.y);
+      });
+      ctx.globalAlpha = 1.0;
+
+      // Victory Banner
+      if (gameState === 'WON') {
+        ctx.fillStyle = 'rgba(13, 9, 38, 0.75)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#ffd166';
+        ctx.font = 'bold 42px Fredoka';
+        ctx.textAlign = 'center';
+        ctx.fillText('MISSION ACCOMPLISHED! 🚀', canvas.width / 2, canvas.height / 2 - 20);
+
+        ctx.fillStyle = '#06d6a0';
+        ctx.font = 'bold 22px Fredoka';
+        ctx.fillText('Stickman built his rocket and is heading home!', canvas.width / 2, canvas.height / 2 + 25);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '16px Fredoka';
+        ctx.fillText('Click RESET MISSION to play again.', canvas.width / 2, canvas.height / 2 + 65);
+      }
+    }
+
+    function draw() {
+      // Clear and draw layers
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawBackground();
+      drawLaunchPad();
+      drawRocketParts();
+      drawAstronautStickman(player.x, player.y, player.facing, player.walkFrame, player.bobOffset);
+      drawUIOverlay();
+    }
+
+    function animate() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+      resizeCanvas();
+      animate();
+    };
+  </script>
+</body>
+</html>

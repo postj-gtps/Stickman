@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman Engine - Widebody Aircraft</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', Courier, monospace, sans-serif;
+    }
+
+    body {
+      background-color: #000000;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 16px;
+    }
+
+    /* Top Header Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1100px;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #ffffff;
+    }
+
+    h1 {
+      font-size: 18px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+
+    .btn-reset {
+      background: transparent;
+      color: #ffffff;
+      border: 1px solid #ffffff;
+      padding: 6px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .btn-reset:hover {
+      background: #ffffff;
+      color: #000000;
+    }
+
+    /* Game Info Bar */
+    #status-bar {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 1100px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #00ffcc;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Main Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      background-color: #000000;
+      border: 1px solid #ffffff;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .instructions {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #888888;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <div id="header">
+    <h1>Stickman Engine - Widebody Aircraft</h1>
+    <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+  </div>
+
+  <!-- Game Status Bar -->
+  <div id="status-bar">
+    <div id="zone-display">ZONE: CARGO BAY</div>
+    <div id="objective-display">GOAL: NAVIGATE TO COCKPIT (RIGHT)</div>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+  </div>
+
+  <div class="instructions">
+    [WASD] Move (Arrow Keys Disabled)
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // WORLD CONSTANTS
+    const WORLD = {
+      width: 4000,   // Length of aircraft world
+      height: 600,   // Canvas internal coordinate height
+      topY: 75,      // Fuselage top bound
+      bottomY: 525   // Fuselage bottom bound
+    };
+
+    // KEYBOARD INPUT STATE (WASD EXCLUSIVE)
+    const keys = {};
+
+    // STICKMAN PLAYER STATE (PILOT)
+    const player = {
+      x: 320,        // Starts inside Cargo Bay
+      y: 300,
+      radius: 12,
+      speed: 4.5,
+      facing: 1,     // 1 = Right (Nose), -1 = Left (Tail)
+      walkFrame: 0,
+      hasWon: false
+    };
+
+    // PROCEDURAL GENERATION OPTIONS (Strictly 5 per category)
+    const CLOTHING_BOTTOMS = ['#1e293b', '#2563eb', '#15803d', '#b45309', '#be123c'];
+    const CLOTHING_TOPS    = ['#f8fafc', '#ef4444', '#06b6d4', '#eab308', '#8b5cf6'];
+    const HAIR_STYLES      = ['none', 'short', 'long', 'spiky', 'afro'];
+    const HAT_STYLES       = ['none', 'cap', 'beanie', 'fedora', 'visor'];
+    const HAIR_COLORS      = ['#451a03', '#f59e0b', '#18181b', '#d97706', '#92400e'];
+
+    // MAP DATA & PARALLAX CLOUDS
+    let obstacles = [];
+    let seats = [];
+    let passengers = [];
+    let clouds = [];
+
+    // SECTIONS MAP (Tail to Nose: Cargo, Coach, Business, First Class, Cockpit)
+    const sections = [
+      { name: "Cargo Bay", startX: 70, endX: 750, color: "#1e293b" },
+      { name: "Coach Class", startX: 750, endX: 2000, color: "#0f172a" },
+      { name: "Business Class", startX: 2000, endX: 2900, color: "#0b1329" },
+      { name: "First Class", startX: 2900, endX: 3550, color: "#1e1b4b" },
+      { name: "Cockpit", startX: 3550, endX: 3950, color: "#022c22" }
+    ];
+
+    function getRandomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    // INITIALIZE PARALLAX SKY CLOUDS
+    function initClouds() {
+      clouds = [];
+      for (let i = 0; i < 50; i++) {
+        clouds.push({
+          x: Math.random() * WORLD.width,
+          y: Math.random() * WORLD.height,
+          radius: 20 + Math.random() * 35,
+          speed: 1.2 + Math.random() * 2.8, // Independent drift speed
+          opacity: 0.2 + Math.random() * 0.4
+        });
+      }
+    }
+
+    function updateClouds() {
+      clouds.forEach(cloud => {
+        cloud.x -= cloud.speed;
+        if (cloud.x < -100) {
+          cloud.x = WORLD.width + 100;
+          cloud.y = Math.random() * WORLD.height;
+        }
+      });
+    }
+
+    // BUILD AIRCRAFT LAYOUT & OBSTACLES
+    function initAircraftLayout() {
+      obstacles = [];
+      seats = [];
+      passengers = [];
+
+      // 1. INVISIBLE BOUNDARY COLLISION BARRIERS (Sky bounds)
+      obstacles.push({ x: 0, y: 0, w: WORLD.width, h: WORLD.topY, type: 'boundary' }); 
+      obstacles.push({ x: 0, y: WORLD.bottomY, w: WORLD.width, h: WORLD.height - WORLD.bottomY, type: 'boundary' }); 
+
+      // Tail cone tapered collision wedges
+      obstacles.push({ x: 0, y: WORLD.topY, w: 280, h: 100, type: 'boundary' });
+      obstacles.push({ x: 0, y: 425, w: 280, h: 100, type: 'boundary' });
+      obstacles.push({ x: 0, y: WORLD.topY, w: 70, h: WORLD.bottomY - WORLD.topY, type: 'boundary' });
+
+      // Nose cone collision
+      obstacles.push({ x: 3930, y: WORLD.topY, w: 70, h: WORLD.bottomY - WORLD.topY, type: 'boundary' });
+
+      // 2. BULKHEADS WITH AISLES
+      const bulkheads = [750, 2000, 2900, 3550];
+      bulkheads.forEach((bx, idx) => {
+        if (idx === 3) {
+          // Cockpit Single Center Door
+          obstacles.push({ x: bx, y: WORLD.topY, w: 15, h: 185 });
+          obstacles.push({ x: bx, y: 315, w: 15, h: WORLD.bottomY - 315 });
+        } else {
+          // 2-Aisle Bulkheads
+          obstacles.push({ x: bx, y: WORLD.topY, w: 15, h: 105 });
+          obstacles.push({ x: bx, y: 220, w: 15, h: 160 });
+          obstacles.push({ x: bx, y: 425, w: 15, h: WORLD.bottomY - 425 });
+        }
+      });
+
+      // 3. CARGO PALLETS & CRATES
+      obstacles.push({ x: 290, y: 120, w: 110, h: 70, type: 'crate', label: 'CARGO' });
+      obstacles.push({ x: 290, y: 410, w: 110, h: 70, type: 'crate', label: 'CARGO' });
+      obstacles.push({ x: 440, y: 240, w: 130, h: 120, type: 'crate', label: 'PALLET' });
+      obstacles.push({ x: 610, y: 100, w: 90, h: 75, type: 'crate', label: 'CRATE' });
+      obstacles.push({ x: 610, y: 440, w: 90, h: 70, type: 'crate', label: 'CRATE' });
+
+      // 4. COACH CLASS SEATING (2-Aisle Config)
+      for (let x = 810; x < 1950; x += 42) {
+        if (x >= 1340 && x <= 1440) continue; // Restrooms
+
+        seats.push({ x: x, y: 90, w: 28, h: 28 });
+        seats.push({ x: x, y: 125, w: 28, h: 28 });
+
+        seats.push({ x: x, y: 235, w: 28, h: 26 });
+        seats.push({ x: x, y: 268, w: 28, h: 26 });
+        seats.push({ x: x, y: 308, w: 28, h: 26 });
+        seats.push({ x: x, y: 341, w: 28, h: 26 });
+
+        seats.push({ x: x, y: 450, w: 28, h: 28 });
+        seats.push({ x: x, y: 485, w: 28, h: 28 });
+      }
+
+      // Restrooms
+      obstacles.push({ x: 1350, y: WORLD.topY, w: 80, h: 105, type: 'restroom', label: 'LAV' });
+      obstacles.push({ x: 1350, y: 425, w: 80, h: WORLD.bottomY - 425, type: 'restroom', label: 'LAV' });
+
+      // 5. BUSINESS CLASS SEATING
+      for (let x = 2060; x < 2850; x += 75) {
+        seats.push({ x: x, y: 98, w: 38, h: 40 });
+        seats.push({ x: x, y: 248, w: 38, h: 38 });
+        seats.push({ x: x, y: 312, w: 38, h: 38 });
+        seats.push({ x: x, y: 462, w: 38, h: 40 });
+      }
+
+      // 6. FIRST CLASS SEATING
+      for (let x = 2960; x < 3500; x += 110) {
+        seats.push({ x: x, y: 105, w: 50, h: 55 });
+        seats.push({ x: x, y: 270, w: 50, h: 60 });
+        seats.push({ x: x, y: 440, w: 50, h: 55 });
+      }
+
+      // Seat Collision Obstacles
+      seats.forEach(s => {
+        obstacles.push({ x: s.x, y: s.y, w: s.w, h: s.h, type: 'seat' });
+      });
+
+      // 7. COCKPIT INSTRUMENTS & CONTROL PANEL
+      obstacles.push({ x: 3820, y: 200, w: 45, h: 40, type: 'pilot-seat' });
+      obstacles.push({ x: 3820, y: 360, w: 45, h: 40, type: 'pilot-seat' });
+      obstacles.push({ x: 3890, y: 140, w: 40, h: 320, type: 'controls', label: 'PANEL' });
+
+      // 8. PROCEDURAL PASSENGERS
+      seats.forEach(s => {
+        if (Math.random() < 0.85) {
+          passengers.push({
+            x: s.x + s.w / 2,
+            y: s.y + s.h / 2,
+            bottomColor: getRandomItem(CLOTHING_BOTTOMS),
+            topColor: getRandomItem(CLOTHING_TOPS),
+            hairStyle: getRandomItem(HAIR_STYLES),
+            hatStyle: getRandomItem(HAT_STYLES),
+            hairColor: getRandomItem(HAIR_COLORS)
+          });
+        }
+      });
+    }
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // CONTROLS HANDLERS (WASD EXCLUSIVE - ARROW KEYS DIRECTLY BLOCKED)
+    window.addEventListener('keydown', (e) => {
+      // Disallow Arrow Keys from triggering any movement
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+        return;
+      }
+
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+        e.preventDefault();
+        keys[e.code] = true;
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+        keys[e.code] = false;
+      }
+    });
+
+    function resetSimulation() {
+      player.x = 320;
+      player.y = 300;
+      player.facing = 1;
+      player.walkFrame = 0;
+      player.hasWon = false;
+      initClouds();
+      initAircraftLayout();
+    }
+
+    // CIRCLE TO BOX COLLISION DETECTION
+    function checkCollision(px, py, radius) {
+      for (let obs of obstacles) {
+        let closestX = Math.max(obs.x, Math.min(px, obs.x + obs.w));
+        let closestY = Math.max(obs.y, Math.min(py, obs.y + obs.h));
+
+        let distanceX = px - closestX;
+        let distanceY = py - closestY;
+        let distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
+
+        if (distanceSquared < (radius * radius)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function updatePhysics() {
+      updateClouds();
+
+      if (player.hasWon) return;
+
+      let dx = 0;
+      let dy = 0;
+
+      // WASD exclusive movement evaluation
+      if (keys['KeyW'] || keys['Keyw']) dy -= 1;
+      if (keys['KeyS'] || keys['Keys']) dy += 1;
+      if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
+      if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+
+      // Diagonal Speed Normalization
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.7071;
+        dy *= 0.7071;
+      }
+
+      // Position update with collision checks
+      let nextX = player.x + dx * player.speed;
+      if (!checkCollision(nextX, player.y, player.radius)) {
+        player.x = nextX;
+      }
+
+      let nextY = player.y + dy * player.speed;
+      if (!checkCollision(player.x, nextY, player.radius)) {
+        player.y = nextY;
+      }
+
+      if (dx !== 0 || dy !== 0) {
+        player.walkFrame += 0.25;
+      } else {
+        player.walkFrame = 0;
+      }
+
+      // Zone Banner Update
+      const currentZone = sections.find(s => player.x >= s.startX && player.x <= s.endX);
+      if (currentZone) {
+        document.getElementById('zone-display').innerText = `ZONE: ${currentZone.name.toUpperCase()}`;
+      }
+
+      if (player.x > 3800) {
+        player.hasWon = true;
+      }
+    }
+
+    // DRAW PROCEDURAL PASSENGER
+    function drawPassenger(p) {
+      const x = p.x;
+      const y = p.y;
+
+      // Bottom Clothing
+      ctx.fillStyle = p.bottomColor;
+      ctx.fillRect(x - 5, y + 2, 10, 8);
+
+      // Top Clothing & Arms
+      ctx.fillStyle = p.topColor;
+      ctx.fillRect(x - 6, y - 5, 12, 9);
+      ctx.strokeStyle = p.topColor;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x - 6, y - 3);
+      ctx.lineTo(x - 9, y + 3);
+      ctx.moveTo(x + 6, y - 3);
+      ctx.lineTo(x + 9, y + 3);
+      ctx.stroke();
+
+      // Head
+      ctx.fillStyle = '#fce7f3';
+      ctx.beginPath();
+      ctx.arc(x, y - 8, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Hair Styles
+      if (p.hairStyle !== 'none') {
+        ctx.fillStyle = p.hairColor;
+        ctx.strokeStyle = p.hairColor;
+        ctx.lineWidth = 1.5;
+
+        if (p.hairStyle === 'short') {
+          ctx.beginPath();
+          ctx.arc(x, y - 9, 5, Math.PI, Math.PI * 2);
+          ctx.fill();
+        } else if (p.hairStyle === 'long') {
+          ctx.beginPath();
+          ctx.arc(x, y - 9, 5, Math.PI, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(x - 6, y - 9, 3, 10);
+          ctx.fillRect(x + 3, y - 9, 3, 10);
+        } else if (p.hairStyle === 'spiky') {
+          for (let angle = Math.PI; angle <= Math.PI * 2; angle += 0.8) {
+            ctx.beginPath();
+            ctx.moveTo(x + Math.cos(angle) * 4, y - 8 + Math.sin(angle) * 4);
+            ctx.lineTo(x + Math.cos(angle) * 8, y - 8 + Math.sin(angle) * 8);
+            ctx.stroke();
+          }
+        } else if (p.hairStyle === 'afro') {
+          ctx.beginPath();
+          ctx.arc(x, y - 9, 7.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Hat Styles
+      if (p.hatStyle !== 'none') {
+        if (p.hatStyle === 'cap') {
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(x - 5, y - 13, 10, 4);
+          ctx.fillRect(x + 1, y - 12, 7, 2);
+        } else if (p.hatStyle === 'beanie') {
+          ctx.fillStyle = '#0284c7';
+          ctx.beginPath();
+          ctx.arc(x, y - 9, 5.5, Math.PI, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(x - 6, y - 10, 12, 3);
+        } else if (p.hatStyle === 'fedora') {
+          ctx.fillStyle = '#451a03';
+          ctx.beginPath();
+          ctx.ellipse(x, y - 9, 8, 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#27272a';
+          ctx.arc(x, y - 9, 4, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (p.hatStyle === 'visor') {
+          ctx.strokeStyle = '#e11d48';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(x, y - 8, 6, Math.PI * 0.8, Math.PI * 2.2);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // DRAW PILOT STICKMAN PLAYER
+    function drawPilot(x, y, facing, walkFrame) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      const armSwing = Math.sin(walkFrame) * 4;
+      const legSwing = Math.sin(walkFrame) * 5;
+
+      // Legs
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-4 - legSwing, 12);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(4 + legSwing, 12);
+      ctx.stroke();
+
+      // Shirt & Tie
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-6, -10, 12, 12);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(-1, -10, 2, 8);
+
+      // Gold Epaulets
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(-7, -10, 3, 4);
+      ctx.fillRect(4, -10, 3, 4);
+
+      // Arms
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-6, -8);
+      ctx.lineTo(-8, 0 + armSwing);
+      ctx.moveTo(6, -8);
+      ctx.lineTo(8, 0 - armSwing);
+      ctx.stroke();
+
+      // Head & Eye
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath();
+      ctx.arc(0, -15, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.arc(facing * 3, -15, 1, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Pilot Cap
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-6, -20, 12, 4);
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(facing * 2 - 2, -18, 4, 2);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(facing * 2, -16, facing * 6, 2);
+
+      ctx.restore();
+    }
+
+    // MAIN RENDER ROUTINE
+    function draw() {
+      // 1. SKY BLUE RADIAL GRADIENT BACKGROUND
+      const skyGradient = ctx.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, 100,
+        canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height)
+      );
+      skyGradient.addColorStop(0, '#38bdf8');
+      skyGradient.addColorStop(0.5, '#0284c7');
+      skyGradient.addColorStop(1, '#0f172a');
+      ctx.fillStyle = skyGradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // CAMERA SETUP (Horizontal Free Scrolling)
+      const scale = canvas.height / WORLD.height;
+      let cameraX = player.x - (canvas.width / scale) / 2;
+      cameraX = Math.max(0, Math.min(WORLD.width - canvas.width / scale, cameraX));
+
+      ctx.save();
+      ctx.scale(scale, scale);
+      ctx.translate(-cameraX, 0);
+
+      // 2. PARALLAX SKY CLOUDS
+      clouds.forEach(cloud => {
+        ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity})`;
+        ctx.beginPath();
+        ctx.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI * 2);
+        ctx.arc(cloud.x + cloud.radius * 0.6, cloud.y - cloud.radius * 0.2, cloud.radius * 0.7, 0, Math.PI * 2);
+        ctx.arc(cloud.x - cloud.radius * 0.6, cloud.y + cloud.radius * 0.1, cloud.radius * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 3. HORIZONTAL STABILIZERS (TAIL WINGS - MATCHING OVERLAY SHAPE)
+      ctx.fillStyle = '#e2e8f0';
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 4;
+
+      // Top Horizontal Stabilizer (Root extends forward along top wall to X:520, tip flares left past screen)
+      ctx.beginPath();
+      ctx.moveTo(520, WORLD.topY);
+      ctx.lineTo(-100, -180);           // Outer tip extends far up & left past screen
+      ctx.lineTo(-100, 160);
+      ctx.lineTo(70, WORLD.height / 2);  // Tail cone apex connection
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Top Stabilizer Panel Line
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(320, WORLD.topY);
+      ctx.lineTo(-100, -10);
+      ctx.stroke();
+
+      // Bottom Horizontal Stabilizer (Symmetric reflection)
+      ctx.fillStyle = '#e2e8f0';
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 4;
+
+      ctx.beginPath();
+      ctx.moveTo(520, WORLD.bottomY);
+      ctx.lineTo(-100, WORLD.height + 180); // Outer tip extends far down & left past screen
+      ctx.lineTo(-100, WORLD.height - 160);
+      ctx.lineTo(70, WORLD.height / 2);     // Tail cone apex connection
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Bottom Stabilizer Panel Line
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(320, WORLD.bottomY);
+      ctx.lineTo(-100, WORLD.height + 10);
+      ctx.stroke();
+
+      // 4. MAIN WINGS IN COACH SECTION
+      ctx.fillStyle = '#e2e8f0';
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 4;
+
+      // Top Main Wing (Root at X:1350..1700, tip extends past screen)
+      ctx.beginPath();
+      ctx.moveTo(1700, WORLD.topY);
+      ctx.lineTo(1250, -180);
+      ctx.lineTo(1000, -180);
+      ctx.lineTo(1350, WORLD.topY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Top Main Wing Panel Lines
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(1525, WORLD.topY);
+      ctx.lineTo(1125, -180);
+      ctx.stroke();
+
+      // Bottom Main Wing
+      ctx.fillStyle = '#e2e8f0';
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 4;
+
+      ctx.beginPath();
+      ctx.moveTo(1700, WORLD.bottomY);
+      ctx.lineTo(1250, WORLD.height + 180);
+      ctx.lineTo(1000, WORLD.height + 180);
+      ctx.lineTo(1350, WORLD.bottomY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Bottom Main Wing Panel Lines
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(1525, WORLD.bottomY);
+      ctx.lineTo(1125, WORLD.height + 180);
+      ctx.stroke();
+
+      // 5. AIRCRAFT INTERIOR FLOORS WITH TAPERED TAIL
+      sections.forEach(sec => {
+        ctx.fillStyle = sec.color;
+
+        if (sec.name === "Cargo Bay") {
+          // Draw Cargo Bay with Tapered Rear Point at X=70, Y=300
+          ctx.beginPath();
+          ctx.moveTo(sec.endX, WORLD.topY);
+          ctx.lineTo(sec.endX, WORLD.bottomY);
+          ctx.lineTo(280, WORLD.bottomY);
+          ctx.lineTo(70, WORLD.height / 2); // Tail Cone Apex
+          ctx.lineTo(280, WORLD.topY);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.fillRect(sec.startX, WORLD.topY, sec.endX - sec.startX, WORLD.bottomY - WORLD.topY);
+        }
+      });
+
+      // Aisles
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.fillRect(280, 185, 3270, 35);
+      ctx.fillRect(280, 385, 3270, 35);
+
+      // Section Text Labels
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.font = 'bold 28px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText("CARGO BAY", 480, 310);
+      ctx.fillText("COACH CLASS", 1375, 310);
+      ctx.fillText("BUSINESS CLASS", 2450, 310);
+      ctx.fillText("FIRST CLASS", 3225, 310);
+      ctx.fillText("COCKPIT", 3750, 310);
+
+      // 6. FUSELAGE HULL STRUCTURAL OUTLINE
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 5;
+
+      // Top Fuselage Wall
+      ctx.beginPath();
+      ctx.moveTo(280, WORLD.topY);
+      ctx.lineTo(3830, WORLD.topY);
+      ctx.stroke();
+
+      // Bottom Fuselage Wall
+      ctx.beginPath();
+      ctx.moveTo(280, WORLD.bottomY);
+      ctx.lineTo(3830, WORLD.bottomY);
+      ctx.stroke();
+
+      // Tapered Tail Cone Hull Contour (Point at X=70, Y=300)
+      ctx.beginPath();
+      ctx.moveTo(280, WORLD.topY);
+      ctx.lineTo(70, WORLD.height / 2);
+      ctx.lineTo(280, WORLD.bottomY);
+      ctx.stroke();
+
+      // Cockpit Nose Cone Curve
+      ctx.beginPath();
+      ctx.moveTo(3830, WORLD.topY);
+      ctx.quadraticCurveTo(4000, WORLD.height / 2, 3830, WORLD.bottomY);
+      ctx.stroke();
+
+      // 7. DRAW OBSTACLES
+      obstacles.forEach(obs => {
+        if (obs.type === 'boundary') return;
+
+        if (obs.type === 'crate') {
+          ctx.fillStyle = '#78350f';
+          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+          ctx.fillStyle = '#f59e0b';
+          ctx.font = '10px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(obs.label, obs.x + obs.w / 2, obs.y + obs.h / 2 + 3);
+        } else if (obs.type === 'seat') {
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+          ctx.strokeStyle = '#64748b';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+        } else if (obs.type === 'restroom') {
+          ctx.fillStyle = '#0284c7';
+          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 12px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(obs.label, obs.x + obs.w / 2, obs.y + obs.h / 2 + 4);
+        } else if (obs.type === 'controls') {
+          ctx.fillStyle = '#065f46';
+          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+          ctx.fillStyle = '#10b981';
+          ctx.font = 'bold 11px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText("FLIGHT", obs.x + obs.w / 2, obs.y + obs.h / 2 - 6);
+          ctx.fillText("PANEL", obs.x + obs.w / 2, obs.y + obs.h / 2 + 10);
+        } else if (obs.type === 'pilot-seat') {
+          ctx.fillStyle = '#991b1b';
+          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+        } else {
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+        }
+      });
+
+      // 8. DRAW SEATED PASSENGERS
+      passengers.forEach(p => drawPassenger(p));
+
+      // 9. DRAW PILOT PLAYER
+      drawPilot(player.x, player.y, player.facing, player.walkFrame);
+
+      // 10. WIN OVERLAY
+      if (player.hasWon) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillRect(cameraX, 0, canvas.width / scale, WORLD.height);
+
+        ctx.fillStyle = '#4ade80';
+        ctx.font = 'bold 32px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("MISSION ACCOMPLISHED!", cameraX + (canvas.width / scale) / 2, 270);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '16px monospace';
+        ctx.fillText("Pilot reached cockpit controls.", cameraX + (canvas.width / scale) / 2, 310);
+        ctx.fillText("Click 'RESET' to play again.", cameraX + (canvas.width / scale) / 2, 340);
+      }
+
+      ctx.restore();
+    }
+
+    function animate() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+      resizeCanvas();
+      resetSimulation();
+      animate();
+    };
+  </script>
+</body>
+</html>
