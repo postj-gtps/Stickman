@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stickman Control Panel 📱</title>
+
+    <!-- iOS Web App Bookmark Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Stickman Control">
+
+    <!-- Google Fonts & FontAwesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@700;800;900&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        tech: ['Space Grotesk', 'sans-serif'],
+                        fredoka: ['Fredoka', 'sans-serif'],
+                        nunito: ['Nunito', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Blueprint Pattern Background */
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #0b1329;
+            background-image: 
+                linear-gradient(rgba(30, 48, 94, 0.4) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30, 48, 94, 0.4) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #f1f5f9;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .blueprint-card {
+            background: #132042;
+            border: 2px solid #2a437e;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .blueprint-card::before, .blueprint-card::after {
+            content: "+";
+            position: absolute;
+            top: 4px;
+            font-family: monospace;
+            font-size: 10px;
+            color: #64748b;
+        }
+        .blueprint-card::before { left: 6px; }
+        .blueprint-card::after { right: 6px; }
+
+        .btn-touch {
+            transition: all 0.12s ease-in-out;
+            box-shadow: 0 5px 0 0 rgba(0, 0, 0, 0.4);
+        }
+        .btn-touch:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.4);
+        }
+
+        /* iOS Style Switch Checkboxes */
+        .ios-switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 30px;
+        }
+        .ios-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .ios-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #334155;
+            transition: .3s;
+            border-radius: 30px;
+            border: 2px solid #475569;
+        }
+        .ios-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .ios-slider {
+            background-color: #06b6d4;
+            border-color: #22d3ee;
+        }
+        input:checked + .ios-slider:before {
+            transform: translateX(22px);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-28 pt-4 px-4 selection:bg-cyan-500 selection:text-slate-900">
+
+    <!-- Header Bar -->
+    <header class="max-w-md mx-auto mb-6 flex items-center justify-between pb-3 border-b-2 border-blue-900/80">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white text-xl font-black shadow border border-cyan-300">
+                📱
+            </div>
+            <div>
+                <h1 class="text-xl font-black font-tech text-white leading-tight">
+                    CONTROL <span class="text-cyan-400">PANEL</span>
+                </h1>
+                <p class="text-xs font-bold text-slate-400">iPhone Remote Manager</p>
+            </div>
+        </div>
+        <button onclick="fetchCurrentConfig()" class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-cyan-400 font-bold text-xs flex items-center gap-1.5" title="Refresh Settings">
+            <i class="fa-solid fa-arrows-rotate"></i> Sync
+        </button>
+    </header>
+
+    <main class="max-w-md mx-auto space-y-6">
+
+        <!-- STATUS ALERT TOAST -->
+        <div id="statusToast" class="hidden p-4 rounded-2xl border font-bold text-xs flex items-center gap-3 shadow-lg">
+            <i id="statusIcon" class="text-lg"></i>
+            <span id="statusMessage"></span>
+        </div>
+
+        <!-- CARD 1: CLASSROOM TOGGLES -->
+        <div class="blueprint-card rounded-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <span class="text-xs font-black text-cyan-400 uppercase tracking-wider font-tech flex items-center gap-2">
+                    <i class="fa-solid fa-[#000]">🏫</i> Class Visibility Toggles
+                </span>
+                <span class="text-[10px] bg-slate-800 text-slate-400 font-bold px-2 py-0.5 rounded-full border border-slate-700">Live Config</span>
+            </div>
+
+            <div class="space-y-3 pt-1">
+                
+                <!-- Adams Scully -->
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/90 border border-cyan-500/30">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-base">🔵</span>
+                        <div>
+                            <p class="text-sm font-black text-white">Adams Scully</p>
+                            <p class="text-[10px] font-bold text-cyan-400">Class Section</p>
+                        </div>
+                    </div>
+                    <label class="ios-switch">
+                        <input type="checkbox" id="toggle-adams-scully" checked>
+                        <span class="ios-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Bisignaro -->
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/90 border border-emerald-500/30">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-base">🟢</span>
+                        <div>
+                            <p class="text-sm font-black text-white">Bisignaro</p>
+                            <p class="text-[10px] font-bold text-emerald-400">Class Section</p>
+                        </div>
+                    </div>
+                    <label class="ios-switch">
+                        <input type="checkbox" id="toggle-bisignaro">
+                        <span class="ios-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Kasunich -->
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/90 border border-amber-500/30">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-base">🟡</span>
+                        <div>
+                            <p class="text-sm font-black text-white">Kasunich</p>
+                            <p class="text-[10px] font-bold text-amber-400">Class Section</p>
+                        </div>
+                    </div>
+                    <label class="ios-switch">
+                        <input type="checkbox" id="toggle-kasunich">
+                        <span class="ios-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Seddon -->
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/90 border border-purple-500/30">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-base">🟣</span>
+                        <div>
+                            <p class="text-sm font-black text-white">Seddon</p>
+                            <p class="text-[10px] font-bold text-purple-400">Class Section</p>
+                        </div>
+                    </div>
+                    <label class="ios-switch">
+                        <input type="checkbox" id="toggle-seddon">
+                        <span class="ios-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Baseline Engine -->
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/90 border border-pink-500/30">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-base">💗</span>
+                        <div>
+                            <p class="text-sm font-black text-white">Baseline Engine</p>
+                            <p class="text-[10px] font-bold text-pink-400">Starter Physics Canvas</p>
+                        </div>
+                    </div>
+                    <label class="ios-switch">
+                        <input type="checkbox" id="toggle-baseline-engine" checked>
+                        <span class="ios-slider"></span>
+                    </label>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- CARD 2: GOOGLE FORM LINK -->
+        <div class="blueprint-card rounded-2xl p-5 space-y-3">
+            <span class="text-xs font-black text-cyan-400 uppercase tracking-wider font-tech flex items-center gap-2 border-b border-slate-700 pb-2">
+                <i class="fa-solid fa-paper-plane"></i> Nominations Form URL
+            </span>
+            <input type="url" id="formUrlInput" placeholder="https://docs.google.com/forms/d/e/.../viewform?embedded=true" 
+                   class="w-full px-3.5 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white font-bold text-xs focus:outline-none focus:border-cyan-400">
+        </div>
+
+        <!-- CARD 3: GITHUB CREDENTIALS (SAVED LOCALLY ON IPHONE) -->
+        <details class="blueprint-card rounded-2xl p-4 bg-slate-900/60 border border-slate-700 group">
+            <summary class="font-bold text-xs text-slate-300 flex items-center justify-between cursor-pointer">
+                <span class="flex items-center gap-2 font-tech uppercase tracking-wider text-cyan-400">
+                    <i class="fa-brands fa-github text-sm"></i> GitHub Connection Settings
+                </span>
+                <i class="fa-solid fa-chevron-down group-open:rotate-180 transition-transform"></i>
+            </summary>
+
+            <div class="space-y-3 pt-4 border-t border-slate-800 mt-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-400 mb-1">GitHub Username / Owner</label>
+                    <input type="text" id="ghOwner" placeholder="e.g. username" 
+                           class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold focus:outline-none focus:border-cyan-400">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-400 mb-1">Repository Name</label>
+                    <input type="text" id="ghRepo" placeholder="e.g. stickman-project" 
+                           class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold focus:outline-none focus:border-cyan-400">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-400 mb-1">Personal Access Token (PAT)</label>
+                    <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" 
+                           class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold focus:outline-none focus:border-cyan-400">
+                    <p class="text-[10px] text-slate-500 mt-1">Requires fine-grained token or classic token with <code>repo</code> contents permission.</p>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-400 mb-1">Branch Name</label>
+                    <input type="text" id="ghBranch" value="main" 
+                           class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold focus:outline-none focus:border-cyan-400">
+                </div>
+                <button onclick="saveGitHubCredentials()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-xl font-bold text-xs border border-slate-600">
+                    Save Credentials to iPhone
+                </button>
+            </div>
+        </details>
+
+    </main>
+
+    <!-- FIXED BOTTOM ACTION BAR -->
+    <div class="fixed bottom-0 left-0 right-0 p-4 bg-[#0b1329]/95 backdrop-blur-md border-t-2 border-blue-900/80 z-50">
+        <div class="max-w-md mx-auto">
+            <button onclick="pushConfigToGitHub()" id="btnSave" class="btn-touch w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-black font-tech text-base tracking-wide flex items-center justify-center gap-2 border-2 border-cyan-300">
+                <i class="fa-solid fa-cloud-arrow-up text-yellow-300 text-lg"></i> SAVE & PUSH TO GITHUB
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const SECTIONS = ['adams-scully', 'bisignaro', 'kasunich', 'seddon', 'baseline-engine'];
+        let currentFileSha = null;
+
+        // --- UTF-8 Base64 Helpers for GitHub REST API ---
+        function decodeBase64Utf8(base64Str) {
+            const cleanStr = base64Str.replace(/\s/g, '');
+            const bytes = Uint8Array.from(atob(cleanStr), c => c.charCodeAt(0));
+            return new TextDecoder().decode(bytes);
+        }
+
+        function encodeBase64Utf8(str) {
+            const bytes = new TextEncoder().encode(str);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        // --- CREDENTIALS MANAGEMENT ---
+        function loadSavedCredentials() {
+            document.getElementById('ghOwner').value = localStorage.getItem('ctrl_gh_owner') || '';
+            document.getElementById('ghRepo').value = localStorage.getItem('ctrl_gh_repo') || '';
+            document.getElementById('ghToken').value = localStorage.getItem('ctrl_gh_token') || '';
+            document.getElementById('ghBranch').value = localStorage.getItem('ctrl_gh_branch') || 'main';
+        }
+
+        function saveGitHubCredentials() {
+            const owner = document.getElementById('ghOwner').value.trim();
+            const repo = document.getElementById('ghRepo').value.trim();
+            const token = document.getElementById('ghToken').value.trim();
+            const branch = document.getElementById('ghBranch').value.trim() || 'main';
+
+            localStorage.setItem('ctrl_gh_owner', owner);
+            localStorage.setItem('ctrl_gh_repo', repo);
+            localStorage.setItem('ctrl_gh_token', token);
+            localStorage.setItem('ctrl_gh_branch', branch);
+
+            showToast('Credentials saved locally on iPhone!', 'success');
+        }
+
+        function getGitHubConfig() {
+            return {
+                owner: document.getElementById('ghOwner').value.trim() || localStorage.getItem('ctrl_gh_owner'),
+                repo: document.getElementById('ghRepo').value.trim() || localStorage.getItem('ctrl_gh_repo'),
+                token: document.getElementById('ghToken').value.trim() || localStorage.getItem('ctrl_gh_token'),
+                branch: document.getElementById('ghBranch').value.trim() || localStorage.getItem('ctrl_gh_branch') || 'main'
+            };
+        }
+
+        // --- FETCH CONFIG FROM GITHUB ---
+        async function fetchCurrentConfig() {
+            const cfg = getGitHubConfig();
+
+            if (!cfg.owner || !cfg.repo) {
+                showToast('Please configure GitHub Username and Repo in settings below.', 'warning');
+                return;
+            }
+
+            showToast('Fetching current configuration from GitHub...', 'info');
+
+            try {
+                const headers = cfg.token ? { 'Authorization': `Bearer ${cfg.token}` } : {};
+                const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/config.json?ref=${cfg.branch}&t=${Date.now()}`;
+                
+                const response = await fetch(url, { headers });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: Failed to fetch config.json`);
+                }
+
+                const data = await response.json();
+                currentFileSha = data.sha;
+
+                const jsonContent = JSON.parse(decodeBase64Utf8(data.content));
+
+                // Populate Form URL
+                if (jsonContent.googleFormUrl) {
+                    document.getElementById('formUrlInput').value = jsonContent.googleFormUrl;
+                }
+
+                // Populate Toggles
+                if (jsonContent.sections) {
+                    SECTIONS.forEach(id => {
+                        const toggle = document.getElementById(`toggle-${id}`);
+                        if (toggle) {
+                            toggle.checked = jsonContent.sections[id] !== false;
+                        }
+                    });
+                }
+
+                showToast('Synced successfully with GitHub config!', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast(err.message, 'error');
+            }
+        }
+
+        // --- PUSH CONFIG UPDATE TO GITHUB ---
+        async function pushConfigToGitHub() {
+            const cfg = getGitHubConfig();
+
+            if (!cfg.owner || !cfg.repo || !cfg.token) {
+                showToast('GitHub Token required to make updates! Expand settings below.', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btnSave');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> PUSHING TO GITHUB...';
+
+            saveGitHubCredentials();
+
+            // Construct new config object
+            const updatedConfig = {
+                googleFormUrl: document.getElementById('formUrlInput').value.trim(),
+                sections: {}
+            };
+
+            SECTIONS.forEach(id => {
+                const toggle = document.getElementById(`toggle-${id}`);
+                updatedConfig.sections[id] = toggle ? toggle.checked : true;
+            });
+
+            const updatedJsonStr = JSON.stringify(updatedConfig, null, 2);
+            const encodedContent = encodeBase64Utf8(updatedJsonStr);
+
+            try {
+                // Get SHA if not already available
+                if (!currentFileSha) {
+                    const getUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/config.json?ref=${cfg.branch}`;
+                    const getResp = await fetch(getUrl, {
+                        headers: { 'Authorization': `Bearer ${cfg.token}` }
+                    });
+                    if (getResp.ok) {
+                        const getData = await getResp.json();
+                        currentFileSha = getData.sha;
+                    }
+                }
+
+                const putUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/config.json`;
+                const payload = {
+                    message: "Update class visibility via iPhone Control Panel",
+                    content: encodedContent,
+                    branch: cfg.branch
+                };
+
+                if (currentFileSha) {
+                    payload.sha = currentFileSha;
+                }
+
+                const putResp = await fetch(putUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${cfg.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!putResp.ok) {
+                    const errData = await putResp.json();
+                    throw new Error(errData.message || 'GitHub commit failed');
+                }
+
+                const result = await putResp.json();
+                currentFileSha = result.content.sha;
+
+                showToast('🚀 Pushed to GitHub! Student pages will update instantly.', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast(`Error: ${err.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-yellow-300 text-lg"></i> SAVE & PUSH TO GITHUB';
+            }
+        }
+
+        // --- UI TOAST MESSAGES ---
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('statusToast');
+            const icon = document.getElementById('statusIcon');
+            const message = document.getElementById('statusMessage');
+
+            toast.className = "p-4 rounded-2xl border font-bold text-xs flex items-center gap-3 shadow-lg ";
+
+            if (type === 'success') {
+                toast.classList.add('bg-emerald-950/90', 'border-emerald-500', 'text-emerald-300');
+                icon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            } else if (type === 'error') {
+                toast.classList.add('bg-red-950/90', 'border-red-500', 'text-red-300');
+                icon.className = 'fa-solid fa-triangle-exclamation text-red-400 text-lg';
+            } else if (type === 'warning') {
+                toast.classList.add('bg-amber-950/90', 'border-amber-500', 'text-amber-300');
+                icon.className = 'fa-solid fa-circle-exclamation text-amber-400 text-lg';
+            } else {
+                toast.classList.add('bg-cyan-950/90', 'border-cyan-500', 'text-cyan-300');
+                icon.className = 'fa-solid fa-circle-info text-cyan-400 text-lg';
+            }
+
+            message.textContent = msg;
+            toast.classList.remove('hidden');
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- INITIALIZE ON PAGE LOAD ---
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSavedCredentials();
+            const cfg = getGitHubConfig();
+            if (cfg.owner && cfg.repo) {
+                fetchCurrentConfig();
+            }
+        });
+    </script>
+</body>
+</html>
