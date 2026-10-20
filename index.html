@@ -532,7 +532,7 @@
         </div>
     </div>
 
-    <!-- TEACHER SETTINGS MODAL (PIN PROTECTED) -->
+    <!-- TEACHER SETTINGS MODAL (PIN PROTECTED & LOCAL PREVIEW) -->
     <div id="teacherModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="bg-[#132042] border-2 border-cyan-400 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col">
             
@@ -553,7 +553,7 @@
                 <!-- STEP 1: PIN UNLOCK VIEW -->
                 <div id="teacherPinView" class="space-y-4">
                     <p class="text-sm font-bold text-slate-300 text-center">
-                        Enter Teacher Access PIN to manage classroom section visibility and Google Form links:
+                        Enter Teacher Access PIN to manage classroom section visibility preview:
                     </p>
                     <div class="flex flex-col items-center gap-3 max-w-xs mx-auto">
                         <input type="password" id="pinInput" placeholder="Enter PIN" maxlength="8" 
@@ -569,10 +569,14 @@
                 <!-- STEP 2: DASHBOARD CONTROLS (Initially Hidden) -->
                 <div id="teacherControlsView" class="space-y-6 hidden">
                     
+                    <div class="p-3 bg-amber-500/10 border border-amber-500/40 rounded-xl text-amber-300 text-xs font-bold">
+                        ℹ️ Note: Global visibility settings for all students are served directly from <code>config.json</code> in GitHub.
+                    </div>
+
                     <!-- Classroom Section Toggles -->
                     <div class="space-y-3">
                         <label class="block text-xs font-black text-cyan-400 uppercase tracking-wider">
-                            Classroom Section Visibility
+                            Local Device Preview Toggles
                         </label>
                         <div class="bg-slate-900 p-4 rounded-2xl border border-slate-700 space-y-2.5">
                             
@@ -606,18 +610,6 @@
                             </label>
 
                         </div>
-                    </div>
-
-                    <!-- Google Form Embed URL Config -->
-                    <div class="space-y-2">
-                        <label class="block text-xs font-black text-cyan-400 uppercase tracking-wider">
-                            Google Form Embed Link
-                        </label>
-                        <input type="text" id="teacherFormUrlInput" placeholder="https://docs.google.com/forms/d/e/.../viewform?embedded=true" 
-                               class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-bold text-xs focus:outline-none focus:border-cyan-400">
-                        <button onclick="saveGoogleFormUrl()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-xl font-bold text-xs border border-slate-600">
-                            Save Google Form URL
-                        </button>
                     </div>
 
                     <!-- Change PIN Section -->
@@ -656,23 +648,36 @@
 
     <!-- INTERACTIVE JAVASCRIPT LOGIC -->
     <script>
-        // --- SECTION TOGGLE & VISIBILITY STATE MANAGEMENT ---
         const ALL_SECTIONS = ['adams-scully', 'bisignaro', 'kasunich', 'seddon', 'baseline-engine'];
         let teacherPin = localStorage.getItem('stickman_teacher_pin') || '2004';
-        let googleFormUrl = localStorage.getItem('stickman_google_form_url') || 'https://docs.google.com/forms/u/0/';
+        let googleFormUrl = 'https://docs.google.com/forms/u/0/';
 
-        function loadSectionVisibilities() {
-            ALL_SECTIONS.forEach(id => {
-                const savedState = localStorage.getItem(`visibility_${id}`);
-                // Default to true (visible) unless explicitly set to 'false'
-                const isVisible = savedState === null ? true : savedState === 'true';
+        // --- FETCH CONFIG.JSON FROM GITHUB ---
+        async function fetchGlobalConfig() {
+            try {
+                // Add timestamp query parameter to bypass GitHub Pages CDN cache
+                const response = await fetch(`config.json?v=${Date.now()}`);
+                if (!response.ok) throw new Error('Config file not found');
                 
-                applySectionVisibility(id, isVisible);
-                
-                // Set checkbox state if element exists
-                const checkbox = document.getElementById(`toggle-${id}`);
-                if (checkbox) checkbox.checked = isVisible;
-            });
+                const config = await response.json();
+
+                if (config.googleFormUrl) {
+                    googleFormUrl = config.googleFormUrl;
+                }
+
+                if (config.sections) {
+                    ALL_SECTIONS.forEach(id => {
+                        const isVisible = config.sections[id] !== false;
+                        applySectionVisibility(id, isVisible);
+
+                        const checkbox = document.getElementById(`toggle-${id}`);
+                        if (checkbox) checkbox.checked = isVisible;
+                    });
+                }
+            } catch (error) {
+                console.warn('Could not fetch config.json, using default visibility:', error);
+                ALL_SECTIONS.forEach(id => applySectionVisibility(id, true));
+            }
         }
 
         function applySectionVisibility(id, isVisible) {
@@ -699,8 +704,6 @@
         function toggleClassSection(id) {
             const checkbox = document.getElementById(`toggle-${id}`);
             const isVisible = checkbox ? checkbox.checked : true;
-            
-            localStorage.setItem(`visibility_${id}`, isVisible);
             applySectionVisibility(id, isVisible);
             playClick();
         }
@@ -742,16 +745,6 @@
         function showTeacherControls() {
             document.getElementById('teacherPinView').classList.add('hidden');
             document.getElementById('teacherControlsView').classList.remove('hidden');
-            document.getElementById('teacherFormUrlInput').value = googleFormUrl;
-        }
-
-        function saveGoogleFormUrl() {
-            const newUrl = document.getElementById('teacherFormUrlInput').value.trim();
-            if (newUrl) {
-                localStorage.setItem('stickman_google_form_url', newUrl);
-                googleFormUrl = newUrl;
-                alert('Google Form Link saved successfully!');
-            }
         }
 
         function changeTeacherPin() {
@@ -773,7 +766,7 @@
                 container.innerHTML = `
                     <div class="text-center p-6 space-y-4">
                         <p class="text-amber-400 font-bold text-lg">Google Form Link Needed</p>
-                        <p class="text-slate-300 text-sm max-w-md">Teachers: Click the gear icon in the top right header to enter your PIN and set the Google Form URL!</p>
+                        <p class="text-slate-300 text-sm max-w-md">Teachers: Update the <code>googleFormUrl</code> inside <code>config.json</code> in your GitHub repository!</p>
                         <button onclick="window.open('${googleFormUrl}', '_blank')" class="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl font-black">Open Form in New Tab ↗</button>
                     </div>
                 `;
@@ -872,7 +865,7 @@
 
         // INITIALIZE PAGE ON LOAD
         window.addEventListener('DOMContentLoaded', () => {
-            loadSectionVisibilities();
+            fetchGlobalConfig();
         });
     </script>
 </body>

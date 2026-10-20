@@ -1,0 +1,10 @@
+{
+  "googleFormUrl": "https://docs.google.com/forms/u/0/",
+  "sections": {
+    "adams-scully": true,
+    "bisignaro": false,
+    "kasunich": false,
+    "seddon": false,
+    "baseline-engine": true
+  }
+}
