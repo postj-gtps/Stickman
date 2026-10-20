@@ -1,7 +1,7 @@
 {
   "googleFormUrl": "",
   "sections": {
-    "adams-scully": false,
+    "adams-scully": true,
     "bisignaro": true,
     "kasunich": false,
     "seddon": false,
