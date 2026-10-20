@@ -2,7 +2,7 @@
   "googleFormUrl": "",
   "sections": {
     "adams-scully": true,
-    "bisignaro": false,
+    "bisignaro": true,
     "kasunich": false,
     "seddon": false,
     "baseline-engine": true
