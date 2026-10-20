@@ -130,13 +130,13 @@
                 </div>
             </a>
 
-            <!-- Quick Controls: Sound Toggle & Google Form Config -->
+            <!-- Quick Controls: Sound Toggle & Teacher Gear Controls -->
             <div class="flex items-center gap-3">
                 <button id="soundToggleBtn" onclick="toggleSound()" class="px-3.5 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border-2 border-slate-700 text-slate-200 font-bold text-sm flex items-center gap-2 transition">
                     <i id="soundIcon" class="fa-solid fa-volume-high text-cyan-400"></i>
                     <span id="soundText" class="hidden sm:inline">Sound: ON</span>
                 </button>
-                <button onclick="configureFormUrl()" class="px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border-2 border-slate-700 text-slate-400 hover:text-white transition" title="Set Google Form Link (Teacher Config)">
+                <button onclick="openTeacherModal()" class="px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border-2 border-slate-700 text-slate-400 hover:text-white transition" title="Teacher Settings (PIN Protected)">
                     <i class="fa-solid fa-gear"></i>
                 </button>
             </div>
@@ -184,20 +184,20 @@
                 </div>
 
                 <!-- Classroom Jump Pills -->
-                <div class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 scrollbar-none">
-                    <a href="#adams-scully" onclick="playClick()" class="btn-touch px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-sm whitespace-nowrap flex items-center gap-2 border border-cyan-300">
+                <div id="navPillsContainer" class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 scrollbar-none">
+                    <a id="pill-adams-scully" href="#adams-scully" onclick="playClick()" class="btn-touch px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-sm whitespace-nowrap flex items-center gap-2 border border-cyan-300">
                         <span>🔵</span> Adams Scully
                     </a>
-                    <a href="#bisignaro" onclick="playClick()" class="btn-touch px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm whitespace-nowrap flex items-center gap-2 border border-emerald-300">
+                    <a id="pill-bisignaro" href="#bisignaro" onclick="playClick()" class="btn-touch px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm whitespace-nowrap flex items-center gap-2 border border-emerald-300">
                         <span>🟢</span> Bisignaro
                     </a>
-                    <a href="#kasunich" onclick="playClick()" class="btn-touch px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm whitespace-nowrap flex items-center gap-2 border border-amber-300">
+                    <a id="pill-kasunich" href="#kasunich" onclick="playClick()" class="btn-touch px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm whitespace-nowrap flex items-center gap-2 border border-amber-300">
                         <span>🟡</span> Kasunich
                     </a>
-                    <a href="#seddon" onclick="playClick()" class="btn-touch px-4 py-2 rounded-xl bg-purple-500 hover:bg-purple-400 text-white font-black text-sm whitespace-nowrap flex items-center gap-2 border border-purple-300">
+                    <a id="pill-seddon" href="#seddon" onclick="playClick()" class="btn-touch px-4 py-2 rounded-xl bg-purple-500 hover:bg-purple-400 text-white font-black text-sm whitespace-nowrap flex items-center gap-2 border border-purple-300">
                         <span>🟣</span> Seddon
                     </a>
-                    <a href="#baseline-engine" onclick="playClick()" class="btn-touch px-4 py-2 rounded-xl bg-pink-500 hover:bg-pink-400 text-white font-black text-sm whitespace-nowrap flex items-center gap-2 border border-pink-300">
+                    <a id="pill-baseline-engine" href="#baseline-engine" onclick="playClick()" class="btn-touch px-4 py-2 rounded-xl bg-pink-500 hover:bg-pink-400 text-white font-black text-sm whitespace-nowrap flex items-center gap-2 border border-pink-300">
                         <span>💗</span> Baseline Starter
                     </a>
                 </div>
@@ -501,7 +501,7 @@
         </main>
     </div>
 
-    <!-- GOOGLE FORM SUBMISSION MODAL -->
+    <!-- STUDENT GOOGLE FORM MODAL -->
     <div id="formModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="bg-[#132042] border-2 border-cyan-400 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
             
@@ -532,6 +532,116 @@
         </div>
     </div>
 
+    <!-- TEACHER SETTINGS MODAL (PIN PROTECTED) -->
+    <div id="teacherModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-[#132042] border-2 border-cyan-400 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col">
+            
+            <!-- Modal Header -->
+            <div class="p-4 sm:p-6 bg-slate-900 border-b border-slate-700 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">⚙️</span>
+                    <h3 class="text-xl sm:text-2xl font-black font-tech text-white">Teacher Admin Controls</h3>
+                </div>
+                <button onclick="closeTeacherModal()" class="w-10 h-10 rounded-xl bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center font-black text-xl transition">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 space-y-6">
+
+                <!-- STEP 1: PIN UNLOCK VIEW -->
+                <div id="teacherPinView" class="space-y-4">
+                    <p class="text-sm font-bold text-slate-300 text-center">
+                        Enter Teacher Access PIN to manage classroom section visibility and Google Form links:
+                    </p>
+                    <div class="flex flex-col items-center gap-3 max-w-xs mx-auto">
+                        <input type="password" id="pinInput" placeholder="Enter PIN" maxlength="8" 
+                               onkeydown="if(event.key==='Enter') verifyTeacherPin()"
+                               class="w-full text-center tracking-widest text-xl px-4 py-3 rounded-xl bg-slate-900 border-2 border-slate-700 text-white font-bold focus:outline-none focus:border-cyan-400">
+                        <button onclick="verifyTeacherPin()" class="btn-touch w-full py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl font-black font-tech text-sm border border-cyan-300">
+                            UNLOCK DASHBOARD 🔓
+                        </button>
+                        <p id="pinError" class="text-xs font-bold text-red-400 hidden">Incorrect PIN. Try again.</p>
+                    </div>
+                </div>
+
+                <!-- STEP 2: DASHBOARD CONTROLS (Initially Hidden) -->
+                <div id="teacherControlsView" class="space-y-6 hidden">
+                    
+                    <!-- Classroom Section Toggles -->
+                    <div class="space-y-3">
+                        <label class="block text-xs font-black text-cyan-400 uppercase tracking-wider">
+                            Classroom Section Visibility
+                        </label>
+                        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-700 space-y-2.5">
+                            
+                            <label class="flex items-center justify-between cursor-pointer group">
+                                <span class="font-bold text-sm text-slate-200 group-hover:text-white">Adams Scully Section</span>
+                                <input type="checkbox" id="toggle-adams-scully" onchange="toggleClassSection('adams-scully')" class="w-5 h-5 accent-cyan-500 rounded cursor-pointer">
+                            </label>
+                            <hr class="border-slate-800">
+
+                            <label class="flex items-center justify-between cursor-pointer group">
+                                <span class="font-bold text-sm text-slate-200 group-hover:text-white">Bisignaro Section</span>
+                                <input type="checkbox" id="toggle-bisignaro" onchange="toggleClassSection('bisignaro')" class="w-5 h-5 accent-emerald-500 rounded cursor-pointer">
+                            </label>
+                            <hr class="border-slate-800">
+
+                            <label class="flex items-center justify-between cursor-pointer group">
+                                <span class="font-bold text-sm text-slate-200 group-hover:text-white">Kasunich Section</span>
+                                <input type="checkbox" id="toggle-kasunich" onchange="toggleClassSection('kasunich')" class="w-5 h-5 accent-amber-500 rounded cursor-pointer">
+                            </label>
+                            <hr class="border-slate-800">
+
+                            <label class="flex items-center justify-between cursor-pointer group">
+                                <span class="font-bold text-sm text-slate-200 group-hover:text-white">Seddon Section</span>
+                                <input type="checkbox" id="toggle-seddon" onchange="toggleClassSection('seddon')" class="w-5 h-5 accent-purple-500 rounded cursor-pointer">
+                            </label>
+                            <hr class="border-slate-800">
+
+                            <label class="flex items-center justify-between cursor-pointer group">
+                                <span class="font-bold text-sm text-slate-200 group-hover:text-white">Baseline Starter Engine</span>
+                                <input type="checkbox" id="toggle-baseline-engine" onchange="toggleClassSection('baseline-engine')" class="w-5 h-5 accent-pink-500 rounded cursor-pointer">
+                            </label>
+
+                        </div>
+                    </div>
+
+                    <!-- Google Form Embed URL Config -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-black text-cyan-400 uppercase tracking-wider">
+                            Google Form Embed Link
+                        </label>
+                        <input type="text" id="teacherFormUrlInput" placeholder="https://docs.google.com/forms/d/e/.../viewform?embedded=true" 
+                               class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-bold text-xs focus:outline-none focus:border-cyan-400">
+                        <button onclick="saveGoogleFormUrl()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-xl font-bold text-xs border border-slate-600">
+                            Save Google Form URL
+                        </button>
+                    </div>
+
+                    <!-- Change PIN Section -->
+                    <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
+                        <span class="text-slate-400 font-bold">Admin Session Active</span>
+                        <button onclick="changeTeacherPin()" class="text-amber-400 font-bold hover:underline">
+                            Change Access PIN
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 bg-slate-900 border-t border-slate-700 flex justify-end">
+                <button onclick="closeTeacherModal()" class="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm">
+                    Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="mt-20 border-t-2 border-blue-900/60 bg-[#070d1c] py-8 text-center text-slate-400 font-bold text-sm">
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -546,7 +656,137 @@
 
     <!-- INTERACTIVE JAVASCRIPT LOGIC -->
     <script>
-        // --- Web Audio Synth Sound Effects ---
+        // --- SECTION TOGGLE & VISIBILITY STATE MANAGEMENT ---
+        const ALL_SECTIONS = ['adams-scully', 'bisignaro', 'kasunich', 'seddon', 'baseline-engine'];
+        let teacherPin = localStorage.getItem('stickman_teacher_pin') || '2004';
+        let googleFormUrl = localStorage.getItem('stickman_google_form_url') || 'https://docs.google.com/forms/u/0/';
+
+        function loadSectionVisibilities() {
+            ALL_SECTIONS.forEach(id => {
+                const savedState = localStorage.getItem(`visibility_${id}`);
+                // Default to true (visible) unless explicitly set to 'false'
+                const isVisible = savedState === null ? true : savedState === 'true';
+                
+                applySectionVisibility(id, isVisible);
+                
+                // Set checkbox state if element exists
+                const checkbox = document.getElementById(`toggle-${id}`);
+                if (checkbox) checkbox.checked = isVisible;
+            });
+        }
+
+        function applySectionVisibility(id, isVisible) {
+            const sectionEl = document.getElementById(id);
+            const pillEl = document.getElementById(`pill-${id}`);
+
+            if (sectionEl) {
+                if (isVisible) {
+                    sectionEl.classList.remove('hidden');
+                } else {
+                    sectionEl.classList.add('hidden');
+                }
+            }
+
+            if (pillEl) {
+                if (isVisible) {
+                    pillEl.classList.remove('hidden');
+                } else {
+                    pillEl.classList.add('hidden');
+                }
+            }
+        }
+
+        function toggleClassSection(id) {
+            const checkbox = document.getElementById(`toggle-${id}`);
+            const isVisible = checkbox ? checkbox.checked : true;
+            
+            localStorage.setItem(`visibility_${id}`, isVisible);
+            applySectionVisibility(id, isVisible);
+            playClick();
+        }
+
+        // --- TEACHER MODAL & PIN VERIFICATION LOGIC ---
+        let isTeacherUnlocked = false;
+
+        function openTeacherModal() {
+            playClick();
+            document.getElementById('teacherModal').classList.remove('hidden');
+            
+            if (isTeacherUnlocked) {
+                showTeacherControls();
+            } else {
+                document.getElementById('teacherPinView').classList.remove('hidden');
+                document.getElementById('teacherControlsView').classList.add('hidden');
+                document.getElementById('pinInput').value = '';
+                document.getElementById('pinError').classList.add('hidden');
+            }
+        }
+
+        function closeTeacherModal() {
+            playClick();
+            document.getElementById('teacherModal').classList.add('hidden');
+        }
+
+        function verifyTeacherPin() {
+            const inputPin = document.getElementById('pinInput').value.trim();
+            if (inputPin === teacherPin) {
+                isTeacherUnlocked = true;
+                showTeacherControls();
+                playLaunchSound();
+            } else {
+                document.getElementById('pinError').classList.remove('hidden');
+                playClick();
+            }
+        }
+
+        function showTeacherControls() {
+            document.getElementById('teacherPinView').classList.add('hidden');
+            document.getElementById('teacherControlsView').classList.remove('hidden');
+            document.getElementById('teacherFormUrlInput').value = googleFormUrl;
+        }
+
+        function saveGoogleFormUrl() {
+            const newUrl = document.getElementById('teacherFormUrlInput').value.trim();
+            if (newUrl) {
+                localStorage.setItem('stickman_google_form_url', newUrl);
+                googleFormUrl = newUrl;
+                alert('Google Form Link saved successfully!');
+            }
+        }
+
+        function changeTeacherPin() {
+            const newPin = prompt('Enter new access PIN for Teacher Settings:', teacherPin);
+            if (newPin && newPin.trim().length > 0) {
+                teacherPin = newPin.trim();
+                localStorage.setItem('stickman_teacher_pin', teacherPin);
+                alert('New PIN set successfully!');
+            }
+        }
+
+        // --- STUDENT GOOGLE FORM MODAL LOGIC ---
+        function openFormModal() {
+            playClick();
+            const container = document.getElementById('formContainer');
+            if (googleFormUrl && googleFormUrl.includes('google.com/forms')) {
+                container.innerHTML = `<iframe src="${googleFormUrl}" width="100%" height="100%" frameborder="0" marginheight="0" marginwidth="0">Loading form...</iframe>`;
+            } else {
+                container.innerHTML = `
+                    <div class="text-center p-6 space-y-4">
+                        <p class="text-amber-400 font-bold text-lg">Google Form Link Needed</p>
+                        <p class="text-slate-300 text-sm max-w-md">Teachers: Click the gear icon in the top right header to enter your PIN and set the Google Form URL!</p>
+                        <button onclick="window.open('${googleFormUrl}', '_blank')" class="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl font-black">Open Form in New Tab ↗</button>
+                    </div>
+                `;
+            }
+            document.getElementById('formModal').classList.remove('hidden');
+        }
+
+        function closeFormModal() {
+            playClick();
+            document.getElementById('formModal').classList.add('hidden');
+        }
+
+        // --- WEB AUDIO SYNTH SOUND EFFECTS ---
         let soundEnabled = true;
         let audioCtx = null;
 
@@ -615,7 +855,7 @@
             }
         }
 
-        // --- Search Card Filter Logic ---
+        // --- SEARCH CARD FILTER LOGIC ---
         function filterCards() {
             const query = document.getElementById('searchInput').value.toLowerCase().trim();
             const cards = document.querySelectorAll('.blueprint-card[data-title]');
@@ -630,40 +870,10 @@
             });
         }
 
-        // --- Google Form Integration Modal Logic ---
-        let googleFormUrl = localStorage.getItem('stickman_google_form_url') || 'https://docs.google.com/forms/u/0/';
-
-        function openFormModal() {
-            playClick();
-            const container = document.getElementById('formContainer');
-            if (googleFormUrl && googleFormUrl.includes('google.com/forms')) {
-                container.innerHTML = `<iframe src="${googleFormUrl}" width="100%" height="100%" frameborder="0" marginheight="0" marginwidth="0">Loading form...</iframe>`;
-            } else {
-                container.innerHTML = `
-                    <div class="text-center p-6 space-y-4">
-                        <p class="text-amber-400 font-bold text-lg">Google Form Link Needed</p>
-                        <p class="text-slate-300 text-sm max-w-md">Teachers: Click the gear icon in the top right header to paste your class Google Form embed URL!</p>
-                        <button onclick="window.open('${googleFormUrl}', '_blank')" class="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl font-black">Open Form in New Tab ↗</button>
-                    </div>
-                `;
-            }
-            document.getElementById('formModal').classList.remove('hidden');
-        }
-
-        function closeFormModal() {
-            playClick();
-            document.getElementById('formModal').classList.add('hidden');
-        }
-
-        function configureFormUrl() {
-            const current = localStorage.getItem('stickman_google_form_url') || '';
-            const newUrl = prompt('Teacher Settings: Paste your Google Form URL here:', current);
-            if (newUrl !== null) {
-                localStorage.setItem('stickman_google_form_url', newUrl.trim());
-                googleFormUrl = newUrl.trim();
-                alert('Google Form URL updated!');
-            }
-        }
+        // INITIALIZE PAGE ON LOAD
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSectionVisibilities();
+        });
     </script>
 </body>
 </html>
