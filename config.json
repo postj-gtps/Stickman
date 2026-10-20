@@ -1,10 +1,10 @@
 {
-  "googleFormUrl": "https://docs.google.com/forms/d/e/1FAIpQLSdiKv7RioVbBRpb2V5qx8BmjiaxwQ5eUqQ4mchm2NhPWvA6Fw/viewform?embedded=true",
+  "googleFormUrl": "",
   "sections": {
     "adams-scully": true,
-    "bisignaro": false,
-    "kasunich": false,
-    "seddon": false,
+    "bisignaro": true,
+    "kasunich": true,
+    "seddon": true,
     "baseline-engine": true
   }
 }
