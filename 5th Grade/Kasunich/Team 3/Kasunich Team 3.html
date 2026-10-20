@@ -1,270 +1,738 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stickman Starter Canvas</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            margin: 0;
-            padding: 0;
-            font-family: 'Courier New', Courier, monospace, sans-serif;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman: Ocean Abyss Explorer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', Courier, monospace, sans-serif;
+    }
 
-        body {
-            background-color: #000000;
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            height: 100vh;
-            overflow: hidden;
-            padding: 16px;
-        }
+    body {
+      background-color: #020617;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 12px;
+    }
 
-        /* Top Header Bar */
-        #header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            max-width: 1100px;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #ffffff;
-        }
+    /* Top Header Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1200px;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #1e293b;
+    }
 
-        h1 {
-            font-size: 18px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
+    h1 {
+      font-size: 18px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: bold;
+      color: #38bdf8;
+    }
 
-        .btn-reset {
-            background: transparent;
-            color: #ffffff;
-            border: 1px solid #ffffff;
-            padding: 6px 16px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.15s ease-in-out;
-        }
+    .stats-container {
+      display: flex;
+      gap: 24px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #fde047;
+    }
 
-        .btn-reset:hover {
-            background: #ffffff;
-            color: #000000;
-        }
+    .btn-reset {
+      background: transparent;
+      color: #ffffff;
+      border: 1px solid #38bdf8;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.15s ease-in-out;
+      border-radius: 4px;
+    }
 
-        /* Main Canvas Container */
-        #canvas-wrapper {
-            position: relative;
-            width: 100%;
-            max-width: 1100px;
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+    .btn-reset:hover {
+      background: #38bdf8;
+      color: #020617;
+    }
 
-        canvas {
-            background-color: #000000;
-            border: 1px solid #ffffff;
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
+    /* Main Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1200px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-        .instructions {
-            margin-top: 8px;
-            font-size: 11px;
-            color: #888888;
-            text-align: center;
-        }
-    </style>
+    canvas {
+      background-color: #000000;
+      border: 1px solid #1e293b;
+      display: block;
+      width: 100%;
+      height: 100%;
+      box-shadow: 0 0 25px rgba(14, 165, 233, 0.15);
+      border-radius: 4px;
+    }
+
+    .instructions {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #38bdf8;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+  </style>
 </head>
 <body>
 
-    <!-- Header Section -->
-    <div id="header">
-        <h1>Stickman Engine</h1>
-        <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+  <!-- Header Section -->
+  <div id="header">
+    <h1>Stickman: Abyss Diver</h1>
+    <div class="stats-container">
+      <span id="depthDisplay">DEPTH: 0m</span>
+      <span id="diamondDisplay">DIAMONDS: 0 / 5</span>
     </div>
+    <button class="btn-reset" onclick="resetSimulation()">Reset Game</button>
+  </div>
 
-    <!-- Canvas Container -->
-    <div id="canvas-wrapper">
-        <canvas id="simCanvas"></canvas>
-    </div>
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+  </div>
 
-    <div class="instructions">
-        [WASD] Move
-    </div>
+  <div class="instructions">
+    [WASD] Move & Swim (Exclusive Controls) | Climb down the ladder and retrieve all 5 diamonds in the abyss!
+  </div>
 
-    <script>
-        const canvas = document.getElementById('simCanvas');
-        const ctx = canvas.getContext('2d');
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
 
-        // KEYBOARD INPUT STATE
-        const keys = {};
+    // WORLD CONSTANTS
+    const WORLD_WIDTH = 1200;
+    const WORLD_HEIGHT = 2800;
+    const SURFACE_Y = 295;
+    const TOTAL_DIAMONDS = 5;
 
-        // STICKMAN PLAYER STATE
-        const player = {
-            x: 0,
-            y: 0,
-            speed: 4.5,
-            facing: 1, // 1 = Right, -1 = Left
-            walkFrame: 0
-        };
+    // SHIP CONFIGURATION & LADDER BOUNDS
+    const ship = {
+      x: WORLD_WIDTH / 2 - 130,
+      width: 260,
+      height: 45,
+      deckY: 250,
+      ladderX: WORLD_WIDTH / 2,
+      ladderTopY: 250,
+      ladderBottomY: 345
+    };
 
-        function resizeCanvas() {
-            const wrapper = document.getElementById('canvas-wrapper');
-            canvas.width = wrapper.clientWidth;
-            canvas.height = wrapper.clientHeight;
-            
-            // Set initial position to exact center on first load
-            if (player.x === 0 && player.y === 0) {
-                resetSimulation();
-            }
-        }
+    // KEYBOARD INPUT STATE (STRICTLY WASD)
+    const keys = {};
 
-        window.addEventListener('resize', resizeCanvas);
+    // STICKMAN PLAYER STATE
+    const player = {
+      x: WORLD_WIDTH / 2,
+      y: ship.deckY,
+      speed: 4.8,
+      facing: 1, // 1 = Right, -1 = Left
+      walkFrame: 0,
+      swimAngle: 0,
+      diamondsCollected: 0
+    };
 
-        // CONTROLS HANDLERS
-        window.addEventListener('keydown', (e) => {
-            if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
-                e.preventDefault();
-            }
-            keys[e.code] = true;
+    // SCENERY OBJECTS
+    let diamonds = [];
+    let particles = [];
+    let fishList = [];
+    let jellyfishList = [];
+    let seabedFlora = [];
+
+    // KEYBOARD LISTENERS - WASD EXCLUSIVE MOVEMENT ENFORCEMENT
+    window.addEventListener('keydown', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        e.preventDefault();
+        keys[e.code] = true;
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        keys[e.code] = false;
+      }
+    });
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // DYNAMIC NARROWING CLIFF BOUNDARY CALCULATION
+    function getCliffWalls(y) {
+      if (y < 420) {
+        return { left: 0, right: WORLD_WIDTH };
+      }
+      
+      const progress = Math.min(1, (y - 420) / (WORLD_HEIGHT - 500));
+      const cliffMargin = 420 * progress; // Cliffs narrow inward up to 420px on each side
+      
+      return {
+        left: cliffMargin,
+        right: WORLD_WIDTH - cliffMargin
+      };
+    }
+
+    function initEntities() {
+      const bottomY = WORLD_HEIGHT - 80;
+      const cliffAtBottom = getCliffWalls(bottomY);
+      
+      // GUARANTEED SAFE DIAMOND SPAWN WITHIN ACCESSIBLE ABYSS FLOOR
+      const safeLeft = cliffAtBottom.left + 50;
+      const safeRight = cliffAtBottom.right - 50;
+      const usableWidth = safeRight - safeLeft;
+      
+      diamonds = [];
+      for (let i = 0; i < TOTAL_DIAMONDS; i++) {
+        const xPos = safeLeft + (usableWidth / (TOTAL_DIAMONDS + 1)) * (i + 1);
+        const yPos = bottomY - 15 - Math.sin(i * 1.5) * 12;
+        diamonds.push({
+          x: xPos,
+          y: yPos,
+          collected: false,
+          pulse: i * 0.8
         });
+      }
 
-        window.addEventListener('keyup', (e) => {
-            keys[e.code] = false;
+      // Decorative Fish
+      fishList = [];
+      for (let i = 0; i < 20; i++) {
+        fishList.push({
+          x: Math.random() * WORLD_WIDTH,
+          y: 350 + Math.random() * 1000,
+          speed: (Math.random() * 1.6 + 0.7) * (Math.random() < 0.5 ? 1 : -1),
+          color: ['#f43f5e', '#fbbf24', '#34d399', '#fb923c', '#a855f7'][Math.floor(Math.random() * 5)],
+          size: Math.random() * 4 + 4
         });
+      }
 
-        function resetSimulation() {
-            player.x = canvas.width / 2;
-            player.y = canvas.height / 2;
-            player.facing = 1;
-            player.walkFrame = 0;
+      // Bioluminescent Jellyfish
+      jellyfishList = [];
+      for (let i = 0; i < 12; i++) {
+        jellyfishList.push({
+          x: 350 + Math.random() * (WORLD_WIDTH - 700),
+          y: 1100 + Math.random() * 1400,
+          speed: Math.random() * 0.02 + 0.015,
+          size: Math.random() * 8 + 12,
+          color: ['#38bdf8', '#c084fc', '#4ade80'][Math.floor(Math.random() * 3)]
+        });
+      }
+
+      // Glowing Seabed Flora
+      seabedFlora = [];
+      for (let i = 0; i < 16; i++) {
+        const xPos = safeLeft - 30 + (usableWidth + 60) * Math.random();
+        seabedFlora.push({
+          x: xPos,
+          y: bottomY,
+          height: 25 + Math.random() * 30,
+          color: ['#00f5d4', '#7b2cbf', '#f72585', '#4cc9f0'][Math.floor(Math.random() * 4)]
+        });
+      }
+
+      // Air Bubbles
+      particles = [];
+      for (let i = 0; i < 50; i++) {
+        particles.push({
+          x: Math.random() * WORLD_WIDTH,
+          y: Math.random() * WORLD_HEIGHT,
+          radius: Math.random() * 2.5 + 1,
+          speed: Math.random() * 1 + 0.5
+        });
+      }
+    }
+
+    function resetSimulation() {
+      player.x = WORLD_WIDTH / 2;
+      player.y = ship.deckY;
+      player.facing = 1;
+      player.walkFrame = 0;
+      player.swimAngle = 0;
+      player.diamondsCollected = 0;
+      initEntities();
+      updateHUD();
+    }
+
+    function updateHUD() {
+      const depthInMeters = Math.max(0, Math.floor((player.y - SURFACE_Y) / 10));
+      document.getElementById('depthDisplay').innerText = `DEPTH: ${depthInMeters}m`;
+      document.getElementById('diamondDisplay').innerText = `DIAMONDS: ${player.diamondsCollected} / ${TOTAL_DIAMONDS}`;
+    }
+
+    function updatePhysics() {
+      let dx = 0;
+      let dy = 0;
+
+      // WASD DIRECT MOVEMENT (EXCLUSIVE)
+      if (keys['KeyW']) dy -= 1;
+      if (keys['KeyS']) dy += 1;
+      if (keys['KeyA']) { dx -= 1; player.facing = -1; }
+      if (keys['KeyD']) { dx += 1; player.facing = 1; }
+
+      // Normalize diagonal speed vector
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.7071;
+        dy *= 0.7071;
+      }
+
+      const isUnderwater = player.y > SURFACE_Y;
+      const currentSpeed = isUnderwater ? player.speed * 0.88 : player.speed;
+
+      player.x += dx * currentSpeed;
+      player.y += dy * currentSpeed;
+
+      // LADDER & WATER SURFACE CEILING RULE
+      const isAtLadder = Math.abs(player.x - ship.ladderX) < 22 && player.y <= ship.ladderBottomY;
+      const isOnDeck = player.x >= ship.x + 10 && player.x <= ship.x + ship.width - 10 && player.y <= SURFACE_Y;
+
+      let minY = SURFACE_Y; // Default ceiling: surface level
+      if (isAtLadder || isOnDeck) {
+        minY = ship.deckY; // Allowed to go up to ship deck
+      }
+
+      // Enforce water ceiling boundary
+      if (player.y < minY) {
+        player.y = minY;
+      }
+
+      // Drop player off deck if walking off ship edges
+      if (player.y < SURFACE_Y && !isOnDeck && !isAtLadder) {
+        player.y = SURFACE_Y;
+      }
+
+      // Keep within narrowing cliff boundaries
+      const cliff = getCliffWalls(player.y);
+      const margin = 16;
+      player.x = Math.max(cliff.left + margin, Math.min(cliff.right - margin, player.x));
+      player.y = Math.min(WORLD_HEIGHT - 45, player.y);
+
+      // HEAD DOWN SWIMMING POSE DYNAMICS
+      if (isUnderwater) {
+        if (dx !== 0 || dy !== 0) {
+          // When dy > 0 (swimming down), rotation angle points head directly downward
+          const targetAngle = Math.atan2(dy, dx) + Math.PI / 2;
+          
+          let diff = targetAngle - player.swimAngle;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          player.swimAngle += diff * 0.25;
+
+          player.walkFrame += 0.25;
+        } else {
+          // Neutral float when still
+          let diff = 0 - player.swimAngle;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          player.swimAngle += diff * 0.1;
+          player.walkFrame = 0;
         }
+      } else {
+        player.swimAngle = 0;
+        if (dx !== 0 || dy !== 0) player.walkFrame += 0.25;
+        else player.walkFrame = 0;
+      }
 
-        function updatePhysics() {
-            // Movement Direction Calculation
-            let dx = 0;
-            let dy = 0;
-
-            if (keys['KeyW'] || keys['Keyw']) dy -= 1;
-            if (keys['KeyS'] || keys['Keys']) dy += 1;
-            if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
-            if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
-
-            // Normalize diagonal movement vector speed
-            if (dx !== 0 && dy !== 0) {
-                dx *= 0.7071;
-                dy *= 0.7071;
-            }
-
-            // Update stickman position
-            player.x += dx * player.speed;
-            player.y += dy * player.speed;
-
-            // Keep stickman inside canvas boundaries
-            const margin = 15;
-            player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
-            player.y = Math.max(margin + 15, Math.min(canvas.height - margin - 10, player.y));
-
-            // Walk animation cycle updates
-            if (dx !== 0 || dy !== 0) {
-                player.walkFrame += 0.25;
-            } else {
-                player.walkFrame = 0;
-            }
+      // Check Diamond Collisions
+      diamonds.forEach(diamond => {
+        if (!diamond.collected) {
+          const dist = Math.hypot(player.x - diamond.x, player.y - diamond.y);
+          if (dist < 26) {
+            diamond.collected = true;
+            player.diamondsCollected++;
+            updateHUD();
+          }
         }
+      });
 
-        function drawStickman(x, y, facing, walkFrame) {
-            ctx.strokeStyle = '#ffffff';
-            ctx.fillStyle = '#ffffff';
-            ctx.lineWidth = 1.8;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-
-            // Halved character dimensions
-            const headRadius = 5;
-            const bodyLength = 15;
-            const legLength = 11;
-            const neckY = y - bodyLength;
-            const headY = neckY - headRadius;
-            const shoulderY = neckY + 4;
-
-            // 1. Head
-            ctx.beginPath();
-            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Eye direction indicator
-            ctx.beginPath();
-            ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 2. Torso
-            ctx.beginPath();
-            ctx.moveTo(x, neckY);
-            ctx.lineTo(x, y);
-            ctx.stroke();
-
-            // 3. Legs
-            const legSwing = Math.sin(walkFrame) * 6;
-
-            // Left / Right Legs
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x - legSwing, y + legLength);
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + legSwing, y + legLength);
-            ctx.stroke();
-
-            // 4. Back Arm
-            const armSwing = Math.sin(walkFrame + Math.PI) * 4;
-            ctx.beginPath();
-            ctx.moveTo(x, shoulderY);
-            ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
-            ctx.stroke();
-
-            // 5. Front Arm
-            ctx.beginPath();
-            ctx.moveTo(x, shoulderY);
-            ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
-            ctx.stroke();
+      // Bubble movement
+      particles.forEach(p => {
+        p.y -= p.speed;
+        if (p.y < 0) {
+          p.y = WORLD_HEIGHT;
+          p.x = Math.random() * WORLD_WIDTH;
         }
+      });
 
-        function draw() {
-            // Clear canvas background
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Fish movement
+      fishList.forEach(f => {
+        f.x += f.speed;
+        if (f.x > WORLD_WIDTH + 30) f.x = -30;
+        if (f.x < -30) f.x = WORLD_WIDTH + 30;
+      });
 
-            // Draw Stickman
-            drawStickman(player.x, player.y, player.facing, player.walkFrame);
+      updateHUD();
+    }
+
+    function drawStickman(x, y, facing, walkFrame, swimAngle, isUnderwater) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Rotate Stickman dynamically when swimming (Head down when swimming down)
+      if (isUnderwater) {
+        ctx.rotate(swimAngle);
+      }
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const headRadius = 5.5;
+      const bodyLength = 16;
+      const legLength = 12;
+
+      const neckY = -bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 4;
+
+      // 1. Head
+      ctx.beginPath();
+      ctx.arc(0, headY, headRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Eye
+      ctx.beginPath();
+      ctx.arc(facing * 2.5, headY - 0.8, 1, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Torso
+      ctx.beginPath();
+      ctx.moveTo(0, neckY);
+      ctx.lineTo(0, 0);
+      ctx.stroke();
+
+      const legSwing = Math.sin(walkFrame) * (isUnderwater ? 8 : 6);
+      const armSwing = Math.sin(walkFrame + Math.PI) * (isUnderwater ? 8 : 5);
+
+      // 3. Legs
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-legSwing, legLength);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(legSwing, legLength);
+      ctx.stroke();
+
+      // 4. Arms
+      ctx.beginPath();
+      ctx.moveTo(0, shoulderY);
+      ctx.lineTo(-facing * 5 - armSwing, shoulderY + (isUnderwater ? 2 : 6));
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(0, shoulderY);
+      ctx.lineTo(facing * 5 + armSwing, shoulderY + (isUnderwater ? 2 : 6));
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawScenery(cameraY) {
+      // 1. Sky & Sun
+      const skyGrad = ctx.createLinearGradient(0, -cameraY, 0, SURFACE_Y - cameraY);
+      skyGrad.addColorStop(0, '#38bdf8');
+      skyGrad.addColorStop(1, '#818cf8');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, -cameraY, WORLD_WIDTH, SURFACE_Y);
+
+      // Sun
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath();
+      ctx.arc(180, 100 - cameraY, 36, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Clouds
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.beginPath();
+      ctx.arc(220, 85 - cameraY, 22, 0, Math.PI * 2);
+      ctx.arc(250, 75 - cameraY, 32, 0, Math.PI * 2);
+      ctx.arc(285, 85 - cameraY, 22, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Ocean Depth Gradient
+      const waterGrad = ctx.createLinearGradient(0, SURFACE_Y - cameraY, 0, WORLD_HEIGHT - cameraY);
+      waterGrad.addColorStop(0, 'rgba(14, 165, 233, 0.88)');
+      waterGrad.addColorStop(0.25, 'rgba(3, 105, 161, 0.92)');
+      waterGrad.addColorStop(0.65, 'rgba(15, 23, 42, 0.98)');
+      waterGrad.addColorStop(1, '#020617');
+      
+      ctx.fillStyle = waterGrad;
+      ctx.fillRect(0, SURFACE_Y - cameraY, WORLD_WIDTH, WORLD_HEIGHT - SURFACE_Y);
+
+      // Water Surface Waves
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let x = 0; x <= WORLD_WIDTH; x += 20) {
+        const waveY = SURFACE_Y + Math.sin((x + Date.now() * 0.003) * 0.05) * 4;
+        if (x === 0) ctx.moveTo(x, waveY - cameraY);
+        else ctx.lineTo(x, waveY - cameraY);
+      }
+      ctx.stroke();
+
+      // 3. Ship & Ladder
+      const shipScreenY = ship.deckY + 15 - cameraY;
+      
+      // Ship Hull
+      ctx.fillStyle = '#854d0e';
+      ctx.beginPath();
+      ctx.moveTo(ship.x, shipScreenY);
+      ctx.lineTo(ship.x + ship.width, shipScreenY);
+      ctx.lineTo(ship.x + ship.width - 30, shipScreenY + ship.height);
+      ctx.lineTo(ship.x + 30, shipScreenY + ship.height);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#a16207';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Ship Railing
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(ship.x + 10, shipScreenY - 10);
+      ctx.lineTo(ship.x + ship.width - 10, shipScreenY - 10);
+      ctx.stroke();
+
+      // Mast & Sail
+      const mastX = ship.x + ship.width / 2;
+      ctx.strokeStyle = '#451a03';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(mastX, shipScreenY);
+      ctx.lineTo(mastX, shipScreenY - 100);
+      ctx.stroke();
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.moveTo(mastX + 4, shipScreenY - 95);
+      ctx.lineTo(mastX + 60, shipScreenY - 55);
+      ctx.lineTo(mastX + 4, shipScreenY - 15);
+      ctx.closePath();
+      ctx.fill();
+
+      // Flag
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.moveTo(mastX, shipScreenY - 100);
+      ctx.lineTo(mastX - 28, shipScreenY - 90);
+      ctx.lineTo(mastX, shipScreenY - 80);
+      ctx.closePath();
+      ctx.fill();
+
+      // LADDER (Extending down into the water)
+      const ladderLeft = ship.ladderX - 10;
+      const ladderRight = ship.ladderX + 10;
+      const ladderTop = ship.ladderTopY - cameraY;
+      const ladderBottom = ship.ladderBottomY - cameraY;
+
+      ctx.strokeStyle = '#fde047';
+      ctx.lineWidth = 3;
+
+      // Vertical Rails
+      ctx.beginPath();
+      ctx.moveTo(ladderLeft, ladderTop);
+      ctx.lineTo(ladderLeft, ladderBottom);
+      ctx.moveTo(ladderRight, ladderTop);
+      ctx.lineTo(ladderRight, ladderBottom);
+      ctx.stroke();
+
+      // Ladder Rungs
+      ctx.lineWidth = 2;
+      for (let ry = ship.ladderTopY; ry <= ship.ladderBottomY; ry += 12) {
+        ctx.beginPath();
+        ctx.moveTo(ladderLeft, ry - cameraY);
+        ctx.lineTo(ladderRight, ry - cameraY);
+        ctx.stroke();
+      }
+
+      // 4. Narrowing Cliff Walls
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 3.5;
+
+      // Left Cliff
+      ctx.beginPath();
+      ctx.moveTo(0, 380 - cameraY);
+      for (let y = 380; y <= WORLD_HEIGHT; y += 40) {
+        const wall = getCliffWalls(y);
+        const jagged = Math.sin(y * 0.04) * 14;
+        ctx.lineTo(wall.left + jagged, y - cameraY);
+      }
+      ctx.lineTo(0, WORLD_HEIGHT - cameraY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Right Cliff
+      ctx.beginPath();
+      ctx.moveTo(WORLD_WIDTH, 380 - cameraY);
+      for (let y = 380; y <= WORLD_HEIGHT; y += 40) {
+        const wall = getCliffWalls(y);
+        const jagged = Math.cos(y * 0.04) * 14;
+        ctx.lineTo(wall.right + jagged, y - cameraY);
+      }
+      ctx.lineTo(WORLD_WIDTH, WORLD_HEIGHT - cameraY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 5. Bioluminescent Seabed Flora
+      seabedFlora.forEach(f => {
+        const sy = f.y - cameraY;
+        if (sy > -50 && sy < canvas.height + 50) {
+          ctx.strokeStyle = f.color;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(f.x, sy);
+          ctx.quadraticCurveTo(
+            f.x + Math.sin(Date.now() * 0.002 + f.x) * 12,
+            sy - f.height / 2,
+            f.x,
+            sy - f.height
+          );
+          ctx.stroke();
         }
+      });
 
-        function animate() {
-            updatePhysics();
-            draw();
-            requestAnimationFrame(animate);
+      // 6. Fish & Jellyfish
+      fishList.forEach(f => {
+        const sy = f.y - cameraY;
+        if (sy > -20 && sy < canvas.height + 20) {
+          ctx.fillStyle = f.color;
+          ctx.beginPath();
+          ctx.ellipse(f.x, sy, f.size, f.size / 2, 0, 0, Math.PI * 2);
+          ctx.fill();
         }
+      });
 
-        window.onload = function() {
-            resizeCanvas();
-            animate();
-        };
-    </script>
+      jellyfishList.forEach(j => {
+        const sy = j.y + Math.sin(Date.now() * j.speed) * 18 - cameraY;
+        if (sy > -30 && sy < canvas.height + 30) {
+          ctx.fillStyle = j.color;
+          ctx.globalAlpha = 0.55;
+          ctx.beginPath();
+          ctx.arc(j.x, sy, j.size, Math.PI, 0);
+          ctx.fill();
+          ctx.globalAlpha = 1.0;
+        }
+      });
+
+      // Ambient Bubbles
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      particles.forEach(p => {
+        const sy = p.y - cameraY;
+        if (sy > 0 && sy < canvas.height) {
+          ctx.beginPath();
+          ctx.arc(p.x, sy, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // 7. Collectible Glowing Diamonds
+      diamonds.forEach(d => {
+        if (!d.collected) {
+          const sy = d.y - cameraY;
+          d.pulse += 0.05;
+          const glow = Math.sin(d.pulse) * 4;
+
+          ctx.fillStyle = 'rgba(0, 245, 212, 0.28)';
+          ctx.beginPath();
+          ctx.arc(d.x, sy, 18 + glow, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#00f5d4';
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(d.x, sy - 12);
+          ctx.lineTo(d.x + 10, sy - 2);
+          ctx.lineTo(d.x, sy + 12);
+          ctx.lineTo(d.x - 10, sy - 2);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+      });
+
+      // 8. Mission Complete Screen
+      if (player.diamondsCollected === TOTAL_DIAMONDS) {
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.82)';
+        ctx.fillRect(0, canvas.height / 2 - 65, canvas.width, 130);
+
+        ctx.fillStyle = '#fde047';
+        ctx.font = 'bold 24px "Courier New", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('MISSION COMPLETE!', canvas.width / 2, canvas.height / 2 - 12);
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '15px "Courier New", monospace';
+        ctx.fillText('You recovered all diamonds from the ocean abyss!', canvas.width / 2, canvas.height / 2 + 24);
+      }
+    }
+
+    function render() {
+      let cameraY = player.y - canvas.height / 2;
+      cameraY = Math.max(0, Math.min(WORLD_HEIGHT - canvas.height, cameraY));
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawScenery(cameraY);
+
+      const isUnderwater = player.y > SURFACE_Y;
+      drawStickman(
+        player.x,
+        player.y - cameraY,
+        player.facing,
+        player.walkFrame,
+        player.swimAngle,
+        isUnderwater
+      );
+    }
+
+    function animate() {
+      updatePhysics();
+      render();
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+      resizeCanvas();
+      resetSimulation();
+      animate();
+    };
+  </script>
 </body>
 </html>

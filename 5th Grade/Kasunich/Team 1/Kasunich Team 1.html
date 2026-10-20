@@ -1,270 +1,1040 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stickman Starter Canvas</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            margin: 0;
-            padding: 0;
-            font-family: 'Courier New', Courier, monospace, sans-serif;
-        }
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Stickman City Navigator - Kasunich Team 1</title>
+ <style>
+ * {
+ box-sizing: border-box;
+ user-select: none;
+ margin: 0;
+ padding: 0;
+ font-family: 'Courier New', Courier, monospace, sans-serif;
+ }
 
-        body {
-            background-color: #000000;
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            height: 100vh;
-            overflow: hidden;
-            padding: 16px;
-        }
+ body {
+ background-color: #0d0d0d;
+ color: #ffffff;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: flex-start;
+ height: 100vh;
+ overflow: hidden;
+ padding: 12px;
+ }
 
-        /* Top Header Bar */
-        #header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            max-width: 1100px;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #ffffff;
-        }
+ #header {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ width: 100%;
+ max-width: 1100px;
+ margin-bottom: 8px;
+ padding-bottom: 8px;
+ border-bottom: 1px solid #444444;
+ }
 
-        h1 {
-            font-size: 18px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
+ .title-group {
+ display: flex;
+ flex-direction: column;
+ }
 
-        .btn-reset {
-            background: transparent;
-            color: #ffffff;
-            border: 1px solid #ffffff;
-            padding: 6px 16px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.15s ease-in-out;
-        }
+ h1 {
+ font-size: 18px;
+ letter-spacing: 2px;
+ text-transform: uppercase;
+ font-weight: bold;
+ color: #ffffff;
+ }
 
-        .btn-reset:hover {
-            background: #ffffff;
-            color: #000000;
-        }
+ #location-info {
+ font-size: 13px;
+ color: #ffcc00;
+ margin-top: 2px;
+ font-weight: bold;
+ }
 
-        /* Main Canvas Container */
-        #canvas-wrapper {
-            position: relative;
-            width: 100%;
-            max-width: 1100px;
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+ .btn-reset {
+ background: transparent;
+ color: #ffffff;
+ border: 1px solid #ffffff;
+ padding: 6px 16px;
+ font-size: 14px;
+ font-weight: bold;
+ cursor: pointer;
+ text-transform: uppercase;
+ letter-spacing: 1px;
+ transition: all 0.15s ease-in-out;
+ }
 
-        canvas {
-            background-color: #000000;
-            border: 1px solid #ffffff;
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
+ .btn-reset:hover {
+ background: #ffffff;
+ color: #000000;
+ }
 
-        .instructions {
-            margin-top: 8px;
-            font-size: 11px;
-            color: #888888;
-            text-align: center;
-        }
-    </style>
+ #canvas-wrapper {
+ position: relative;
+ width: 100%;
+ max-width: 1100px;
+ flex-grow: 1;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ }
+
+ canvas {
+ background-color: #000000;
+ border: 1px solid #ffffff;
+ display: block;
+ width: 100%;
+ height: 100%;
+ }
+
+ .instructions {
+ margin-top: 8px;
+ font-size: 11px;
+ color: #888888;
+ text-align: center;
+ }
+
+ #victory-modal {
+ display: none;
+ position: absolute;
+ top: 50%;
+ left: 50%;
+ transform: translate(-50%, -50%);
+ background: rgba(0, 0, 0, 0.95);
+ border: 2px solid #ffcc00;
+ padding: 24px 32px;
+ text-align: center;
+ border-radius: 6px;
+ box-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
+ z-index: 10;
+ }
+
+ #victory-modal h2 {
+ color: #ffcc00;
+ font-size: 22px;
+ margin-bottom: 10px;
+ text-transform: uppercase;
+ }
+
+ #victory-modal p {
+ font-size: 13px;
+ color: #ffffff;
+ margin-bottom: 16px;
+ }
+ </style>
 </head>
 <body>
 
-    <!-- Header Section -->
-    <div id="header">
-        <h1>Stickman Engine</h1>
-        <button class="btn-reset" onclick="resetSimulation()">Reset</button>
-    </div>
+ <div id="header">
+ <div class="title-group">
+ <h1>Stickman City Navigator</h1>
+ <div id="location-info">Sector: Stadium</div>
+ </div>
+ <button class="btn-reset" onclick="resetGame()">Reset Game</button>
+ </div>
 
-    <!-- Canvas Container -->
-    <div id="canvas-wrapper">
-        <canvas id="simCanvas"></canvas>
-    </div>
+ <div id="canvas-wrapper">
+ <canvas id="simCanvas"></canvas>
+ 
+ <div id="victory-modal">
+ <h2>Goal Reached!</h2>
+ <p>Stickman found the Red & Yellow Fast Food Restaurant (RYFFR)!</p>
+ <button class="btn-reset" onclick="resetGame()">Play Again</button>
+ </div>
+ </div>
 
-    <div class="instructions">
-        [WASD] Move
-    </div>
+ <div class="instructions">
+ Movement: [WASD] Keys Only (Arrow Keys Disabled) | Exit Stadium to reach city roads!
+ </div>
 
-    <script>
-        const canvas = document.getElementById('simCanvas');
-        const ctx = canvas.getContext('2d');
+ <script>
+ const canvas = document.getElementById('simCanvas');
+ const ctx = canvas.getContext('2d');
 
-        // KEYBOARD INPUT STATE
-        const keys = {};
+ const keys = {};
 
-        // STICKMAN PLAYER STATE
-        const player = {
-            x: 0,
-            y: 0,
-            speed: 4.5,
-            facing: 1, // 1 = Right, -1 = Left
-            walkFrame: 0
-        };
+ const GRID_SIZE = 5;
+ const CENTER = 2;
 
-        function resizeCanvas() {
-            const wrapper = document.getElementById('canvas-wrapper');
-            canvas.width = wrapper.clientWidth;
-            canvas.height = wrapper.clientHeight;
-            
-            // Set initial position to exact center on first load
-            if (player.x === 0 && player.y === 0) {
-                resetSimulation();
-            }
-        }
+ const TILE_TYPES = {
+ STADIUM: 'Stadium (Center Field)',
+ DENSE_CITY: 'Dense City',
+ PARK: 'Park',
+ RESIDENTIAL: 'Residential District',
+ INDUSTRIAL: 'Industrial Zone',
+ RYFFR: 'Red & Yellow Fast Food Restaurant'
+ };
 
-        window.addEventListener('resize', resizeCanvas);
+ let cityGrid = [];
+ let currentGridX = CENTER;
+ let currentGridY = CENTER;
+ let ryffrX = 0;
+ let ryffrY = 0;
+ let hasWon = false;
 
-        // CONTROLS HANDLERS
-        window.addEventListener('keydown', (e) => {
-            if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
-                e.preventDefault();
-            }
-            keys[e.code] = true;
-        });
+ // BASELINE SIDE-VIEW STICKMAN
+ const player = {
+ x: 0,
+ y: 0,
+ speed: 4.0,
+ facing: 1,
+ walkFrame: 0
+ };
 
-        window.addEventListener('keyup', (e) => {
-            keys[e.code] = false;
-        });
+ function seededRandom(seed) {
+ const x = Math.sin(seed++) * 10000;
+ return x - Math.floor(x);
+ }
 
-        function resetSimulation() {
-            player.x = canvas.width / 2;
-            player.y = canvas.height / 2;
-            player.facing = 1;
-            player.walkFrame = 0;
-        }
+ function generateCityMap() {
+ cityGrid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null));
 
-        function updatePhysics() {
-            // Movement Direction Calculation
-            let dx = 0;
-            let dy = 0;
+ cityGrid[CENTER][CENTER] = { type: TILE_TYPES.STADIUM, seed: Math.random() * 1000 };
 
-            if (keys['KeyW'] || keys['Keyw']) dy -= 1;
-            if (keys['KeyS'] || keys['Keys']) dy += 1;
-            if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
-            if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+ const outerCoords = [];
+ for (let x = 0; x < GRID_SIZE; x++) {
+ for (let y = 0; y < GRID_SIZE; y++) {
+ if (x === 0 || x === GRID_SIZE - 1 || y === 0 || y === GRID_SIZE - 1) {
+ outerCoords.push({ x, y });
+ }
+ }
+ }
+ const randomOuterIndex = Math.floor(Math.random() * outerCoords.length);
+ ryffrX = outerCoords[randomOuterIndex].x;
+ ryffrY = outerCoords[randomOuterIndex].y;
+ cityGrid[ryffrX][ryffrY] = { type: TILE_TYPES.RYFFR, seed: Math.random() * 1000 };
 
-            // Normalize diagonal movement vector speed
-            if (dx !== 0 && dy !== 0) {
-                dx *= 0.7071;
-                dy *= 0.7071;
-            }
+ const interveningTypes = [
+ TILE_TYPES.DENSE_CITY,
+ TILE_TYPES.PARK,
+ TILE_TYPES.RESIDENTIAL,
+ TILE_TYPES.INDUSTRIAL
+ ];
 
-            // Update stickman position
-            player.x += dx * player.speed;
-            player.y += dy * player.speed;
+ for (let x = 0; x < GRID_SIZE; x++) {
+ for (let y = 0; y < GRID_SIZE; y++) {
+ if (!cityGrid[x][y]) {
+ const randomType = interveningTypes[Math.floor(Math.random() * interveningTypes.length)];
+ cityGrid[x][y] = { type: randomType, seed: Math.floor(Math.random() * 10000) };
+ }
+ }
+ }
+ }
 
-            // Keep stickman inside canvas boundaries
-            const margin = 15;
-            player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
-            player.y = Math.max(margin + 15, Math.min(canvas.height - margin - 10, player.y));
+ function resizeCanvas() {
+ const wrapper = document.getElementById('canvas-wrapper');
+ canvas.width = wrapper.clientWidth;
+ canvas.height = wrapper.clientHeight;
+ 
+ if (player.x === 0 && player.y === 0) {
+ resetPlayerToCenter();
+ }
+ }
 
-            // Walk animation cycle updates
-            if (dx !== 0 || dy !== 0) {
-                player.walkFrame += 0.25;
-            } else {
-                player.walkFrame = 0;
-            }
-        }
+ window.addEventListener('resize', resizeCanvas);
 
-        function drawStickman(x, y, facing, walkFrame) {
-            ctx.strokeStyle = '#ffffff';
-            ctx.fillStyle = '#ffffff';
-            ctx.lineWidth = 1.8;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
+ // STRICT WASD CONTROLS (ARROW KEYS BLOCKED)
+ window.addEventListener('keydown', (e) => {
+ if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+ e.preventDefault();
+ return;
+ }
 
-            // Halved character dimensions
-            const headRadius = 5;
-            const bodyLength = 15;
-            const legLength = 11;
-            const neckY = y - bodyLength;
-            const headY = neckY - headRadius;
-            const shoulderY = neckY + 4;
+ if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+ e.preventDefault();
+ keys[e.code] = true;
+ }
+ });
 
-            // 1. Head
-            ctx.beginPath();
-            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
-            ctx.stroke();
+ window.addEventListener('keyup', (e) => {
+ if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+ keys[e.code] = false;
+ }
+ });
 
-            // Eye direction indicator
-            ctx.beginPath();
-            ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
-            ctx.fill();
+ function resetPlayerToCenter() {
+ player.x = canvas.width / 2;
+ player.y = canvas.height / 2;
+ player.facing = 1;
+ player.walkFrame = 0;
+ }
 
-            // 2. Torso
-            ctx.beginPath();
-            ctx.moveTo(x, neckY);
-            ctx.lineTo(x, y);
-            ctx.stroke();
+ function resetGame() {
+ currentGridX = CENTER;
+ currentGridY = CENTER;
+ resetPlayerToCenter();
+ hasWon = false;
+ document.getElementById('victory-modal').style.display = 'none';
+ updateLocationUI();
+ }
 
-            // 3. Legs
-            const legSwing = Math.sin(walkFrame) * 6;
+ function updateLocationUI() {
+ const currentTile = cityGrid[currentGridX][currentGridY];
+ document.getElementById('location-info').innerText = 
+ `Sector [${currentGridX + 1},${currentGridY + 1}]: ${currentTile.type}`;
+ }
 
-            // Left / Right Legs
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x - legSwing, y + legLength);
-            ctx.stroke();
+ function getRoadBounds() {
+ const w = canvas.width;
+ const h = canvas.height;
+ const roadW = w * 0.25;
+ const roadH = h * 0.25;
+ return {
+ minX: (w - roadW) / 2,
+ maxX: (w + roadW) / 2,
+ minY: (h - roadH) / 2,
+ maxY: (h + roadH) / 2,
+ roadW,
+ roadH
+ };
+ }
 
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + legSwing, y + legLength);
-            ctx.stroke();
+ // WALKABILITY CHECK (ROADS VS STADIUM ARENA)
+ function isWalkable(px, py) {
+ const b = getRoadBounds();
+ const currentTile = cityGrid[currentGridX][currentGridY];
 
-            // 4. Back Arm
-            const armSwing = Math.sin(walkFrame + Math.PI) * 4;
-            ctx.beginPath();
-            ctx.moveTo(x, shoulderY);
-            ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
-            ctx.stroke();
+ if (currentTile.type === TILE_TYPES.STADIUM) {
+ // 1. Stadium Field / Track Inner Oval Bounds
+ const rx = canvas.width * 0.38;
+ const ry = canvas.height * 0.38;
+ const cx = canvas.width / 2;
+ const cy = canvas.height / 2;
+ const inStadiumField = (Math.pow(px - cx, 2) / Math.pow(rx, 2) + Math.pow(py - cy, 2) / Math.pow(ry, 2)) <= 1;
 
-            // 5. Front Arm
-            ctx.beginPath();
-            ctx.moveTo(x, shoulderY);
-            ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
-            ctx.stroke();
-        }
+ // 2. N/S/E/W Exits Corridor Bounds (Matches adjacent 25% road alignments)
+ const inNorthExit = (px >= b.minX && px <= b.maxX && py <= b.minY);
+ const inSouthExit = (px >= b.minX && px <= b.maxX && py >= b.maxY);
+ const inWestExit = (py >= b.minY && py <= b.maxY && px <= b.minX);
+ const inEastExit = (py >= b.minY && py <= b.maxY && px >= b.maxX);
 
-        function draw() {
-            // Clear canvas background
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+ return inStadiumField || inNorthExit || inSouthExit || inWestExit || inEastExit;
+ } else {
+ // standard plus-sign road network
+ const inHorizontalRoad = (py >= b.minY && py <= b.maxY);
+ const inVerticalRoad = (px >= b.minX && px <= b.maxX);
+ return inHorizontalRoad || inVerticalRoad;
+ }
+ }
 
-            // Draw Stickman
-            drawStickman(player.x, player.y, player.facing, player.walkFrame);
-        }
+ function getQuadrants() {
+ const b = getRoadBounds();
+ return [
+ { x: 0, y: 0, w: b.minX, h: b.minY, id: 'TL' },
+ { x: b.maxX, y: 0, w: b.minX, h: b.minY, id: 'TR' },
+ { x: 0, y: b.maxY, w: b.minX, h: b.minY, id: 'BL' },
+ { x: b.maxX, y: b.maxY, w: b.minX, h: b.minY, id: 'BR' }
+ ];
+ }
 
-        function animate() {
-            updatePhysics();
-            draw();
-            requestAnimationFrame(animate);
-        }
+ function updatePhysics() {
+ if (hasWon) return;
 
-        window.onload = function() {
-            resizeCanvas();
-            animate();
-        };
-    </script>
+ let dx = 0;
+ let dy = 0;
+
+ if (keys['KeyW']) dy -= 1;
+ if (keys['KeyS']) dy += 1;
+ if (keys['KeyA']) { dx -= 1; player.facing = -1; }
+ if (keys['KeyD']) { dx += 1; player.facing = 1; }
+
+ if (dx !== 0 && dy !== 0) {
+ dx *= 0.7071;
+ dy *= 0.7071;
+ }
+
+ const nextX = player.x + dx * player.speed;
+ const nextY = player.y + dy * player.speed;
+
+ if (isWalkable(nextX, player.y)) {
+ player.x = nextX;
+ }
+ if (isWalkable(player.x, nextY)) {
+ player.y = nextY;
+ }
+
+ if (dx !== 0 || dy !== 0) {
+ player.walkFrame += 0.25;
+ } else {
+ player.walkFrame = 0;
+ }
+
+ const margin = 10;
+ const w = canvas.width;
+ const h = canvas.height;
+
+ if (player.x < margin) {
+ if (currentGridX > 0) {
+ currentGridX--;
+ player.x = w - margin - 5;
+ updateLocationUI();
+ } else {
+ player.x = margin;
+ }
+ } else if (player.x > w - margin) {
+ if (currentGridX < GRID_SIZE - 1) {
+ currentGridX++;
+ player.x = margin + 5;
+ updateLocationUI();
+ } else {
+ player.x = w - margin;
+ }
+ }
+
+ if (player.y < margin) {
+ if (currentGridY > 0) {
+ currentGridY--;
+ player.y = h - margin - 5;
+ updateLocationUI();
+ } else {
+ player.y = margin;
+ }
+ } else if (player.y > h - margin) {
+ if (currentGridY < GRID_SIZE - 1) {
+ currentGridY++;
+ player.y = margin + 5;
+ updateLocationUI();
+ } else {
+ player.y = h - margin;
+ }
+ }
+
+ const currentTile = cityGrid[currentGridX][currentGridY];
+ if (currentTile.type === TILE_TYPES.RYFFR) {
+ const dist = Math.hypot(player.x - w / 2, player.y - h / 2);
+ if (dist < 60) {
+ hasWon = true;
+ document.getElementById('victory-modal').style.display = 'block';
+ }
+ }
+ }
+
+ function drawPlusSignRoad(w, h) {
+ const b = getRoadBounds();
+
+ ctx.fillStyle = '#2c3e50';
+ ctx.fillRect(0, b.minY, w, b.roadH);
+ ctx.fillRect(b.minX, 0, b.roadW, h);
+
+ ctx.fillStyle = '#7f8c8d';
+ ctx.fillRect(0, b.minY - 3, w, 3);
+ ctx.fillRect(0, b.maxY, w, 3);
+ ctx.fillRect(b.minX - 3, 0, 3, h);
+ ctx.fillRect(b.maxX, 0, 3, h);
+
+ ctx.strokeStyle = '#f1c40f';
+ ctx.lineWidth = 2;
+ ctx.setLineDash([8, 8]);
+ ctx.beginPath();
+ ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2);
+ ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h);
+ ctx.stroke();
+ ctx.setLineDash([]);
+
+ ctx.fillStyle = '#ffffff';
+ for (let i = 0; i < b.roadW; i += 8) {
+ ctx.fillRect(b.minX + i, b.minY - 10, 5, 8);
+ ctx.fillRect(b.minX + i, b.maxY + 2, 5, 8);
+ }
+ for (let i = 0; i < b.roadH; i += 8) {
+ ctx.fillRect(b.minX - 10, b.minY + i, 8, 5);
+ ctx.fillRect(b.maxX + 2, b.minY + i, 8, 5);
+ }
+ }
+
+ function drawCar(x, y, color, horizontal = true) {
+ ctx.fillStyle = color;
+ if (horizontal) {
+ ctx.fillRect(x, y, 22, 10);
+ ctx.fillStyle = '#87ceeb';
+ ctx.fillRect(x + 12, y + 2, 5, 6);
+ ctx.fillStyle = '#000000';
+ ctx.fillRect(x + 2, y - 2, 4, 2);
+ ctx.fillRect(x + 16, y - 2, 4, 2);
+ ctx.fillRect(x + 2, y + 10, 4, 2);
+ ctx.fillRect(x + 16, y + 10, 4, 2);
+ } else {
+ ctx.fillRect(x, y, 10, 22);
+ ctx.fillStyle = '#87ceeb';
+ ctx.fillRect(x + 2, y + 12, 6, 5);
+ ctx.fillStyle = '#000000';
+ ctx.fillRect(x - 2, y + 2, 2, 4);
+ ctx.fillRect(x - 2, y + 16, 2, 4);
+ ctx.fillRect(x + 10, y + 2, 2, 4);
+ ctx.fillRect(x + 10, y + 16, 2, 4);
+ }
+ }
+
+ // ==================== SECTOR DRAWER FUNCTIONS ====================
+
+ // 1. OVAL SPORTS STADIUM WITH NORTH, SOUTH, EAST, WEST TUNNEL EXITS
+ function drawStadium(w, h) {
+ const b = getRoadBounds();
+ const cx = w / 2;
+ const cy = h / 2;
+
+ // Concrete / Outer Arena Floor
+ ctx.fillStyle = '#11161b';
+ ctx.fillRect(0, 0, w, h);
+
+ // Outer Oval Wall
+ ctx.fillStyle = '#2c3e50';
+ ctx.beginPath();
+ ctx.ellipse(cx, cy, w * 0.47, h * 0.47, 0, 0, Math.PI * 2);
+ ctx.fill();
+
+ // Layered Bleachers (Concentric Oval Seating Tiers)
+ const tierColors = ['#1f2a36', '#283747', '#34495e', '#2c3e50'];
+ const crowdColors = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#ecf0f1', '#e67e22', '#9b59b6'];
+
+ for (let i = 0; i < 6; i++) {
+ const rx = w * (0.46 - i * 0.015);
+ const ry = h * (0.46 - i * 0.015);
+ ctx.fillStyle = tierColors[i % tierColors.length];
+ ctx.beginPath();
+ ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+ ctx.fill();
+
+ // Spectator Crowds
+ ctx.strokeStyle = '#111';
+ ctx.lineWidth = 1;
+ for (let angle = 0; angle < Math.PI * 2; angle += 0.08) {
+ const px = cx + Math.cos(angle) * (rx - 4);
+ const py = cy + Math.sin(angle) * (ry - 4);
+ if (seededRandom(i * 100 + angle * 10) > 0.2) {
+ ctx.fillStyle = crowdColors[Math.floor(seededRandom(i * 50 + angle) * crowdColors.length)];
+ ctx.fillRect(px, py, 2.5, 2.5);
+ }
+ }
+ }
+
+ // 4 Concrete Illuminated Tunnel Corridors (Leading N, S, E, W to Roads)
+ ctx.fillStyle = '#2c3e50';
+ ctx.fillRect(b.minX, 0, b.roadW, b.minY); // North Exit
+ ctx.fillRect(b.minX, b.maxY, b.roadW, h - b.maxY); // South Exit
+ ctx.fillRect(0, b.minY, b.minX, b.roadH); // West Exit
+ ctx.fillRect(b.maxX, b.minY, w - b.maxX, b.roadH); // East Exit
+
+ // Yellow Curb Trim on Tunnel Corridors
+ ctx.fillStyle = '#f1c40f';
+ ctx.fillRect(b.minX, 0, 4, b.minY); ctx.fillRect(b.maxX - 4, 0, 4, b.minY);
+ ctx.fillRect(b.minX, b.maxY, 4, h - b.maxY); ctx.fillRect(b.maxX - 4, b.maxY, 4, h - b.maxY);
+ ctx.fillRect(0, b.minY, b.minX, 4); ctx.fillRect(0, b.maxY - 4, b.minX, 4);
+ ctx.fillRect(b.maxX, b.minY, w - b.maxX, 4); ctx.fillRect(b.maxX, b.maxY - 4, w - b.maxX, 4);
+
+ // Tunnel Exit Signboards
+ ctx.fillStyle = '#111';
+ ctx.fillRect(cx - 35, b.minY - 14, 70, 12);
+ ctx.fillRect(cx - 35, b.maxY + 2, 70, 12);
+ ctx.fillStyle = '#00ffcc';
+ ctx.font = 'bold 9px monospace';
+ ctx.textAlign = 'center';
+ ctx.fillText('NORTH EXIT', cx, b.minY - 5);
+ ctx.fillText('SOUTH EXIT', cx, b.maxY + 11);
+
+ // Running Track Oval
+ ctx.fillStyle = '#a04000'; // Terracotta Red
+ ctx.beginPath();
+ ctx.ellipse(cx, cy, w * 0.38, h * 0.38, 0, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 1;
+ ctx.stroke();
+
+ // Track Lane Lines
+ ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+ ctx.beginPath();
+ ctx.ellipse(cx, cy, w * 0.35, h * 0.35, 0, 0, Math.PI * 2);
+ ctx.stroke();
+
+ // Central Grass Field
+ ctx.fillStyle = '#27ae60';
+ ctx.beginPath();
+ ctx.ellipse(cx, cy, w * 0.32, h * 0.32, 0, 0, Math.PI * 2);
+ ctx.fill();
+
+ // Field Yard Markings
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 1.5;
+ for (let x = cx - w * 0.22; x <= cx + w * 0.22; x += 18) {
+ ctx.beginPath();
+ ctx.moveTo(x, cy - h * 0.2);
+ ctx.lineTo(x, cy + h * 0.2);
+ ctx.stroke();
+ }
+
+ // Midfield Circle & Logo
+ ctx.beginPath();
+ ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+ ctx.stroke();
+ ctx.fillStyle = '#f1c40f';
+ ctx.font = 'bold 16px sans-serif';
+ ctx.fillText('★', cx, cy + 5);
+
+ // Yellow Goalposts at East and West Field Ends
+ ctx.strokeStyle = '#f1c40f';
+ ctx.lineWidth = 2;
+ // West Goalpost
+ const gxW = cx - w * 0.24;
+ ctx.beginPath(); ctx.moveTo(gxW, cy - 14); ctx.lineTo(gxW, cy + 14); ctx.stroke();
+ ctx.beginPath(); ctx.moveTo(gxW, cy); ctx.lineTo(gxW - 8, cy); ctx.stroke();
+ // East Goalpost
+ const gxE = cx + w * 0.24;
+ ctx.beginPath(); ctx.moveTo(gxE, cy - 14); ctx.lineTo(gxE, cy + 14); ctx.stroke();
+ ctx.beginPath(); ctx.moveTo(gxE, cy); ctx.lineTo(gxE + 8, cy); ctx.stroke();
+
+ // Sideline Benches & Water Coolers
+ ctx.fillStyle = '#34495e';
+ ctx.fillRect(cx - 30, cy - h * 0.26, 60, 5);
+ ctx.fillRect(cx - 30, cy + h * 0.25, 60, 5);
+ ctx.fillStyle = '#2980b9'; // Water Coolers
+ ctx.fillRect(cx - 38, cy - h * 0.27, 5, 7);
+ ctx.fillRect(cx + 33, cy + h * 0.24, 5, 7);
+
+ // Stadium Scoreboard Jumbotron (Top Outer Wall)
+ ctx.fillStyle = '#000000';
+ ctx.fillRect(cx - 70, 8, 140, 22);
+ ctx.strokeStyle = '#f1c40f';
+ ctx.lineWidth = 2;
+ ctx.strokeRect(cx - 70, 8, 140, 22);
+ ctx.fillStyle = '#f1c40f';
+ ctx.font = 'bold 10px monospace';
+ ctx.fillText('HOME 24 - GUEST 21 | Q4 01:45', cx, 23);
+
+ // Floodlight Steel Towers in 4 Corners
+ const towers = [
+ { x: 20, y: 20 }, { x: w - 20, y: 20 },
+ { x: 20, y: h - 20 }, { x: w - 20, y: h - 20 }
+ ];
+ towers.forEach(t => {
+ ctx.fillStyle = '#7f8c8d';
+ ctx.fillRect(t.x - 6, t.y - 6, 12, 12);
+ ctx.fillStyle = '#ffffff';
+ ctx.beginPath();
+ ctx.arc(t.x, t.y, 4, 0, Math.PI * 2);
+ ctx.fill();
+ });
+ }
+
+ // 2. DENSE CITY
+ function drawDenseCity(w, h, seed) {
+ ctx.fillStyle = '#111111';
+ ctx.fillRect(0, 0, w, h);
+
+ const quads = getQuadrants();
+ const bColors = ['#1a252f', '#2c3e50', '#34495e', '#22313f', '#1c2833'];
+ const neonColors = ['#e74c3c', '#00f0ff', '#f1c40f', '#e67e22', '#9b59b6'];
+
+ quads.forEach((q, qIdx) => {
+ const cols = 4, rows = 3;
+ const bw = (q.w - 16) / cols;
+ const bh = (q.h - 16) / rows;
+
+ for (let r = 0; r < rows; r++) {
+ for (let c = 0; c < cols; c++) {
+ const bx = q.x + 8 + c * bw;
+ const by = q.y + 8 + r * bh;
+ const cSeed = seed + qIdx * 20 + r * cols + c;
+
+ ctx.fillStyle = bColors[Math.floor(seededRandom(cSeed) * bColors.length)];
+ ctx.fillRect(bx + 1, by + 1, bw - 2, bh - 2);
+ ctx.strokeStyle = '#000000';
+ ctx.lineWidth = 1;
+ ctx.strokeRect(bx + 1, by + 1, bw - 2, bh - 2);
+
+ ctx.fillStyle = '#f1c40f';
+ for (let wx = bx + 4; wx < bx + bw - 4; wx += 5) {
+ for (let wy = by + 4; wy < by + bh - 4; wy += 5) {
+ if (seededRandom(cSeed + wx * 10 + wy) > 0.35) {
+ ctx.fillRect(wx, wy, 2.5, 2.5);
+ }
+ }
+ }
+
+ if (seededRandom(cSeed + 99) > 0.6) {
+ ctx.fillStyle = neonColors[Math.floor(seededRandom(cSeed + 88) * neonColors.length)];
+ ctx.fillRect(bx + 3, by + 2, bw - 6, 3);
+ } else {
+ ctx.fillStyle = '#555555';
+ ctx.fillRect(bx + bw / 2 - 3, by + bh / 2 - 3, 6, 6);
+ }
+ }
+ }
+
+ const carColor = neonColors[Math.floor(seededRandom(seed + qIdx) * neonColors.length)];
+ if (q.id.includes('T')) {
+ drawCar(q.x + q.w / 2 - 10, q.h - 16, carColor, true);
+ } else {
+ drawCar(q.x + q.w / 2 - 10, q.y + 6, carColor, true);
+ }
+ });
+
+ drawPlusSignRoad(w, h);
+ }
+
+ // 3. PARK
+ function drawPark(w, h, seed) {
+ ctx.fillStyle = '#27ae60';
+ ctx.fillRect(0, 0, w, h);
+
+ const quads = getQuadrants();
+
+ quads.forEach((q, qIdx) => {
+ ctx.strokeStyle = '#d5c4a1';
+ ctx.lineWidth = 8;
+ ctx.beginPath();
+ ctx.moveTo(q.x + 10, q.y + q.h / 2);
+ ctx.quadraticCurveTo(q.x + q.w / 2, q.y + q.h / 2, q.x + q.w - 10, q.y + 10);
+ ctx.stroke();
+
+ if (qIdx === 0) {
+ const bx = q.x + q.w * 0.4, by = q.y + q.h * 0.4;
+ ctx.fillStyle = '#d35400';
+ ctx.beginPath(); ctx.arc(bx, by, 22, 0, Math.PI * 2); ctx.fill();
+ ctx.fillStyle = '#27ae60';
+ ctx.beginPath(); ctx.arc(bx, by, 14, 0, Math.PI * 2); ctx.fill();
+ } else if (qIdx === 1) {
+ const px = q.x + q.w * 0.5, py = q.y + q.h * 0.5;
+ ctx.fillStyle = '#2980b9';
+ ctx.beginPath(); ctx.ellipse(px, py, 26, 18, Math.PI / 6, 0, Math.PI * 2); ctx.fill();
+ ctx.fillStyle = '#2ecc71';
+ ctx.fillRect(px - 6, py - 4, 4, 4); ctx.fillRect(px + 8, py + 2, 4, 4);
+ } else if (qIdx === 2) {
+ ctx.fillStyle = '#e74c3c';
+ ctx.fillRect(q.x + 20, q.y + 20, 24, 4);
+ ctx.fillRect(q.x + 22, q.y + 20, 2, 16); ctx.fillRect(q.x + 40, q.y + 20, 2, 16);
+ ctx.fillStyle = '#f1c40f';
+ ctx.fillRect(q.x + 55, q.y + 25, 16, 8);
+ } else {
+ ctx.fillStyle = '#795548';
+ ctx.fillRect(q.x + 25, q.y + 25, 18, 10); ctx.fillRect(q.x + 55, q.y + 40, 18, 10);
+ }
+
+ for (let i = 0; i < 28; i++) {
+ const tx = q.x + 10 + seededRandom(seed + qIdx * 30 + i) * (q.w - 20);
+ const ty = q.y + 10 + seededRandom(seed + qIdx * 30 + i + 50) * (q.h - 20);
+
+ ctx.fillStyle = '#5d4037';
+ ctx.fillRect(tx - 1.5, ty, 3, 6);
+ ctx.fillStyle = (i % 2 === 0) ? '#1e8449' : '#145a32';
+ ctx.beginPath(); ctx.arc(tx, ty - 3, 8, 0, Math.PI * 2); ctx.fill();
+ ctx.fillStyle = '#2ecc71';
+ ctx.beginPath(); ctx.arc(tx - 2, ty - 5, 4, 0, Math.PI * 2); ctx.fill();
+ }
+ });
+
+ drawPlusSignRoad(w, h);
+ }
+
+ // 4. RESIDENTIAL
+ function drawResidential(w, h, seed) {
+ ctx.fillStyle = '#2ecc71';
+ ctx.fillRect(0, 0, w, h);
+
+ const quads = getQuadrants();
+ const houseColors = ['#c0392b', '#2980b9', '#d35400', '#8e44ad', '#16a085', '#2c3e50'];
+ const roofColors = ['#4a235a', '#6e2c00', '#1b2631', '#78281f'];
+
+ quads.forEach((q, qIdx) => {
+ const isTop = q.id.includes('T');
+ const cols = 3, rows = 2;
+ const hW = (q.w - 24) / cols;
+ const hH = (q.h - 30) / rows;
+
+ for (let r = 0; r < rows; r++) {
+ for (let c = 0; c < cols; c++) {
+ const hx = q.x + 8 + c * (hW + 4);
+ const hy = q.y + 8 + r * (hH + 8);
+ const hSeed = seed + qIdx * 15 + r * cols + c;
+
+ const bCol = houseColors[Math.floor(seededRandom(hSeed) * houseColors.length)];
+ const rCol = roofColors[Math.floor(seededRandom(hSeed + 7) * roofColors.length)];
+
+ ctx.fillStyle = '#7f8c8d';
+ ctx.fillRect(hx + hW - 10, hy + hH, 8, 12);
+
+ ctx.fillStyle = '#795548';
+ ctx.fillRect(hx + 4, hy - 6, 5, 8);
+
+ ctx.fillStyle = bCol;
+ ctx.fillRect(hx, hy, hW, hH);
+ ctx.strokeStyle = '#111111';
+ ctx.lineWidth = 1;
+ ctx.strokeRect(hx, hy, hW, hH);
+
+ ctx.fillStyle = rCol;
+ ctx.beginPath();
+ ctx.moveTo(hx - 3, hy);
+ ctx.lineTo(hx + hW / 2, hy - 12);
+ ctx.lineTo(hx + hW + 3, hy);
+ ctx.closePath();
+ ctx.fill();
+ ctx.stroke();
+
+ ctx.fillStyle = '#f1c40f';
+ ctx.fillRect(hx + 4, hy + 5, 7, 6);
+ ctx.fillStyle = '#5d4037';
+ ctx.fillRect(hx + hW - 12, hy + hH - 10, 6, 10);
+
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 1;
+ ctx.strokeRect(hx - 2, hy + hH + 2, hW + 4, 3);
+ }
+ }
+
+ for (let m = q.x + 15; m < q.x + q.w - 15; m += 25) {
+ ctx.fillStyle = '#333333';
+ const my = isTop ? q.h - 8 : q.y + 4;
+ ctx.fillRect(m, my, 2, 6);
+ ctx.fillStyle = '#c0392b';
+ ctx.fillRect(m - 2, my - 3, 6, 4);
+ }
+ });
+
+ drawPlusSignRoad(w, h);
+ }
+
+ // 5. INDUSTRIAL
+ function drawIndustrial(w, h, seed) {
+ ctx.fillStyle = '#212a31';
+ ctx.fillRect(0, 0, w, h);
+
+ const quads = getQuadrants();
+ const containerColors = ['#c0392b', '#2980b9', '#16a085', '#d35400', '#f39c12', '#7f8c8d'];
+
+ quads.forEach((q, qIdx) => {
+ ctx.strokeStyle = '#95a5a6';
+ ctx.lineWidth = 1.5;
+ ctx.setLineDash([3, 3]);
+ ctx.strokeRect(q.x + 3, q.y + 3, q.w - 6, q.h - 6);
+ ctx.setLineDash([]);
+
+ const fw = q.w * 0.55;
+ const fh = q.h * 0.35;
+ const fx = q.x + 12;
+ const fy = q.y + 12;
+
+ ctx.fillStyle = '#1c2833';
+ ctx.fillRect(fx, fy, fw, fh);
+ ctx.strokeStyle = '#000000';
+ ctx.lineWidth = 1.5;
+ ctx.strokeRect(fx, fy, fw, fh);
+
+ ctx.fillStyle = '#566573';
+ for (let rx = fx; rx < fx + fw - 8; rx += 10) {
+ ctx.beginPath();
+ ctx.moveTo(rx, fy);
+ ctx.lineTo(rx + 5, fy - 6);
+ ctx.lineTo(rx + 10, fy);
+ ctx.fill();
+ }
+
+ ctx.fillStyle = '#2c3e50';
+ ctx.fillRect(fx + 6, fy + fh - 10, 12, 10);
+ ctx.fillRect(fx + 22, fy + fh - 10, 12, 10);
+
+ const smX = fx + fw - 10;
+ const smY = fy + 8;
+ ctx.fillStyle = '#a04000';
+ ctx.fillRect(smX, smY - 12, 6, 12);
+ ctx.fillStyle = 'rgba(200, 200, 200, 0.4)';
+ ctx.beginPath(); ctx.arc(smX + 3, smY - 16, 4, 0, Math.PI * 2); ctx.fill();
+
+ const siloX = q.x + q.w - 30;
+ const siloY = q.y + 18;
+ ctx.fillStyle = '#bdc3c7';
+ ctx.beginPath(); ctx.arc(siloX, siloY, 10, 0, Math.PI * 2); ctx.fill();
+
+ const truckY = q.y + fh + 18;
+ const truckX = q.x + 12;
+ ctx.fillStyle = '#e74c3c';
+ ctx.fillRect(truckX, truckY, 12, 16);
+ ctx.fillStyle = '#ecf0f1';
+ ctx.fillRect(truckX + 12, truckY - 2, 40, 20);
+ ctx.strokeStyle = '#000';
+ ctx.strokeRect(truckX + 12, truckY - 2, 40, 20);
+
+ const forkX = q.x + q.w - 45;
+ const forkY = q.y + q.h - 30;
+ ctx.fillStyle = '#f1c40f';
+ ctx.fillRect(forkX, forkY, 14, 10);
+ ctx.fillStyle = '#000';
+ ctx.fillRect(forkX - 5, forkY + 2, 5, 2);
+
+ let cSeed = seed + qIdx * 12;
+ for (let r = 0; r < 2; r++) {
+ for (let c = 0; c < 4; c++) {
+ const cx = q.x + 12 + c * 22;
+ const cy = q.y + q.h - 26 + r * 10;
+ if (cx + 20 < q.x + q.w - 10) {
+ ctx.fillStyle = containerColors[Math.floor(seededRandom(cSeed++) * containerColors.length)];
+ ctx.fillRect(cx, cy, 20, 8);
+ ctx.strokeStyle = '#000';
+ ctx.lineWidth = 0.8;
+ ctx.strokeRect(cx, cy, 20, 8);
+ }
+ }
+ }
+ });
+
+ drawPlusSignRoad(w, h);
+ }
+
+ // 6. RYFFR RESTAURANT
+ function drawRYFFRScreen(w, h) {
+ ctx.fillStyle = '#111111';
+ ctx.fillRect(0, 0, w, h);
+
+ const b = getRoadBounds();
+ const quads = getQuadrants();
+
+ quads.forEach((q, qIdx) => {
+ ctx.strokeStyle = '#f1c40f';
+ ctx.lineWidth = 1;
+ const carCols = ['#e74c3c', '#2980b9', '#ecf0f1', '#34495e', '#f1c40f', '#9b59b6'];
+
+ for (let i = 0; i < 4; i++) {
+ const slotX = q.x + 10 + i * 26;
+ const slotY = q.id.includes('T') ? q.y + 10 : q.y + q.h - 40;
+ ctx.strokeRect(slotX, slotY, 20, 30);
+
+ if (seededRandom(qIdx * 10 + i) > 0.2) {
+ drawCar(slotX + 5, slotY + 4, carCols[i % carCols.length], false);
+ }
+ }
+ });
+
+ drawPlusSignRoad(w, h);
+
+ const bw = b.roadW * 0.9;
+ const bh = b.roadH * 0.9;
+ const bx = w / 2 - bw / 2;
+ const by = h / 2 - bh / 2;
+
+ ctx.fillStyle = '#c0392b';
+ ctx.fillRect(bx, by, bw, bh);
+
+ ctx.strokeStyle = '#f1c40f';
+ ctx.lineWidth = 5;
+ ctx.strokeRect(bx, by, bw, bh);
+
+ ctx.fillStyle = '#f1c40f';
+ ctx.font = '900 26px sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText('M', w / 2, by + bh / 2 - 2);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = 'bold 10px monospace';
+ ctx.fillText('RYFFR FAST FOOD', w / 2, by + bh / 2 + 14);
+
+ ctx.fillStyle = '#333333';
+ ctx.fillRect(b.maxX + 10, b.minY + 10, 16, 22);
+ ctx.fillStyle = '#f1c40f';
+ ctx.fillRect(b.maxX + 12, b.minY + 12, 12, 10);
+ }
+
+ // BASELINE SIDE-VIEW STICKMAN RENDERER
+ function drawStickman(x, y, facing, walkFrame) {
+ ctx.strokeStyle = '#ffffff';
+ ctx.fillStyle = '#ffffff';
+ ctx.lineWidth = 1.8;
+ ctx.lineCap = 'round';
+ ctx.lineJoin = 'round';
+
+ const headRadius = 5;
+ const bodyLength = 15;
+ const legLength = 11;
+ const neckY = y - bodyLength;
+ const headY = neckY - headRadius;
+ const shoulderY = neckY + 4;
+
+ ctx.beginPath();
+ ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.beginPath();
+ ctx.moveTo(x, neckY);
+ ctx.lineTo(x, y);
+ ctx.stroke();
+
+ const legSwing = Math.sin(walkFrame) * 6;
+ ctx.beginPath();
+ ctx.moveTo(x, y);
+ ctx.lineTo(x - legSwing, y + legLength);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.moveTo(x, y);
+ ctx.lineTo(x + legSwing, y + legLength);
+ ctx.stroke();
+
+ const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+ ctx.beginPath();
+ ctx.moveTo(x, shoulderY);
+ ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.moveTo(x, shoulderY);
+ ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
+ ctx.stroke();
+ }
+
+ function drawEnvironment() {
+ const currentTile = cityGrid[currentGridX][currentGridY];
+ const w = canvas.width;
+ const h = canvas.height;
+
+ switch (currentTile.type) {
+ case TILE_TYPES.STADIUM:
+ drawStadium(w, h);
+ break;
+ case TILE_TYPES.DENSE_CITY:
+ drawDenseCity(w, h, currentTile.seed);
+ break;
+ case TILE_TYPES.PARK:
+ drawPark(w, h, currentTile.seed);
+ break;
+ case TILE_TYPES.RESIDENTIAL:
+ drawResidential(w, h, currentTile.seed);
+ break;
+ case TILE_TYPES.INDUSTRIAL:
+ drawIndustrial(w, h, currentTile.seed);
+ break;
+ case TILE_TYPES.RYFFR:
+ drawRYFFRScreen(w, h);
+ break;
+ }
+ }
+
+ function draw() {
+ ctx.clearRect(0, 0, canvas.width, canvas.height);
+ drawEnvironment();
+ drawStickman(player.x, player.y, player.facing, player.walkFrame);
+ }
+
+ function animate() {
+ updatePhysics();
+ draw();
+ requestAnimationFrame(animate);
+ }
+
+ window.onload = function() {
+ generateCityMap();
+ resizeCanvas();
+ updateLocationUI();
+ animate();
+ };
+ </script>
 </body>
 </html>

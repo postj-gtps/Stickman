@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman Planet Explorer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', Courier, monospace, sans-serif;
+    }
+
+    body {
+      background-color: #030308;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 16px;
+    }
+
+    /* Top Header Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1100px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    h1 {
+      font-size: 18px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: bold;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    }
+
+    .btn-reset {
+      background: transparent;
+      color: #ffffff;
+      border: 1px solid #ffffff;
+      padding: 6px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .btn-reset:hover {
+      background: #ffffff;
+      color: #000000;
+      box-shadow: 0 0 10px #ffffff;
+    }
+
+    /* Main Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      background-color: #030308;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 4px;
+      display: block;
+      width: 100%;
+      height: 100%;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    }
+
+    .instructions {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #aaaaaa;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <div id="header">
+    <h1>Stickman Space Engine — Planet <span id="lvl-display">1</span></h1>
+    <button class="btn-reset" onclick="resetSimulation()">Restart Level</button>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+  </div>
+
+  <div class="instructions">
+    [A / D] Walk Left / Right &nbsp;|&nbsp; [SPACEBAR] Jump
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // KEYBOARD INPUT STATE
+    const keys = {};
+
+    // GAME STATE & PLANET PARAMETERS
+    let level = 1;
+    let planetRadius = 400;
+    let gravity = 0.3;
+    const moveSpeed = 3.8;
+    const jumpImpulse = 7.8;
+
+    let obstacles = []; // { type: 'rock'|'crater', angle, halfWidth, height|depth }
+    let shipParts = []; // { angle, collected: false }
+    let particles = [];
+    
+    // COLORFUL SPACE BACKGROUND OBJECTS
+    let stars = [];
+    let nebulae = [];
+    let backgroundPlanets = [];
+
+    // PLANET COLOR THEMES
+    let currentTheme = {
+      fill: '#1a1d24',
+      stroke: '#38bdf8',
+      craterFill: '#111318',
+      accent: '#0284c7'
+    };
+
+    const PLANET_PALETTES = [
+      { fill: '#280d2b', stroke: '#c084fc', craterFill: '#1a071c', accent: '#a855f7' }, // Lunar Violet
+      { fill: '#0a231c', stroke: '#34d399', craterFill: '#051410', accent: '#10b981' }, // Alien Emerald
+      { fill: '#2a1208', stroke: '#fb923c', craterFill: '#1b0903', accent: '#f97316' }, // Volcanic Crimson
+      { fill: '#0c2233', stroke: '#38bdf8', craterFill: '#06131d', accent: '#0284c7' }, // Frozen Cyan
+      { fill: '#272008', stroke: '#facc15', craterFill: '#171303', accent: '#eab308' }, // Golden Dust
+      { fill: '#1f102b', stroke: '#f472b6', craterFill: '#12081a', accent: '#ec4899' }, // Neon Pink Nebula
+      { fill: '#182026', stroke: '#94a3b8', craterFill: '#0f1418', accent: '#64748b' }  // Dark Basalt
+    ];
+
+    let gameState = 'CRASH'; // 'CRASH', 'PLAYING', 'TAKEOFF'
+    let shipYOffset = -400;
+    let shipVy = 0;
+    let levelTransitionTimer = 0;
+
+    // STICKMAN PLAYER STATE
+    const player = {
+      worldAngle: 0.5, // Angle around planet in radians
+      jumpY: 0,        // Radial height above surface
+      vy: 0,
+      isGrounded: true,
+      facing: 1,       // 1 = Right, -1 = Left
+      walkFrame: 0
+    };
+
+    function generateBackgroundElements() {
+      // 1. Multi-colored Twinkling Stars
+      stars = [];
+      const starColors = ['#ffffff', '#bae6fd', '#fef08a', '#fbcfe8', '#c084fc', '#6ee7b7'];
+      for (let i = 0; i < 140; i++) {
+        stars.push({
+          x: Math.random(),
+          y: Math.random(),
+          size: Math.random() * 1.8 + 0.4,
+          color: starColors[Math.floor(Math.random() * starColors.length)],
+          phase: Math.random() * Math.PI * 2,
+          speed: Math.random() * 0.003 + 0.001
+        });
+      }
+
+      // 2. Cosmic Nebulae Glowing Clouds
+      nebulae = [];
+      const nebulaColors = [
+        'rgba(168, 85, 247, ',  // Purple
+        'rgba(56, 189, 248, ',  // Cyan
+        'rgba(244, 114, 182, ', // Pink
+        'rgba(52, 211, 153, ',  // Emerald
+        'rgba(251, 146, 60, '   // Orange
+      ];
+      for (let i = 0; i < 4; i++) {
+        nebulae.push({
+          x: Math.random(),
+          y: Math.random() * 0.7,
+          radius: Math.random() * 180 + 120,
+          colorBase: nebulaColors[Math.floor(Math.random() * nebulaColors.length)],
+          alpha: Math.random() * 0.18 + 0.08
+        });
+      }
+
+      // 3. Distant Space Moons & Planets
+      backgroundPlanets = [];
+      const bgColors = ['#f43f5e', '#8b5cf6', '#0ea5e9', '#10b981', '#f59e0b'];
+      const numBgPlanets = Math.floor(Math.random() * 2) + 2; // 2 to 3 space bodies
+      for (let i = 0; i < numBgPlanets; i++) {
+        backgroundPlanets.push({
+          x: Math.random() * 0.85 + 0.08,
+          y: Math.random() * 0.4 + 0.08,
+          radius: Math.random() * 22 + 10,
+          color: bgColors[Math.floor(Math.random() * bgColors.length)],
+          hasRing: Math.random() > 0.5,
+          ringAngle: (Math.random() - 0.5) * 0.6
+        });
+      }
+    }
+
+    function generateLevel() {
+      // Pick dynamic planet color palette
+      currentTheme = PLANET_PALETTES[Math.floor(Math.random() * PLANET_PALETTES.length)];
+
+      // a.) Planet radius randomized between 200 (tiny/sharp curve) and 900 (giant/slight curve)
+      planetRadius = Math.floor(Math.random() * 700) + 200;
+
+      // c.) Gravity scales with planet radius (larger planet = larger gravity = smaller jump)
+      gravity = 0.18 + ((planetRadius - 200) / 700) * 0.44;
+
+      // Maximum jump height possible under this planet's gravity
+      const maxJumpHeight = (jumpImpulse * jumpImpulse) / (2 * gravity);
+
+      // b.) Obstacles randomized and guaranteed jumpable
+      obstacles = [];
+      const numObstacles = Math.floor(Math.random() * 5) + 4; // 4 to 8 obstacles
+      const angleStep = (Math.PI * 2) / (numObstacles + 1);
+
+      for (let i = 0; i < numObstacles; i++) {
+        let obsAngle = -Math.PI + (i + 1) * angleStep + (Math.random() * 0.3 - 0.15);
+        
+        // Keep starting landing zone near angle 0 clear of obstacles
+        if (Math.abs(obsAngle) < 0.4) continue;
+
+        let isRock = Math.random() > 0.45;
+        let arcWidth = Math.random() * 50 + 50; // 50px to 100px wide
+        let halfWidth = arcWidth / planetRadius;
+
+        if (isRock) {
+          // Cap rock height below jump height
+          let height = Math.random() * (maxJumpHeight * 0.6) + 16;
+          obstacles.push({ type: 'rock', angle: obsAngle, halfWidth, height });
+        } else {
+          // Cap crater depth so stickman can always jump out
+          let depth = Math.random() * (maxJumpHeight * 0.6) + 16;
+          obstacles.push({ type: 'crater', angle: obsAngle, halfWidth, depth });
+        }
+      }
+
+      // Scatter ship repair parts around the planet
+      shipParts = [];
+      const numParts = Math.floor(Math.random() * 3) + 3; // 3 to 5 parts
+      for (let i = 0; i < numParts; i++) {
+        let partAngle = -Math.PI + (i + 0.5) * ((Math.PI * 2) / numParts) + (Math.random() * 0.3 - 0.15);
+        if (Math.abs(partAngle) < 0.35) partAngle += 0.7;
+        shipParts.push({ angle: partAngle, collected: false });
+      }
+
+      // Player initial position
+      player.worldAngle = 0.4;
+      player.jumpY = 0;
+      player.vy = 0;
+      player.isGrounded = true;
+
+      // Crash sequence setup
+      gameState = 'CRASH';
+      shipYOffset = -canvas.height * 0.7;
+      shipVy = 3;
+      particles = [];
+      levelTransitionTimer = 0;
+
+      document.getElementById('lvl-display').innerText = level;
+    }
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // KEYBOARD CONTROLS HANDLER (WASD + SPACEBAR EXCLUSIVE, ARROW KEYS BLOCKED)
+    window.addEventListener('keydown', (e) => {
+      // Explicitly ignore and block arrow keys
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+        return;
+      }
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) {
+        e.preventDefault();
+      }
+      keys[e.code] = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+        return;
+      }
+      keys[e.code] = false;
+    });
+
+    function resetSimulation() {
+      generateLevel();
+    }
+
+    function getTerrainOffset(angle) {
+      let normAngle = Math.atan2(Math.sin(angle), Math.cos(angle));
+      let totalOffset = 0;
+
+      for (let obs of obstacles) {
+        let diff = Math.atan2(Math.sin(normAngle - obs.angle), Math.cos(normAngle - obs.angle));
+        if (Math.abs(diff) < obs.halfWidth) {
+          let factor = Math.cos((diff / obs.halfWidth) * (Math.PI / 2));
+          factor = factor * factor; // Smooth bell curve contour
+          if (obs.type === 'rock') {
+            totalOffset += obs.height * factor;
+          } else if (obs.type === 'crater') {
+            totalOffset -= obs.depth * factor;
+          }
+        }
+      }
+      return totalOffset;
+    }
+
+    function updatePhysics() {
+      if (gameState === 'CRASH') {
+        shipYOffset += shipVy;
+        shipVy += 0.3;
+        if (shipYOffset >= 0) {
+          shipYOffset = 0;
+          gameState = 'PLAYING';
+          // Explosion particles on impact
+          for (let i = 0; i < 40; i++) {
+            particles.push({
+              x: canvas.width / 2,
+              y: getSurfaceY() - 10,
+              vx: (Math.random() - 0.5) * 9,
+              vy: (Math.random() - 0.8) * 8,
+              life: 35 + Math.random() * 20,
+              color: Math.random() > 0.4 ? '#ffaa00' : '#ffffff'
+            });
+          }
+        }
+        return;
+      }
+
+      if (gameState === 'TAKEOFF') {
+        shipVy += 0.35;
+        shipYOffset -= shipVy;
+        
+        // Jet thruster flames
+        for (let i = 0; i < 5; i++) {
+          particles.push({
+            x: canvas.width / 2 + (Math.random() - 0.5) * 12,
+            y: getSurfaceY() - getTerrainOffset(0) + shipYOffset + 22,
+            vx: (Math.random() - 0.5) * 2,
+            vy: Math.random() * 5 + 4,
+            life: 15,
+            color: Math.random() > 0.3 ? '#ff6600' : '#ffff00'
+          });
+        }
+
+        levelTransitionTimer++;
+        if (levelTransitionTimer > 110) {
+          level++;
+          generateLevel();
+        }
+        return;
+      }
+
+      // MOVEMENT INPUTS (WASD: A & D ONLY FOR HORIZONTAL MOVEMENT)
+      let moveDir = 0;
+      if (keys['KeyA'] || keys['Keya']) { moveDir = -1; player.facing = -1; }
+      if (keys['KeyD'] || keys['Keyd']) { moveDir = 1; player.facing = 1; }
+
+      if (moveDir !== 0) {
+        player.walkFrame += 0.25;
+        let deltaAngle = (moveDir * moveSpeed) / planetRadius;
+        let nextAngle = player.worldAngle + deltaAngle;
+
+        let currOffset = getTerrainOffset(player.worldAngle);
+        let nextOffset = getTerrainOffset(nextAngle);
+        let playerAlt = currOffset + player.jumpY;
+
+        // Block movement if rock face is too steep
+        const maxStepUp = 8;
+        if (nextOffset > playerAlt + maxStepUp) {
+          // Block horizontal step into solid rock wall
+        } else {
+          player.worldAngle = nextAngle;
+          player.jumpY = playerAlt - nextOffset;
+          if (player.jumpY < 0) {
+            player.jumpY = 0;
+            player.vy = 0;
+            player.isGrounded = true;
+          }
+        }
+      } else {
+        player.walkFrame = 0;
+      }
+
+      // JUMPING (SPACEBAR ONLY)
+      if (keys['Space'] && player.isGrounded) {
+        player.vy = jumpImpulse;
+        player.isGrounded = false;
+      }
+
+      // VERTICAL GRAVITY PHYSICS
+      if (!player.isGrounded) {
+        player.jumpY += player.vy;
+        player.vy -= gravity;
+
+        if (player.jumpY <= 0) {
+          player.jumpY = 0;
+          player.vy = 0;
+          player.isGrounded = true;
+        }
+      } else {
+        // Fall into crater if ground drops beneath player
+        if (player.jumpY > 0) {
+          player.isGrounded = false;
+        }
+      }
+
+      // PARTICLE ANIMATION UPDATE
+      for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      // SHIP PART COLLECTION DETECTION
+      const playerNormAngle = Math.atan2(Math.sin(player.worldAngle), Math.cos(player.worldAngle));
+      for (let part of shipParts) {
+        if (!part.collected) {
+          let diff = Math.abs(Math.atan2(Math.sin(playerNormAngle - part.angle), Math.cos(playerNormAngle - part.angle)));
+          let arcDist = diff * planetRadius;
+          if (arcDist < 22 && player.jumpY < 28) {
+            part.collected = true;
+            // Collection sparkle particles
+            for (let k = 0; k < 14; k++) {
+              particles.push({
+                x: canvas.width / 2,
+                y: getSurfaceY() - player.jumpY - 10,
+                vx: (Math.random() - 0.5) * 5,
+                vy: (Math.random() - 0.5) * 5,
+                life: 22,
+                color: '#38bdf8'
+              });
+            }
+          }
+        }
+      }
+
+      // TAKEOFF CHECK: All parts collected & player back at rocket ship
+      const allCollected = shipParts.every(p => p.collected);
+      if (allCollected && gameState === 'PLAYING') {
+        let shipDiff = Math.abs(Math.atan2(Math.sin(playerNormAngle - 0), Math.cos(playerNormAngle - 0)));
+        if (shipDiff * planetRadius < 25 && player.isGrounded) {
+          gameState = 'TAKEOFF';
+          shipYOffset = 0;
+          shipVy = 1;
+        }
+      }
+    }
+
+    function getSurfaceY() {
+      return canvas.height * 0.65;
+    }
+
+    function drawStellarBackground() {
+      // 1. Draw Glowing Nebulae
+      for (let neb of nebulae) {
+        let grad = ctx.createRadialGradient(
+          neb.x * canvas.width, neb.y * canvas.height, 10,
+          neb.x * canvas.width, neb.y * canvas.height, neb.radius
+        );
+        grad.addColorStop(0, neb.colorBase + neb.alpha + ')');
+        grad.addColorStop(1, neb.colorBase + '0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(neb.x * canvas.width, neb.y * canvas.height, neb.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 2. Draw Distant Planets & Moons
+      for (let bp of backgroundPlanets) {
+        let bx = bp.x * canvas.width;
+        let by = bp.y * canvas.height;
+
+        ctx.save();
+        ctx.translate(bx, by);
+
+        // Planet Body
+        let planetGrad = ctx.createLinearGradient(-bp.radius, -bp.radius, bp.radius, bp.radius);
+        planetGrad.addColorStop(0, bp.color);
+        planetGrad.addColorStop(1, '#000000');
+        ctx.fillStyle = planetGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, bp.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Planet Ring (if applicable)
+        if (bp.hasRing) {
+          ctx.rotate(bp.ringAngle);
+          ctx.strokeStyle = bp.color;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, bp.radius * 2.2, bp.radius * 0.4, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // 3. Draw Multi-colored Twinkling Stars
+      for (let s of stars) {
+        let alpha = 0.3 + 0.7 * Math.abs(Math.sin(Date.now() * s.speed + s.phase));
+        ctx.fillStyle = s.color;
+        ctx.globalAlpha = alpha;
+        ctx.fillRect(s.x * canvas.width, s.y * canvas.height, s.size, s.size);
+      }
+      ctx.globalAlpha = 1.0;
+    }
+
+    function drawPlanet() {
+      const centerX = canvas.width / 2;
+      const surfaceY = getSurfaceY();
+      const centerY = surfaceY + planetRadius;
+
+      // Draw Curved Planet Body
+      ctx.beginPath();
+      const steps = 260;
+      for (let i = 0; i <= steps; i++) {
+        const relAngle = -Math.PI + (i / steps) * (2 * Math.PI);
+        const worldAngle = player.worldAngle + relAngle + Math.PI / 2;
+        const r = planetRadius + getTerrainOffset(worldAngle);
+
+        const sx = centerX + r * Math.cos(relAngle);
+        const sy = centerY + r * Math.sin(relAngle);
+
+        if (i === 0) ctx.moveTo(sx, sy);
+        else ctx.lineTo(sx, sy);
+      }
+      ctx.closePath();
+
+      ctx.fillStyle = currentTheme.fill;
+      ctx.fill();
+      ctx.strokeStyle = currentTheme.stroke;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    function drawRocketShip() {
+      const centerX = canvas.width / 2;
+      const surfaceY = getSurfaceY();
+      const centerY = surfaceY + planetRadius;
+
+      // Ship is located at worldAngle = 0
+      const relAngle = (0 - player.worldAngle) - Math.PI / 2;
+      const r = planetRadius + getTerrainOffset(0);
+
+      const sx = centerX + r * Math.cos(relAngle);
+      const sy = centerY + r * Math.sin(relAngle) + shipYOffset;
+
+      if (sy < -120 || sy > canvas.height + 120) return;
+
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(relAngle + Math.PI / 2);
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = '#090a0f';
+      ctx.lineWidth = 2;
+
+      // Rocket Body
+      ctx.beginPath();
+      ctx.moveTo(0, -30);
+      ctx.bezierCurveTo(14, -15, 14, 12, 11, 20);
+      ctx.lineTo(-11, 20);
+      ctx.bezierCurveTo(-14, 12, -14, -15, 0, -30);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Porthole Window
+      ctx.strokeStyle = currentTheme.stroke;
+      ctx.beginPath();
+      ctx.arc(0, -6, 5, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Rocket Fins
+      ctx.strokeStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(-11, 8);
+      ctx.lineTo(-20, 24);
+      ctx.lineTo(-11, 20);
+      ctx.moveTo(11, 8);
+      ctx.lineTo(20, 24);
+      ctx.lineTo(11, 20);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawShipParts() {
+      const centerX = canvas.width / 2;
+      const surfaceY = getSurfaceY();
+      const centerY = surfaceY + planetRadius;
+
+      for (let part of shipParts) {
+        if (part.collected) continue;
+
+        const relAngle = (part.angle - player.worldAngle) - Math.PI / 2;
+        const hoverOffset = Math.sin(Date.now() * 0.006 + part.angle) * 4;
+        const r = planetRadius + getTerrainOffset(part.angle) + 14 + hoverOffset;
+
+        const sx = centerX + r * Math.cos(relAngle);
+        const sy = centerY + r * Math.sin(relAngle);
+
+        ctx.strokeStyle = '#38bdf8';
+        ctx.fillStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+        ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(sx, sy, 7, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    function drawParticles() {
+      for (let p of particles) {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawStickman(x, y, facing, walkFrame) {
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const headRadius = 5;
+      const bodyLength = 15;
+      const legLength = 11;
+      const neckY = y - bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 4;
+
+      // 1. Head
+      ctx.beginPath();
+      ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Eye
+      ctx.beginPath();
+      ctx.arc(x + facing * 2, headY - 0.5, 0.9, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Torso
+      ctx.beginPath();
+      ctx.moveTo(x, neckY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+
+      // 3. Legs
+      const legSwing = Math.sin(walkFrame) * 6;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - legSwing, y + legLength);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + legSwing, y + legLength);
+      ctx.stroke();
+
+      // 4. Arms
+      const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
+      ctx.stroke();
+    }
+
+    function drawHUD() {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '12px "Courier New", Courier, monospace';
+      ctx.textAlign = 'left';
+
+      const gravDesc = gravity < 0.28 ? 'LOW (HIGH JUMP)' : gravity > 0.48 ? 'HIGH (LOW JUMP)' : 'MEDIUM';
+      ctx.fillText(`PLANET RADIUS: ${planetRadius}km | GRAVITY: ${gravDesc}`, 16, 28);
+
+      const collected = shipParts.filter(p => p.collected).length;
+      ctx.fillText(`REPAIR PARTS: ${collected} / ${shipParts.length}`, 16, 48);
+
+      if (gameState === 'PLAYING') {
+        if (collected === shipParts.length) {
+          ctx.fillStyle = '#34d399';
+          ctx.fillText('ALL PARTS COLLECTED! RETURN TO ROCKET SHIP TO LAUNCH!', 16, 70);
+        } else {
+          ctx.fillStyle = '#aaaaaa';
+          ctx.fillText('COLLECT ALL SHIP PARTS AROUND THE PLANET', 16, 70);
+        }
+      } else if (gameState === 'CRASH') {
+        ctx.fillStyle = '#f87171';
+        ctx.fillText('MAYDAY! ROCKET CRASHED! SEARCH PLANET FOR REPAIR PARTS!', 16, 70);
+      } else if (gameState === 'TAKEOFF') {
+        ctx.fillStyle = '#34d399';
+        ctx.fillText('SHIP REPAIRED! TAKING OFF TO NEXT PLANET SYSTEM...', 16, 70);
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = '#030308';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      drawStellarBackground();
+      drawPlanet();
+      drawRocketShip();
+      drawShipParts();
+      drawParticles();
+
+      // Render Stickman centered at top of planet
+      if (gameState !== 'TAKEOFF' || levelTransitionTimer < 20) {
+        const playerX = canvas.width / 2;
+        const playerGroundY = getSurfaceY() - getTerrainOffset(player.worldAngle) - player.jumpY;
+        drawStickman(playerX, playerGroundY - 11, player.facing, player.walkFrame);
+      }
+
+      drawHUD();
+    }
+
+    function animate() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+      resizeCanvas();
+      generateBackgroundElements();
+      generateLevel();
+      animate();
+    };
+  </script>
+</body>
+</html>

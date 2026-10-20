@@ -1,270 +1,545 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stickman Starter Canvas</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            margin: 0;
-            padding: 0;
-            font-family: 'Courier New', Courier, monospace, sans-serif;
-        }
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Stickman Engine - Pac-Man Maze</title>
+ <style>
+ * {
+ box-sizing: border-box;
+ user-select: none;
+ margin: 0;
+ padding: 0;
+ font-family: 'Courier New', Courier, monospace, sans-serif;
+ }
 
-        body {
-            background-color: #000000;
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            height: 100vh;
-            overflow: hidden;
-            padding: 16px;
-        }
+ body {
+ background-color: #000000;
+ color: #ffffff;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: flex-start;
+ height: 100vh;
+ overflow: hidden;
+ padding: 16px;
+ }
 
-        /* Top Header Bar */
-        #header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            max-width: 1100px;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #ffffff;
-        }
+ /* Top Header Bar */
+ #header {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ width: 100%;
+ max-width: 1100px;
+ margin-bottom: 12px;
+ padding-bottom: 8px;
+ border-bottom: 1px solid #ffffff;
+ }
 
-        h1 {
-            font-size: 18px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
+ h1 {
+ font-size: 18px;
+ letter-spacing: 2px;
+ text-transform: uppercase;
+ font-weight: bold;
+ }
 
-        .btn-reset {
-            background: transparent;
-            color: #ffffff;
-            border: 1px solid #ffffff;
-            padding: 6px 16px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.15s ease-in-out;
-        }
+ .stats {
+ font-size: 16px;
+ font-weight: bold;
+ letter-spacing: 2px;
+ text-transform: uppercase;
+ }
 
-        .btn-reset:hover {
-            background: #ffffff;
-            color: #000000;
-        }
+ .btn-reset {
+ background: transparent;
+ color: #ffffff;
+ border: 1px solid #ffffff;
+ padding: 6px 16px;
+ font-size: 14px;
+ font-weight: bold;
+ cursor: pointer;
+ text-transform: uppercase;
+ letter-spacing: 1px;
+ transition: all 0.15s ease-in-out;
+ }
 
-        /* Main Canvas Container */
-        #canvas-wrapper {
-            position: relative;
-            width: 100%;
-            max-width: 1100px;
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+ .btn-reset:hover {
+ background: #ffffff;
+ color: #000000;
+ }
 
-        canvas {
-            background-color: #000000;
-            border: 1px solid #ffffff;
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
+ /* Main Canvas Container */
+ #canvas-wrapper {
+ position: relative;
+ width: 100%;
+ max-width: 1100px;
+ flex-grow: 1;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ }
 
-        .instructions {
-            margin-top: 8px;
-            font-size: 11px;
-            color: #888888;
-            text-align: center;
-        }
-    </style>
+ canvas {
+ background-color: #000000;
+ border: 1px solid #ffffff;
+ display: block;
+ width: 100%;
+ height: 100%;
+ }
+
+ .instructions {
+ margin-top: 8px;
+ font-size: 11px;
+ color: #888888;
+ text-align: center;
+ }
+ </style>
 </head>
 <body>
 
-    <!-- Header Section -->
-    <div id="header">
-        <h1>Stickman Engine</h1>
-        <button class="btn-reset" onclick="resetSimulation()">Reset</button>
-    </div>
+ <!-- Header Section -->
+ <div id="header">
+ <h1>Stickman Engine</h1>
+ <div class="stats">
+ LEVEL: <span id="level-display" style="color: #2121ff;">1</span>
+ </div>
+ <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+ </div>
 
-    <!-- Canvas Container -->
-    <div id="canvas-wrapper">
-        <canvas id="simCanvas"></canvas>
-    </div>
+ <!-- Canvas Container -->
+ <div id="canvas-wrapper">
+ <canvas id="simCanvas"></canvas>
+ </div>
 
-    <div class="instructions">
-        [WASD] Move
-    </div>
+ <div class="instructions">
+ [WASD] Move &nbsp;|&nbsp; Navigate the maze to reach the EXIT!
+ </div>
 
-    <script>
-        const canvas = document.getElementById('simCanvas');
-        const ctx = canvas.getContext('2d');
+ <script>
+ const canvas = document.getElementById('simCanvas');
+ const ctx = canvas.getContext('2d');
 
-        // KEYBOARD INPUT STATE
-        const keys = {};
+ // KEYBOARD INPUT STATE
+ const keys = {};
 
-        // STICKMAN PLAYER STATE
-        const player = {
-            x: 0,
-            y: 0,
-            speed: 4.5,
-            facing: 1, // 1 = Right, -1 = Left
-            walkFrame: 0
-        };
+ // MAZE CONFIGURATION
+ const COLS = 13;
+ const ROWS = 8;
+ let maze = [];
+ let currentLevel = 1;
 
-        function resizeCanvas() {
-            const wrapper = document.getElementById('canvas-wrapper');
-            canvas.width = wrapper.clientWidth;
-            canvas.height = wrapper.clientHeight;
-            
-            // Set initial position to exact center on first load
-            if (player.x === 0 && player.y === 0) {
-                resetSimulation();
-            }
-        }
+ // Pac-Man inspired neon palette per level
+ const LEVEL_COLORS = [
+ '#2121FF', // Pac-Man Classic Blue
+ '#FF007F', // Neon Pink
+ '#00FFFF', // Cyan
+ '#FF9900', // Neon Orange
+ '#00FF66', // Bright Green
+ '#B537F7', // Electric Purple
+ '#FF3333', // Crimson Red
+ '#FFFF00'  // Pac-Man Yellow
+ ];
 
-        window.addEventListener('resize', resizeCanvas);
+ // STICKMAN PLAYER STATE
+ const player = {
+ x: 0,
+ y: 0,
+ radius: 11,
+ speed: 3.5,
+ facing: 1, // 1 = Right, -1 = Left
+ walkFrame: 0
+ };
 
-        // CONTROLS HANDLERS
-        window.addEventListener('keydown', (e) => {
-            if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
-                e.preventDefault();
-            }
-            keys[e.code] = true;
-        });
+ function getLevelColor() {
+ return LEVEL_COLORS[(currentLevel - 1) % LEVEL_COLORS.length];
+ }
 
-        window.addEventListener('keyup', (e) => {
-            keys[e.code] = false;
-        });
+ function updateLevelUI() {
+ const display = document.getElementById('level-display');
+ if (display) {
+ display.textContent = currentLevel;
+ display.style.color = getLevelColor();
+ }
+ }
 
-        function resetSimulation() {
-            player.x = canvas.width / 2;
-            player.y = canvas.height / 2;
-            player.facing = 1;
-            player.walkFrame = 0;
-        }
+ // RANDOMIZED MAZE GENERATOR (Depth-First Search)
+ function generateMaze(cols, rows) {
+ const grid = [];
+ for (let r = 0; r < rows; r++) {
+ const row = [];
+ for (let c = 0; c < cols; c++) {
+ row.push({
+ r, c,
+ walls: { top: true, right: true, bottom: true, left: true },
+ visited: false
+ });
+ }
+ grid.push(row);
+ }
 
-        function updatePhysics() {
-            // Movement Direction Calculation
-            let dx = 0;
-            let dy = 0;
+ const stack = [];
+ let current = grid[0][0];
+ current.visited = true;
 
-            if (keys['KeyW'] || keys['Keyw']) dy -= 1;
-            if (keys['KeyS'] || keys['Keys']) dy += 1;
-            if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
-            if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+ while (true) {
+ const { r, c } = current;
+ const neighbors = [];
 
-            // Normalize diagonal movement vector speed
-            if (dx !== 0 && dy !== 0) {
-                dx *= 0.7071;
-                dy *= 0.7071;
-            }
+ if (r > 0 && !grid[r - 1][c].visited) neighbors.push({ cell: grid[r - 1][c], dir: 'top' });
+ if (c < cols - 1 && !grid[r][c + 1].visited) neighbors.push({ cell: grid[r][c + 1], dir: 'right' });
+ if (r < rows - 1 && !grid[r + 1][c].visited) neighbors.push({ cell: grid[r + 1][c], dir: 'bottom' });
+ if (c > 0 && !grid[r][c - 1].visited) neighbors.push({ cell: grid[r][c - 1], dir: 'left' });
 
-            // Update stickman position
-            player.x += dx * player.speed;
-            player.y += dy * player.speed;
+ if (neighbors.length > 0) {
+ const nextObj = neighbors[Math.floor(Math.random() * neighbors.length)];
+ const nextCell = nextObj.cell;
 
-            // Keep stickman inside canvas boundaries
-            const margin = 15;
-            player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
-            player.y = Math.max(margin + 15, Math.min(canvas.height - margin - 10, player.y));
+ if (nextObj.dir === 'top') {
+ current.walls.top = false;
+ nextCell.walls.bottom = false;
+ } else if (nextObj.dir === 'right') {
+ current.walls.right = false;
+ nextCell.walls.left = false;
+ } else if (nextObj.dir === 'bottom') {
+ current.walls.bottom = false;
+ nextCell.walls.top = false;
+ } else if (nextObj.dir === 'left') {
+ current.walls.left = false;
+ nextCell.walls.right = false;
+ }
 
-            // Walk animation cycle updates
-            if (dx !== 0 || dy !== 0) {
-                player.walkFrame += 0.25;
-            } else {
-                player.walkFrame = 0;
-            }
-        }
+ stack.push(current);
+ current = nextCell;
+ current.visited = true;
+ } else if (stack.length > 0) {
+ current = stack.pop();
+ } else {
+ break;
+ }
+ }
 
-        function drawStickman(x, y, facing, walkFrame) {
-            ctx.strokeStyle = '#ffffff';
-            ctx.fillStyle = '#ffffff';
-            ctx.lineWidth = 1.8;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
+ return grid;
+ }
 
-            // Halved character dimensions
-            const headRadius = 5;
-            const bodyLength = 15;
-            const legLength = 11;
-            const neckY = y - bodyLength;
-            const headY = neckY - headRadius;
-            const shoulderY = neckY + 4;
+ function initLevel() {
+ maze = generateMaze(COLS, ROWS);
+ updateLevelUI();
 
-            // 1. Head
-            ctx.beginPath();
-            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
-            ctx.stroke();
+ const cw = canvas.width / COLS;
+ const ch = canvas.height / ROWS;
 
-            // Eye direction indicator
-            ctx.beginPath();
-            ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
-            ctx.fill();
+ // Place player in center of start cell (0, 0)
+ player.x = cw * 0.5;
+ player.y = ch * 0.5;
+ player.facing = 1;
+ player.walkFrame = 0;
+ }
 
-            // 2. Torso
-            ctx.beginPath();
-            ctx.moveTo(x, neckY);
-            ctx.lineTo(x, y);
-            ctx.stroke();
+ function resetSimulation() {
+ currentLevel = 1;
+ initLevel();
+ }
 
-            // 3. Legs
-            const legSwing = Math.sin(walkFrame) * 6;
+ function nextLevel() {
+ currentLevel++;
+ initLevel();
+ }
 
-            // Left / Right Legs
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x - legSwing, y + legLength);
-            ctx.stroke();
+ function resizeCanvas() {
+ const wrapper = document.getElementById('canvas-wrapper');
+ const oldWidth = canvas.width || wrapper.clientWidth;
+ const oldHeight = canvas.height || wrapper.clientHeight;
 
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + legSwing, y + legLength);
-            ctx.stroke();
+ canvas.width = wrapper.clientWidth;
+ canvas.height = wrapper.clientHeight;
 
-            // 4. Back Arm
-            const armSwing = Math.sin(walkFrame + Math.PI) * 4;
-            ctx.beginPath();
-            ctx.moveTo(x, shoulderY);
-            ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
-            ctx.stroke();
+ if (maze.length === 0) {
+ initLevel();
+ } else if (oldWidth > 0 && oldHeight > 0) {
+ player.x = (player.x / oldWidth) * canvas.width;
+ player.y = (player.y / oldHeight) * canvas.height;
+ }
+ }
 
-            // 5. Front Arm
-            ctx.beginPath();
-            ctx.moveTo(x, shoulderY);
-            ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
-            ctx.stroke();
-        }
+ window.addEventListener('resize', resizeCanvas);
 
-        function draw() {
-            // Clear canvas background
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+ // CONTROLS HANDLERS - STRICTLY WASD MOVEMENT ONLY
+ window.addEventListener('keydown', (e) => {
+ // Prevent default scrolling/actions for arrow keys and spacebar
+ if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+ e.preventDefault();
+ }
+ if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+ e.preventDefault();
+ }
+ keys[e.code] = true;
+ });
 
-            // Draw Stickman
-            drawStickman(player.x, player.y, player.facing, player.walkFrame);
-        }
+ window.addEventListener('keyup', (e) => {
+ keys[e.code] = false;
+ });
 
-        function animate() {
-            updatePhysics();
-            draw();
-            requestAnimationFrame(animate);
-        }
+ // SMOOTH WALL COLLISION RESOLUTION
+ function clampToSegment(x1, y1, x2, y2, radius) {
+ const dx = x2 - x1;
+ const dy = y2 - y1;
+ const lenSq = dx * dx + dy * dy;
+ if (lenSq === 0) return;
 
-        window.onload = function() {
-            resizeCanvas();
-            animate();
-        };
-    </script>
+ let t = ((player.x - x1) * dx + (player.y - y1) * dy) / lenSq;
+ t = Math.max(0, Math.min(1, t));
+
+ const closestX = x1 + t * dx;
+ const closestY = y1 + t * dy;
+
+ const distX = player.x - closestX;
+ const distY = player.y - closestY;
+ const dist = Math.hypot(distX, distY);
+
+ if (dist < radius && dist > 0) {
+ const overlap = radius - dist;
+ player.x += (distX / dist) * overlap;
+ player.y += (distY / dist) * overlap;
+ }
+ }
+
+ function resolveWallCollisions() {
+ const cw = canvas.width / COLS;
+ const ch = canvas.height / ROWS;
+ const pr = player.radius;
+
+ let c = Math.floor(player.x / cw);
+ let r = Math.floor(player.y / ch);
+ c = Math.max(0, Math.min(COLS - 1, c));
+ r = Math.max(0, Math.min(ROWS - 1, r));
+
+ // Check surrounding 3x3 cells for wall collisions
+ for (let nr = Math.max(0, r - 1); nr <= Math.min(ROWS - 1, r + 1); nr++) {
+ for (let nc = Math.max(0, c - 1); nc <= Math.min(COLS - 1, c + 1); nc++) {
+ const cell = maze[nr][nc];
+ const x1 = nc * cw;
+ const y1 = nr * ch;
+ const x2 = (nc + 1) * cw;
+ const y2 = (nr + 1) * ch;
+
+ if (cell.walls.top) clampToSegment(x1, y1, x2, y1, pr);
+ if (cell.walls.bottom) clampToSegment(x1, y2, x2, y2, pr);
+ if (cell.walls.left) clampToSegment(x1, y1, x1, y2, pr);
+ if (cell.walls.right) clampToSegment(x2, y1, x2, y2, pr);
+ }
+ }
+
+ // Outer canvas boundary safety clamp
+ player.x = Math.max(pr, Math.min(canvas.width - pr, player.x));
+ player.y = Math.max(pr, Math.min(canvas.height - pr, player.y));
+ }
+
+ function updatePhysics() {
+ let dx = 0;
+ let dy = 0;
+
+ // WASD Movement Keys Only
+ if (keys['KeyW'] || keys['Keyw']) dy -= 1;
+ if (keys['KeyS'] || keys['Keys']) dy += 1;
+ if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
+ if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+
+ // Normalize diagonal movement vector speed
+ if (dx !== 0 && dy !== 0) {
+ dx *= 0.7071;
+ dy *= 0.7071;
+ }
+
+ // Update stickman position
+ player.x += dx * player.speed;
+ player.y += dy * player.speed;
+
+ // Wall collision handling
+ resolveWallCollisions();
+
+ // Walk animation cycle updates
+ if (dx !== 0 || dy !== 0) {
+ player.walkFrame += 0.25;
+ } else {
+ player.walkFrame = 0;
+ }
+
+ // Check goal destination reached
+ const cw = canvas.width / COLS;
+ const ch = canvas.height / ROWS;
+ const goalX = (COLS - 0.5) * cw;
+ const goalY = (ROWS - 0.5) * ch;
+ const distToGoal = Math.hypot(player.x - goalX, player.y - goalY);
+
+ if (distToGoal < player.radius + Math.min(cw, ch) * 0.2) {
+ nextLevel();
+ }
+ }
+
+ function drawMaze() {
+ const cw = canvas.width / COLS;
+ const ch = canvas.height / ROWS;
+ const wallColor = getLevelColor();
+ const wallWidth = Math.max(6, Math.min(cw, ch) * 0.12);
+
+ ctx.save();
+ ctx.strokeStyle = wallColor;
+ ctx.lineWidth = wallWidth;
+ ctx.lineCap = 'round';
+ ctx.lineJoin = 'round';
+
+ ctx.beginPath();
+ for (let r = 0; r < ROWS; r++) {
+ for (let c = 0; c < COLS; c++) {
+ const cell = maze[r][c];
+ const x1 = c * cw;
+ const y1 = r * ch;
+ const x2 = (c + 1) * cw;
+ const y2 = (r + 1) * ch;
+
+ if (cell.walls.top) {
+ ctx.moveTo(x1, y1);
+ ctx.lineTo(x2, y1);
+ }
+ if (cell.walls.left) {
+ ctx.moveTo(x1, y1);
+ ctx.lineTo(x1, y2);
+ }
+ if (cell.walls.bottom && r === ROWS - 1) {
+ ctx.moveTo(x1, y2);
+ ctx.lineTo(x2, y2);
+ }
+ if (cell.walls.right && c === COLS - 1) {
+ ctx.moveTo(x2, y1);
+ ctx.lineTo(x2, y2);
+ }
+ }
+ }
+ ctx.stroke();
+
+ // Pac-Man arcade style inner line split
+ ctx.strokeStyle = '#000000';
+ ctx.lineWidth = Math.max(2, wallWidth * 0.35);
+ ctx.stroke();
+
+ ctx.restore();
+ }
+
+ function drawGoal() {
+ const cw = canvas.width / COLS;
+ const ch = canvas.height / ROWS;
+ const goalX = (COLS - 0.5) * cw;
+ const goalY = (ROWS - 0.5) * ch;
+
+ const time = Date.now() * 0.005;
+ const pulse = Math.sin(time) * 2 + Math.min(cw, ch) * 0.18;
+
+ ctx.save();
+ ctx.shadowColor = '#ffffff';
+ ctx.shadowBlur = 10;
+
+ // Outer pulsating exit circle
+ ctx.fillStyle = '#ffff00';
+ ctx.beginPath();
+ ctx.arc(goalX, goalY, Math.max(6, pulse), 0, Math.PI * 2);
+ ctx.fill();
+
+ // Core center
+ ctx.fillStyle = '#ffffff';
+ ctx.beginPath();
+ ctx.arc(goalX, goalY, Math.max(2, pulse * 0.4), 0, Math.PI * 2);
+ ctx.fill();
+
+ // Text label
+ ctx.shadowBlur = 0;
+ ctx.fillStyle = '#ffffff';
+ ctx.font = 'bold 10px "Courier New", monospace';
+ ctx.textAlign = 'center';
+ ctx.textBaseline = 'middle';
+ ctx.fillText('EXIT', goalX, goalY + pulse + 10);
+
+ ctx.restore();
+ }
+
+ function drawStickman(x, y, facing, walkFrame) {
+ ctx.strokeStyle = '#ffffff';
+ ctx.fillStyle = '#ffffff';
+ ctx.lineWidth = 1.8;
+ ctx.lineCap = 'round';
+ ctx.lineJoin = 'round';
+
+ const headRadius = 4.5;
+ const bodyLength = 12;
+ const legLength = 10;
+ const centerY = y + 2;
+ const neckY = centerY - bodyLength;
+ const headY = neckY - headRadius;
+ const shoulderY = neckY + 3;
+
+ // 1. Head
+ ctx.beginPath();
+ ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+ ctx.stroke();
+
+ // Eye indicator
+ ctx.beginPath();
+ ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+ ctx.fill();
+
+ // 2. Torso
+ ctx.beginPath();
+ ctx.moveTo(x, neckY);
+ ctx.lineTo(x, centerY);
+ ctx.stroke();
+
+ // 3. Legs
+ const legSwing = Math.sin(walkFrame) * 5;
+
+ ctx.beginPath();
+ ctx.moveTo(x, centerY);
+ ctx.lineTo(x - legSwing, centerY + legLength);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.moveTo(x, centerY);
+ ctx.lineTo(x + legSwing, centerY + legLength);
+ ctx.stroke();
+
+ // 4. Arms
+ const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+ ctx.beginPath();
+ ctx.moveTo(x, shoulderY);
+ ctx.lineTo(x - facing * 3 - armSwing, shoulderY + 5);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.moveTo(x, shoulderY);
+ ctx.lineTo(x + facing * 3 + armSwing, shoulderY + 5);
+ ctx.stroke();
+ }
+
+ function draw() {
+ // Clear canvas background
+ ctx.fillStyle = '#000000';
+ ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+ // Draw canvas components
+ drawMaze();
+ drawGoal();
+ drawStickman(player.x, player.y, player.facing, player.walkFrame);
+ }
+
+ function animate() {
+ updatePhysics();
+ draw();
+ requestAnimationFrame(animate);
+ }
+
+ window.onload = function() {
+ resizeCanvas();
+ animate();
+ };
+ </script>
 </body>
 </html>

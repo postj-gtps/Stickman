@@ -1,270 +1,866 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stickman Starter Canvas</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            margin: 0;
-            padding: 0;
-            font-family: 'Courier New', Courier, monospace, sans-serif;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman: Space Crash Physics</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', Courier, monospace, sans-serif;
+    }
 
-        body {
-            background-color: #000000;
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            height: 100vh;
-            overflow: hidden;
-            padding: 16px;
-        }
+    body {
+      background-color: #05050a;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 16px;
+      transition: background-color 0.5s ease;
+    }
 
-        /* Top Header Bar */
-        #header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            max-width: 1100px;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #ffffff;
-        }
+    /* HUD Header Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1280px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #ffffff;
+    }
 
-        h1 {
-            font-size: 18px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
+    .title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
 
-        .btn-reset {
-            background: transparent;
-            color: #ffffff;
-            border: 1px solid #ffffff;
-            padding: 6px 16px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.15s ease-in-out;
-        }
+    h1 {
+      font-size: 18px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
 
-        .btn-reset:hover {
-            background: #ffffff;
-            color: #000000;
-        }
+    .hud-info {
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      display: flex;
+      gap: 20px;
+    }
 
-        /* Main Canvas Container */
-        #canvas-wrapper {
-            position: relative;
-            width: 100%;
-            max-width: 1100px;
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+    .btn-reset {
+      background: transparent;
+      color: #ffffff;
+      border: 1px solid #ffffff;
+      padding: 6px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.15s ease-in-out;
+    }
 
-        canvas {
-            background-color: #000000;
-            border: 1px solid #ffffff;
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
+    .btn-reset:hover {
+      background: #ffffff;
+      color: #000000;
+    }
 
-        .instructions {
-            margin-top: 8px;
-            font-size: 11px;
-            color: #888888;
-            text-align: center;
-        }
-    </style>
+    /* Canvas Wrapper */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1280px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      background-color: #000000;
+      border: 1px solid #ffffff;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .instructions {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #aaaaaa;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+  </style>
 </head>
 <body>
 
-    <!-- Header Section -->
-    <div id="header">
-        <h1>Stickman Engine</h1>
-        <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+  <!-- Header Section -->
+  <div id="header">
+    <div class="title-group">
+      <h1>Stickman: Space Crash Physics</h1>
+      <div class="hud-info">
+        <span id="level-display">PLANET: 1</span>
+        <span id="parts-display">PARTS: 0/5</span>
+      </div>
     </div>
+    <button class="btn-reset" onclick="resetGame()">Reset Game</button>
+  </div>
 
-    <!-- Canvas Container -->
-    <div id="canvas-wrapper">
-        <canvas id="simCanvas"></canvas>
-    </div>
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+  </div>
 
-    <div class="instructions">
-        [WASD] Move
-    </div>
+  <div class="instructions" id="status-text">
+    [WASD MOVEMENT ONLY] Thrust through space! Watch heavy asteroids knock tiny spare parts around!
+  </div>
 
-    <script>
-        const canvas = document.getElementById('simCanvas');
-        const ctx = canvas.getContext('2d');
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
 
-        // KEYBOARD INPUT STATE
-        const keys = {};
+    // ALIEN PLANET COLOR PALETTES
+    const PALETTES = [
+      { name: "CYAN EXOPLANET", bg: '#060d1a', asteroid: '#1e3048', border: '#00f0ff', part: '#00f0ff', accent: '#00a8ff' },
+      { name: "MAGENTA NEBULA", bg: '#1a061c', asteroid: '#3b1442', border: '#ff00ea', part: '#ff4081', accent: '#aa00ff' },
+      { name: "TOXIC XENON", bg: '#041c12', asteroid: '#0f3d27', border: '#00ff66', part: '#76ff03', accent: '#00e676' },
+      { name: "MARTIAN BASALT", bg: '#1c0903', asteroid: '#4a1c0d', border: '#ff6600', part: '#ffd600', accent: '#ff3d00' },
+      { name: "GOLDEN PULSAR", bg: '#171402', asteroid: '#40380c', border: '#ffee00', part: '#ffea00', accent: '#ffab00' }
+    ];
 
-        // STICKMAN PLAYER STATE
-        const player = {
-            x: 0,
-            y: 0,
-            speed: 4.5,
-            facing: 1, // 1 = Right, -1 = Left
-            walkFrame: 0
-        };
+    // GAME STATE
+    let currentLevel = 1;
+    let gameState = 'PLAYING'; // 'PLAYING', 'TAKEOFF', 'CRASHING'
+    let palette = PALETTES[0];
 
-        function resizeCanvas() {
-            const wrapper = document.getElementById('canvas-wrapper');
-            canvas.width = wrapper.clientWidth;
-            canvas.height = wrapper.clientHeight;
-            
-            // Set initial position to exact center on first load
-            if (player.x === 0 && player.y === 0) {
-                resetSimulation();
-            }
-        }
+    // KEYBOARD INPUT STATE (STRICT WASD MOVEMENT ONLY)
+    const keys = {};
 
-        window.addEventListener('resize', resizeCanvas);
+    // STICKMAN PLAYER STATE (LIGHTWEIGHT HUMAN MASS = 10)
+    const player = {
+      x: 0,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      accel: 0.75,
+      friction: 0.95,
+      mass: 10,
+      facing: 1, // 1 = Right, -1 = Left
+      walkFrame: 0,
+      radius: 12,
+      restitution: 0.88
+    };
 
-        // CONTROLS HANDLERS
-        window.addEventListener('keydown', (e) => {
-            if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
-                e.preventDefault();
-            }
-            keys[e.code] = true;
+    // SPACESHIP OBJECT
+    const ship = {
+      x: 0,
+      y: 0,
+      width: 56,
+      height: 78,
+      state: 'DAMAGED', // 'DAMAGED', 'REPAIRED'
+      vy: 0
+    };
+
+    // GAME ARRAYS
+    let parts = [];
+    let asteroids = [];
+    let stars = [];
+    let particles = [];
+
+    function getPalette(level) {
+      return PALETTES[(level - 1) % PALETTES.length];
+    }
+
+    function generateStars() {
+      stars = [];
+      const cw = canvas.width || 800;
+      const ch = canvas.height || 600;
+      for (let i = 0; i < 85; i++) {
+        stars.push({
+          x: Math.random() * cw,
+          y: Math.random() * ch,
+          size: Math.random() * 2 + 0.8,
+          alpha: Math.random() * 0.8 + 0.2
         });
+      }
+    }
 
-        window.addEventListener('keyup', (e) => {
-            keys[e.code] = false;
+    // GENERATE JAGGED ASTEROID GEOMETRY
+    function createAsteroidShape(radius) {
+      const points = [];
+      const numPoints = 8 + Math.floor(Math.random() * 5);
+      for (let i = 0; i < numPoints; i++) {
+        const angle = (i / numPoints) * Math.PI * 2;
+        const dist = radius * (0.75 + Math.random() * 0.45);
+        points.push({ x: Math.cos(angle) * dist, y: Math.sin(angle) * dist });
+      }
+      return points;
+    }
+
+    function initLevel(levelNum) {
+      currentLevel = levelNum;
+      palette = getPalette(levelNum);
+      document.body.style.backgroundColor = palette.bg;
+
+      const cw = Math.max(canvas.width, 400);
+      const ch = Math.max(canvas.height, 300);
+
+      generateStars();
+
+      // Spaceship position
+      ship.x = cw - 130;
+      ship.y = ch - 130;
+      ship.state = 'DAMAGED';
+      ship.vy = 0;
+
+      // Stickman initial spawn
+      player.x = 110;
+      player.y = 120;
+      player.vx = 0;
+      player.vy = 0;
+      player.facing = 1;
+      player.walkFrame = 0;
+
+      // SUPER-DENSE DRIFTING ASTEROIDS (URANIUM DENSITY)
+      asteroids = [];
+      const asteroidCount = 8 + Math.min(levelNum * 2, 10);
+
+      for (let i = 0; i < asteroidCount; i++) {
+        let ast;
+        let overlap = false;
+        let attempts = 0;
+
+        do {
+          overlap = false;
+          attempts++;
+          const radius = Math.random() * 18 + 20; // 20px to 38px radius
+
+          // Super-dense material (Uranium density scalar = 8000)
+          const uraniumDensity = 8000;
+          const mass = Math.PI * radius * radius * uraniumDensity;
+
+          const x = Math.random() * Math.max(100, cw - radius * 4) + radius * 2;
+          const y = Math.random() * Math.max(100, ch - radius * 4) + radius * 2;
+
+          ast = {
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 1.8,
+            vy: (Math.random() - 0.5) * 1.8,
+            radius: radius,
+            mass: mass,
+            angle: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.02,
+            shape: createAsteroidShape(radius)
+          };
+
+          // Distance check from player spawn and ship
+          if (Math.hypot(ast.x - player.x, ast.y - player.y) < ast.radius + player.radius + 70) overlap = true;
+          if (Math.hypot(ast.x - (ship.x + ship.width/2), ast.y - (ship.y + ship.height/2)) < ast.radius + 90) overlap = true;
+
+          // Distance check from other asteroids
+          for (let other of asteroids) {
+            if (Math.hypot(ast.x - other.x, ast.y - other.y) < ast.radius + other.radius + 12) {
+              overlap = true;
+              break;
+            }
+          }
+        } while (overlap && attempts < 150);
+
+        asteroids.push(ast);
+      }
+
+      // GENERATE SPARE PARTS (TINY MASS = 1 so asteroids send them flying!)
+      parts = [];
+      const partCount = 5;
+      for (let i = 0; i < partCount; i++) {
+        let pt;
+        let valid = false;
+        let attempts = 0;
+
+        do {
+          valid = true;
+          attempts++;
+          const px = Math.random() * Math.max(100, cw - 140) + 70;
+          const py = Math.random() * Math.max(100, ch - 140) + 70;
+
+          pt = {
+            x: px,
+            y: py,
+            vx: (Math.random() - 0.5) * 1.0,
+            vy: (Math.random() - 0.5) * 1.0,
+            radius: 9,
+            mass: 1, // Extremely small mass relative to asteroids
+            angle: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.05,
+            restitution: 0.92,
+            collected: false
+          };
+
+          if (Math.hypot(px - player.x, py - player.y) < 80) valid = false;
+        } while (!valid && attempts < 100);
+
+        parts.push(pt);
+      }
+
+      gameState = 'PLAYING';
+      particles = [];
+      updateHUD();
+    }
+
+    function resetGame() {
+      initLevel(1);
+    }
+
+    function updateHUD() {
+      document.getElementById('level-display').innerText = `PLANET: ${currentLevel} (${palette.name})`;
+      const collected = parts.filter(p => p.collected).length;
+      document.getElementById('parts-display').innerText = `PARTS: ${collected}/${parts.length}`;
+
+      const statusEl = document.getElementById('status-text');
+      if (gameState === 'PLAYING') {
+        if (collected < parts.length) {
+          statusEl.innerText = "[WASD MOVEMENT ONLY] Catch floating spare parts! Heavy asteroids knock them away!";
+          statusEl.style.color = '#aaaaaa';
+        } else {
+          statusEl.innerText = "SHIP REPAIRED! Walk to your spaceship to launch to the next planet!";
+          statusEl.style.color = palette.part;
+        }
+      }
+    }
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth || 1100;
+      canvas.height = wrapper.clientHeight || 650;
+      initLevel(currentLevel);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // STRICT WASD CONTROLS ONLY (Arrow keys are strictly ignored for movement)
+    window.addEventListener('keydown', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+        e.preventDefault();
+        keys[e.code] = true;
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+        keys[e.code] = false;
+      }
+    });
+
+    function createParticles(x, y, color, count = 10) {
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 6,
+          vy: (Math.random() - 0.5) * 6,
+          life: 1.0,
+          decay: Math.random() * 0.03 + 0.02,
+          color: color,
+          size: Math.random() * 4 + 2
         });
+      }
+    }
 
-        function resetSimulation() {
-            player.x = canvas.width / 2;
-            player.y = canvas.height / 2;
-            player.facing = 1;
-            player.walkFrame = 0;
+    // ELASTIC NEWTONIAN COLLISION RESOLVER WITH ZERO-DIVISION PROTECTION
+    function resolveElasticCollision(obj1, obj2) {
+      const dx = obj2.x - obj1.x;
+      const dy = obj2.y - obj1.y;
+      let dist = Math.hypot(dx, dy);
+      const minDist = obj1.radius + obj2.radius;
+
+      if (dist < minDist) {
+        let nx = 1;
+        let ny = 0;
+        if (dist > 0.0001) {
+          nx = dx / dist;
+          ny = dy / dist;
+        } else {
+          dist = 0.0001; // Division by zero protection
         }
 
-        function updatePhysics() {
-            // Movement Direction Calculation
-            let dx = 0;
-            let dy = 0;
+        // Separate overlapping objects based on inverse mass
+        const overlap = minDist - dist;
+        const totalInverseMass = (1 / obj1.mass) + (1 / obj2.mass);
 
-            if (keys['KeyW'] || keys['Keyw']) dy -= 1;
-            if (keys['KeyS'] || keys['Keys']) dy += 1;
-            if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
-            if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+        obj1.x -= nx * overlap * ((1 / obj1.mass) / totalInverseMass);
+        obj1.y -= ny * overlap * ((1 / obj1.mass) / totalInverseMass);
+        obj2.x += nx * overlap * ((1 / obj2.mass) / totalInverseMass);
+        obj2.y += ny * overlap * ((1 / obj2.mass) / totalInverseMass);
 
-            // Normalize diagonal movement vector speed
-            if (dx !== 0 && dy !== 0) {
-                dx *= 0.7071;
-                dy *= 0.7071;
+        // Relative velocity
+        const rvx = obj1.vx - obj2.vx;
+        const rvy = obj1.vy - obj2.vy;
+
+        const velAlongNormal = rvx * nx + rvy * ny;
+
+        if (velAlongNormal > 0) {
+          const e = 0.9; // Restitution / Elasticity
+          const impulseScalar = (-(1 + e) * velAlongNormal) / totalInverseMass;
+
+          obj1.vx += (impulseScalar / obj1.mass) * nx;
+          obj1.vy += (impulseScalar / obj1.mass) * ny;
+          obj2.vx -= (impulseScalar / obj2.mass) * nx;
+          obj2.vy -= (impulseScalar / obj2.mass) * ny;
+
+          createParticles(obj1.x + nx * obj1.radius, obj1.y + ny * obj1.radius, palette.border, 4);
+        }
+      }
+    }
+
+    function updatePhysics() {
+      if (gameState === 'TAKEOFF') {
+        ship.y += ship.vy;
+        ship.vy -= 0.4;
+
+        createParticles(ship.x + ship.width / 2, ship.y + ship.height, '#ff9800', 3);
+        createParticles(ship.x + ship.width / 2, ship.y + ship.height, '#ff3d00', 2);
+
+        if (ship.y + ship.height < -50) {
+          currentLevel++;
+          palette = getPalette(currentLevel);
+          document.body.style.backgroundColor = palette.bg;
+          generateStars();
+          initLevel(currentLevel);
+          gameState = 'CRASHING';
+          ship.y = -100;
+          ship.x = 100;
+          ship.vy = 9;
+        }
+        return;
+      }
+
+      if (gameState === 'CRASHING') {
+        ship.y += ship.vy;
+        createParticles(ship.x + ship.width / 2, ship.y, '#ff5722', 2);
+
+        if (ship.y >= 120) {
+          ship.y = 120;
+          createParticles(ship.x + ship.width / 2, ship.y + ship.height / 2, '#ffcc00', 30);
+          gameState = 'PLAYING';
+          player.x = ship.x + ship.width + 25;
+          player.y = ship.y + ship.height - 10;
+          ship.x = canvas.width - 130;
+          ship.y = canvas.height - 130;
+          ship.state = 'DAMAGED';
+        }
+        return;
+      }
+
+      if (gameState !== 'PLAYING') return;
+
+      // 1. STICKMAN WASD THRUST ACCELERATION
+      let ax = 0;
+      let ay = 0;
+
+      if (keys['KeyW'] || keys['Keyw']) ay -= player.accel;
+      if (keys['KeyS'] || keys['Keys']) ay += player.accel;
+      if (keys['KeyA'] || keys['Keya']) { ax -= player.accel; player.facing = -1; }
+      if (keys['KeyD'] || keys['Keyd']) { ax += player.accel; player.facing = 1; }
+
+      player.vx += ax;
+      player.vy += ay;
+
+      // Damping / Friction
+      player.vx *= player.friction;
+      player.vy *= player.friction;
+
+      player.x += player.vx;
+      player.y += player.vy;
+
+      // Walk Animation Frame
+      if (Math.hypot(player.vx, player.vy) > 0.4) {
+        player.walkFrame += 0.25;
+      } else {
+        player.walkFrame = 0;
+      }
+
+      // 2. STICKMAN SCREEN BOUNDARY BOUNCE PHYSICS
+      if (player.x - player.radius < 0) {
+        player.x = player.radius;
+        player.vx = -player.vx * player.restitution;
+        createParticles(player.x, player.y, '#ffffff', 4);
+      } else if (player.x + player.radius > canvas.width) {
+        player.x = canvas.width - player.radius;
+        player.vx = -player.vx * player.restitution;
+        createParticles(player.x, player.y, '#ffffff', 4);
+      }
+
+      if (player.y - player.radius < 0) {
+        player.y = player.radius;
+        player.vy = -player.vy * player.restitution;
+        createParticles(player.x, player.y, '#ffffff', 4);
+      } else if (player.y + player.radius > canvas.height) {
+        player.y = canvas.height - player.radius;
+        player.vy = -player.vy * player.restitution;
+        createParticles(player.x, player.y, '#ffffff', 4);
+      }
+
+      // 3. DRIFTING ASTEROIDS & WALL BOUNCES
+      asteroids.forEach(ast => {
+        ast.x += ast.vx;
+        ast.y += ast.vy;
+        ast.angle += ast.rotSpeed;
+
+        if (ast.x - ast.radius < 0) {
+          ast.x = ast.radius;
+          ast.vx = -ast.vx;
+        } else if (ast.x + ast.radius > canvas.width) {
+          ast.x = canvas.width - ast.radius;
+          ast.vx = -ast.vx;
+        }
+
+        if (ast.y - ast.radius < 0) {
+          ast.y = ast.radius;
+          ast.vy = -ast.vy;
+        } else if (ast.y + ast.radius > canvas.height) {
+          ast.y = canvas.height - ast.radius;
+          ast.vy = -ast.vy;
+        }
+      });
+
+      // 4. DRIFTING SPARE PARTS MOVEMENT & WALL BOUNCES
+      parts.forEach(part => {
+        if (!part.collected) {
+          // Cap maximum velocity on spare parts so asteroid impacts don't fling them out of bounds
+          const maxPartSpeed = 10;
+          const currentSpeed = Math.hypot(part.vx, part.vy);
+          if (currentSpeed > maxPartSpeed) {
+            part.vx = (part.vx / currentSpeed) * maxPartSpeed;
+            part.vy = (part.vy / currentSpeed) * maxPartSpeed;
+          }
+
+          part.x += part.vx;
+          part.y += part.vy;
+          part.angle += part.rotSpeed;
+
+          // Screen edge bounce for spare parts
+          if (part.x - part.radius < 0) {
+            part.x = part.radius;
+            part.vx = -part.vx * part.restitution;
+          } else if (part.x + part.radius > canvas.width) {
+            part.x = canvas.width - part.radius;
+            part.vx = -part.vx * part.restitution;
+          }
+
+          if (part.y - part.radius < 0) {
+            part.y = part.radius;
+            part.vy = -part.vy * part.restitution;
+          } else if (part.y + part.radius > canvas.height) {
+            part.y = canvas.height - part.radius;
+            part.vy = -part.vy * part.restitution;
+          }
+        }
+      });
+
+      // 5. ASTEROID VS ASTEROID COLLISION (Heavy bounce)
+      for (let i = 0; i < asteroids.length; i++) {
+        for (let j = i + 1; j < asteroids.length; j++) {
+          resolveElasticCollision(asteroids[i], asteroids[j]);
+        }
+      }
+
+      // 6. ASTEROID VS SPARE PART COLLISION (Huge asteroid mass sends tiny part flying!)
+      asteroids.forEach(ast => {
+        parts.forEach(part => {
+          if (!part.collected) {
+            resolveElasticCollision(ast, part);
+          }
+        });
+      });
+
+      // 7. SPARE PART VS SPARE PART COLLISION
+      for (let i = 0; i < parts.length; i++) {
+        for (let j = i + 1; j < parts.length; j++) {
+          if (!parts[i].collected && !parts[j].collected) {
+            resolveElasticCollision(parts[i], parts[j]);
+          }
+        }
+      }
+
+      // 8. STICKMAN VS SUPER-DENSE ASTEROID BOUNCE
+      asteroids.forEach(ast => {
+        resolveElasticCollision(player, ast);
+      });
+
+      // 9. STICKMAN PICKING UP SPARE PARTS (Overlapping collection without physical push)
+      parts.forEach(part => {
+        if (!part.collected) {
+          const dist = Math.hypot(player.x - part.x, player.y - part.y);
+          if (dist < player.radius + part.radius + 4) {
+            part.collected = true;
+            createParticles(part.x, part.y, palette.part, 15);
+            updateHUD();
+
+            const allCollected = parts.every(p => p.collected);
+            if (allCollected) {
+              ship.state = 'REPAIRED';
+              updateHUD();
             }
-
-            // Update stickman position
-            player.x += dx * player.speed;
-            player.y += dy * player.speed;
-
-            // Keep stickman inside canvas boundaries
-            const margin = 15;
-            player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
-            player.y = Math.max(margin + 15, Math.min(canvas.height - margin - 10, player.y));
-
-            // Walk animation cycle updates
-            if (dx !== 0 || dy !== 0) {
-                player.walkFrame += 0.25;
-            } else {
-                player.walkFrame = 0;
-            }
+          }
         }
+      });
 
-        function drawStickman(x, y, facing, walkFrame) {
-            ctx.strokeStyle = '#ffffff';
-            ctx.fillStyle = '#ffffff';
-            ctx.lineWidth = 1.8;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-
-            // Halved character dimensions
-            const headRadius = 5;
-            const bodyLength = 15;
-            const legLength = 11;
-            const neckY = y - bodyLength;
-            const headY = neckY - headRadius;
-            const shoulderY = neckY + 4;
-
-            // 1. Head
-            ctx.beginPath();
-            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Eye direction indicator
-            ctx.beginPath();
-            ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 2. Torso
-            ctx.beginPath();
-            ctx.moveTo(x, neckY);
-            ctx.lineTo(x, y);
-            ctx.stroke();
-
-            // 3. Legs
-            const legSwing = Math.sin(walkFrame) * 6;
-
-            // Left / Right Legs
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x - legSwing, y + legLength);
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + legSwing, y + legLength);
-            ctx.stroke();
-
-            // 4. Back Arm
-            const armSwing = Math.sin(walkFrame + Math.PI) * 4;
-            ctx.beginPath();
-            ctx.moveTo(x, shoulderY);
-            ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
-            ctx.stroke();
-
-            // 5. Front Arm
-            ctx.beginPath();
-            ctx.moveTo(x, shoulderY);
-            ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
-            ctx.stroke();
+      // 10. BOARDING REPAIRED SPACESHIP
+      if (ship.state === 'REPAIRED') {
+        const distToShip = Math.hypot(player.x - (ship.x + ship.width / 2), player.y - (ship.y + ship.height / 2));
+        if (distToShip < 42) {
+          gameState = 'TAKEOFF';
+          ship.vy = -2;
+          document.getElementById('status-text').innerText = "TAKING OFF TO NEXT PLANET...";
+          document.getElementById('status-text').style.color = '#ffffff';
         }
+      }
 
-        function draw() {
-            // Clear canvas background
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // 11. UPDATE PARTICLES
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= p.decay;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+    }
 
-            // Draw Stickman
-            drawStickman(player.x, player.y, player.facing, player.walkFrame);
+    function drawStickman(x, y, facing, walkFrame) {
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const headRadius = 5;
+      const bodyLength = 15;
+      const legLength = 11;
+      const neckY = y - bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 4;
+
+      // Head
+      ctx.beginPath();
+      ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Eye
+      ctx.beginPath();
+      ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Torso
+      ctx.beginPath();
+      ctx.moveTo(x, neckY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+
+      // Legs
+      const legSwing = Math.sin(walkFrame) * 6;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - legSwing, y + legLength);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + legSwing, y + legLength);
+      ctx.stroke();
+
+      // Arms
+      const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
+      ctx.stroke();
+    }
+
+    function drawShip(s) {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+
+      // Rocket Hull
+      ctx.fillStyle = s.state === 'REPAIRED' ? '#e0e0e0' : '#666666';
+      ctx.strokeStyle = palette.accent;
+      ctx.lineWidth = 2;
+
+      // Nosecone
+      ctx.beginPath();
+      ctx.moveTo(0, s.height * 0.3);
+      ctx.quadraticCurveTo(s.width / 2, -15, s.width, s.height * 0.3);
+      ctx.closePath();
+      ctx.fillStyle = palette.accent;
+      ctx.fill();
+      ctx.stroke();
+
+      // Main Fuselage
+      ctx.fillRect(0, s.height * 0.3, s.width, s.height * 0.5);
+      ctx.strokeRect(0, s.height * 0.3, s.width, s.height * 0.5);
+
+      // Glass Window
+      ctx.beginPath();
+      ctx.arc(s.width / 2, s.height * 0.45, 9, 0, Math.PI * 2);
+      ctx.fillStyle = '#00f0ff';
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      // Side Fins
+      ctx.fillStyle = palette.accent;
+      ctx.beginPath();
+      ctx.moveTo(0, s.height * 0.6);
+      ctx.lineTo(-12, s.height * 0.85);
+      ctx.lineTo(0, s.height * 0.85);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(s.width, s.height * 0.6);
+      ctx.lineTo(s.width + 12, s.height * 0.85);
+      ctx.lineTo(s.width, s.height * 0.85);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Damage Visual Effects
+      if (s.state === 'DAMAGED') {
+        ctx.strokeStyle = '#ff3d00';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(12, s.height * 0.38);
+        ctx.lineTo(24, s.height * 0.55);
+        ctx.lineTo(16, s.height * 0.72);
+        ctx.stroke();
+
+        if (Math.random() < 0.3) {
+          createParticles(s.x + 18, s.y + s.height * 0.5, '#555555', 1);
         }
+      }
 
-        function animate() {
-            updatePhysics();
-            draw();
-            requestAnimationFrame(animate);
+      ctx.restore();
+    }
+
+    function drawAsteroids() {
+      asteroids.forEach(ast => {
+        ctx.save();
+        ctx.translate(ast.x, ast.y);
+        ctx.rotate(ast.angle);
+
+        ctx.fillStyle = palette.asteroid;
+        ctx.strokeStyle = palette.border;
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+        ast.shape.forEach((pt, idx) => {
+          if (idx === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Crater texture
+        ctx.strokeStyle = palette.bg;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(ast.radius * 0.25, -ast.radius * 0.2, ast.radius * 0.22, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.restore();
+      });
+    }
+
+    function drawParts() {
+      parts.forEach(part => {
+        if (!part.collected) {
+          ctx.save();
+          ctx.translate(part.x, part.y);
+          ctx.rotate(part.angle);
+
+          ctx.fillStyle = palette.part;
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+
+          const teeth = 5;
+          ctx.beginPath();
+          for (let i = 0; i < teeth; i++) {
+            const angle = (i / teeth) * Math.PI * 2;
+            const outerX = Math.cos(angle) * part.radius;
+            const outerY = Math.sin(angle) * part.radius;
+            ctx.lineTo(outerX, outerY);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(0, 0, 3, 0, Math.PI * 2);
+          ctx.fillStyle = palette.bg;
+          ctx.fill();
+
+          ctx.restore();
         }
+      });
+    }
 
-        window.onload = function() {
-            resizeCanvas();
-            animate();
-        };
-    </script>
+    function draw() {
+      ctx.fillStyle = palette.bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      stars.forEach(star => {
+        ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+        ctx.fillRect(star.x, star.y, star.size, star.size);
+      });
+
+      drawAsteroids();
+      drawParts();
+      drawShip(ship);
+
+      particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+      });
+
+      if (gameState === 'PLAYING' || gameState === 'CRASHING') {
+        drawStickman(player.x, player.y, player.facing, player.walkFrame);
+      }
+    }
+
+    function animate() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+      resizeCanvas();
+      animate();
+    };
+  </script>
 </body>
 </html>

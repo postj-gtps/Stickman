@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cinema Stickman</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', Courier, monospace, sans-serif;
+    }
+
+    body {
+      background-color: #000000;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 16px;
+    }
+
+    /* Top Header Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1100px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #ffffff;
+    }
+
+    h1 {
+      font-size: 18px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-reset {
+      background: transparent;
+      color: #ffffff;
+      border: 1px solid #ffffff;
+      padding: 6px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .btn-reset:hover {
+      background: #ffffff;
+      color: #000000;
+    }
+
+    /* Main Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      height: 70vh;
+      min-height: 420px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      background-color: #0a0a0c;
+      border: 1px solid #ffffff;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .instructions {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #888888;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <div id="header">
+    <h1>Cinema Stickman</h1>
+    <div class="stats">
+      <span class="stat-item">🍿 Popcorn: <span id="score-popcorn">0</span></span>
+      <span class="stat-item">🍬 Candy: <span id="score-candy">0</span></span>
+      <span class="stat-item">🥤 Soda: <span id="score-drink">0</span></span>
+      <span class="stat-item">🎬 Level: <span id="level-display">1</span></span>
+    </div>
+    <button class="btn-reset" onclick="resetGame()">Reset</button>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+  </div>
+
+  <div class="instructions">
+    [WASD] Move Stickman | Navigate seats, collect all treats, and exit through the bottom doors!
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // KEYBOARD INPUT STATE (WASD strictly)
+    const keys = {};
+
+    // STICKMAN PLAYER STATE
+    const player = {
+      x: 0,
+      y: 0,
+      radius: 6,
+      speed: 4.5,
+      facing: 1, // 1 = Right, -1 = Left
+      walkFrame: 0
+    };
+
+    // GAME STATE
+    let level = 1;
+    let score = { popcorn: 0, candy: 0, drink: 0 };
+    let items = [];
+    let itemsRemaining = 0;
+    let movieType = 0; // 0 to 4 procedurally generated movies
+    let timeStep = 0;
+    let seatColorTheme = { main: '#800020', cushion: '#a00028', arm: '#500014' };
+    let initialized = false;
+
+    // SEAT THEME COLOR PALETTES FOR LEVELS
+    const seatPalettes = [
+      { main: '#800020', cushion: '#a00028', arm: '#500014' }, // Maroon
+      { main: '#1a237e', cushion: '#283593', arm: '#0d47a1' }, // Royal Blue
+      { main: '#004d40', cushion: '#00695c', arm: '#00251a' }, // Emerald
+      { main: '#4a148c', cushion: '#6a1b9a', arm: '#311b92' }, // Deep Purple
+      { main: '#e65100', cushion: '#f57c00', arm: '#b23c00' }  // Amber
+    ];
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth || wrapper.offsetWidth || 800;
+      canvas.height = wrapper.clientHeight || wrapper.offsetHeight || 500;
+
+      if (!initialized) {
+        initialized = true;
+        initLevel();
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // CONTROLS HANDLERS (WASD STRICTLY)
+    window.addEventListener('keydown', (e) => {
+      const code = e.code;
+      const key = e.key.toLowerCase();
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(code) || ['w', 'a', 's', 'd'].includes(key)) {
+        e.preventDefault();
+      }
+      keys[code] = true;
+      keys[key] = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+      const code = e.code;
+      const key = e.key.toLowerCase();
+      keys[code] = false;
+      keys[key] = false;
+    });
+
+    function updateScoreUI() {
+      document.getElementById('score-popcorn').innerText = score.popcorn;
+      document.getElementById('score-candy').innerText = score.candy;
+      document.getElementById('score-drink').innerText = score.drink;
+      document.getElementById('level-display').innerText = level;
+    }
+
+    // CALCULATE SEAT BOUNDING BOXES FOR DRAWING & COLLISION (6 ROWS x 12 SEATS)
+    function getSeatLayout() {
+      const rows = 6;
+      const cols = 12;
+      const startY = canvas.height * 0.28;
+      const endY = canvas.height * 0.80;
+      const rowSpacing = (endY - startY) / (rows - 1);
+      
+      const seatWidth = Math.min(32, (canvas.width - 160) / cols);
+      const seatHeight = 20;
+
+      const totalWidth = cols * (seatWidth + 6);
+      const startX = (canvas.width - totalWidth) / 2;
+
+      const seats = [];
+      for (let r = 0; r < rows; r++) {
+        const sy = startY + r * rowSpacing;
+        for (let c = 0; c < cols; c++) {
+          const sx = startX + c * (seatWidth + 6);
+          seats.push({
+            x: sx - 2,
+            y: sy,
+            width: seatWidth + 4,
+            height: seatHeight,
+            seatWidth: seatWidth
+          });
+        }
+      }
+      return seats;
+    }
+
+    // CHECK CIRCLE VS RECTANGLE OVERLAP FOR OBSTACLE COLLISION
+    function circleRectOverlap(cx, cy, r, rect) {
+      const closestX = Math.max(rect.x, Math.min(cx, rect.x + rect.width));
+      const closestY = Math.max(rect.y, Math.min(cy, rect.y + rect.height));
+      const distX = cx - closestX;
+      const distY = cy - closestY;
+      return (distX * distX + distY * distY) < (r * r);
+    }
+
+    function initLevel() {
+      movieType = (level - 1) % 5;
+      seatColorTheme = seatPalettes[Math.floor(Math.random() * seatPalettes.length)];
+
+      // Initial Stickman Spawn at Bottom Center
+      player.x = canvas.width / 2;
+      player.y = canvas.height - 90;
+      player.facing = 1;
+      player.walkFrame = 0;
+
+      const seats = getSeatLayout();
+      items = [];
+      const itemTypes = ['popcorn', 'candy', 'drink'];
+      const totalItems = 10 + Math.min(level * 2, 10);
+
+      // TRAPEZOIDAL THEATER FLOOR SPAN
+      const screenW = Math.min(600, canvas.width * 0.65);
+      const screenX = (canvas.width - screenW) / 2;
+      const screenH = Math.min(110, canvas.height * 0.22);
+
+      const y1 = 25 + screenH + 10;
+      const y2 = canvas.height - 85;
+      const x1_left = Math.max(45, screenX - 20);
+      const x1_right = Math.min(canvas.width - 45, screenX + screenW + 20);
+
+      for (let i = 0; i < totalItems; i++) {
+        let valid = false;
+        let itemX = 0, itemY = 0;
+        let attempts = 0;
+
+        while (!valid && attempts < 150) {
+          attempts++;
+          itemY = Math.random() * (y2 - y1 - 20) + y1 + 10;
+          const t = (itemY - y1) / (y2 - y1);
+          
+          const minX = (x1_left + t * (50 - x1_left)) + 25;
+          const maxX = (x1_right + t * ((canvas.width - 50) - x1_right)) - 25;
+
+          itemX = Math.random() * (maxX - minX) + minX;
+
+          // Ensure treats do not spawn on top of seat obstacles
+          let insideSeat = false;
+          for (let seat of seats) {
+            if (itemX >= seat.x - 12 && itemX <= seat.x + seat.width + 12 &&
+                itemY >= seat.y - 12 && itemY <= seat.y + seat.height + 12) {
+              insideSeat = true;
+              break;
+            }
+          }
+          if (!insideSeat) valid = true;
+        }
+
+        items.push({
+          x: itemX,
+          y: itemY,
+          type: itemTypes[Math.floor(Math.random() * itemTypes.length)],
+          collected: false
+        });
+      }
+
+      itemsRemaining = totalItems;
+      updateScoreUI();
+    }
+
+    function resetGame() {
+      level = 1;
+      score = { popcorn: 0, candy: 0, drink: 0 };
+      initLevel();
+    }
+
+    function updatePhysics() {
+      timeStep += 0.03;
+
+      let dx = 0;
+      let dy = 0;
+
+      if (keys['KeyW'] || keys['w']) dy -= 1;
+      if (keys['KeyS'] || keys['s']) dy += 1;
+      if (keys['KeyA'] || keys['a']) { dx -= 1; player.facing = -1; }
+      if (keys['KeyD'] || keys['d']) { dx += 1; player.facing = 1; }
+
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.7071;
+        dy *= 0.7071;
+      }
+
+      const seats = getSeatLayout();
+
+      // Horizontal movement & seat collision resolution
+      if (dx !== 0) {
+        player.x += dx * player.speed;
+        for (let seat of seats) {
+          if (circleRectOverlap(player.x, player.y, player.radius, seat)) {
+            if (dx > 0) player.x = seat.x - player.radius;
+            else if (dx < 0) player.x = seat.x + seat.width + player.radius;
+          }
+        }
+      }
+
+      // Vertical movement & seat collision resolution
+      if (dy !== 0) {
+        player.y += dy * player.speed;
+        for (let seat of seats) {
+          if (circleRectOverlap(player.x, player.y, player.radius, seat)) {
+            if (dy > 0) player.y = seat.y - player.radius;
+            else if (dy < 0) player.y = seat.y + seat.height + player.radius;
+          }
+        }
+      }
+
+      // Outer Canvas Walls Collision
+      const margin = 15;
+      player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
+      player.y = Math.max(margin + 15, Math.min(canvas.height - margin - 10, player.y));
+
+      if (dx !== 0 || dy !== 0) {
+        player.walkFrame += 0.25;
+      } else {
+        player.walkFrame = 0;
+      }
+
+      // Item Pickup Detection
+      items.forEach(item => {
+        if (!item.collected) {
+          const dist = Math.hypot(player.x - item.x, player.y - item.y);
+          if (dist < 20) {
+            item.collected = true;
+            score[item.type]++;
+            itemsRemaining--;
+            updateScoreUI();
+          }
+        }
+      });
+
+      // Exit Level Trigger
+      if (itemsRemaining === 0) {
+        const bottomExitY = canvas.height - 75;
+        const leftExitTrigger = player.x < 75 && player.y > bottomExitY;
+        const rightExitTrigger = player.x > canvas.width - 75 && player.y > bottomExitY;
+
+        if (leftExitTrigger || rightExitTrigger) {
+          level++;
+          initLevel();
+        }
+      }
+    }
+
+    // RENDER MOVIE SCREEN (1 of 5 Procedural Films)
+    function drawMovieScreen(x, y, w, h) {
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(x, y, w, h);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.clip();
+
+      if (movieType === 0) {
+        // Starfield & Planet
+        ctx.fillStyle = '#050518';
+        ctx.fillRect(x, y, w, h);
+        for (let i = 0; i < 25; i++) {
+          const sx = x + ((i * 37 + timeStep * 12) % w);
+          const sy = y + ((i * 19) % h);
+          ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#4dabf7';
+          ctx.fillRect(sx, sy, 2, 2);
+        }
+        const px = x + w * 0.7;
+        const py = y + h * 0.5;
+        ctx.fillStyle = '#e64980';
+        ctx.beginPath();
+        ctx.arc(px, py, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffdeeb';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.ellipse(px, py, 26, 7, Math.PI / 6, 0, Math.PI * 2);
+        ctx.stroke();
+
+      } else if (movieType === 1) {
+        // Digital Rain
+        ctx.fillStyle = '#001100';
+        ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = '#00ff66';
+        ctx.font = '10px monospace';
+        const cols = 16;
+        for (let c = 0; c < cols; c++) {
+          const cx = x + (c * (w / cols)) + 4;
+          const dropY = y + ((timeStep * 40 + c * 17) % h);
+          ctx.fillText(String.fromCharCode(0x30A0 + (c * 3) % 96), cx, dropY);
+          ctx.fillText(String.fromCharCode(0x30A0 + (c * 7) % 96), cx, (dropY + h / 2) % h + y);
+        }
+
+      } else if (movieType === 2) {
+        // Synthwave Sunset
+        const grad = ctx.createLinearGradient(x, y, x, y + h);
+        grad.addColorStop(0, '#ff007f');
+        grad.addColorStop(0.7, '#ffaa00');
+        grad.addColorStop(1, '#330033');
+        ctx.fillStyle = grad;
+        ctx.fillRect(x, y, w, h);
+
+        ctx.fillStyle = '#ffff00';
+        ctx.beginPath();
+        ctx.arc(x + w / 2, y + h * 0.6, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#110022';
+        ctx.beginPath();
+        ctx.moveTo(x, y + h);
+        ctx.lineTo(x + w * 0.2, y + h * 0.55);
+        ctx.lineTo(x + w * 0.4, y + h);
+        ctx.lineTo(x + w * 0.7, y + h * 0.5);
+        ctx.lineTo(x + w, y + h);
+        ctx.fill();
+
+      } else if (movieType === 3) {
+        // Neon Geometry
+        ctx.fillStyle = '#080010';
+        ctx.fillRect(x, y, w, h);
+        const cx = x + w / 2;
+        const cy = y + h / 2;
+        ctx.strokeStyle = '#00ffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const rad = ((timeStep * 20 + i * 15) % 45) + 5;
+          ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ff00ff';
+        const rot = timeStep;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(rot) * 35, cy + Math.sin(rot) * 35);
+        ctx.lineTo(cx - Math.cos(rot) * 35, cy - Math.sin(rot) * 35);
+        ctx.stroke();
+
+      } else if (movieType === 4) {
+        // Ocean Deep Documentary
+        const oceanGrad = ctx.createLinearGradient(x, y, x, y + h);
+        oceanGrad.addColorStop(0, '#00b4d8');
+        oceanGrad.addColorStop(1, '#03045e');
+        ctx.fillStyle = oceanGrad;
+        ctx.fillRect(x, y, w, h);
+
+        const fx = x + ((timeStep * 30) % (w + 40)) - 20;
+        const fy = y + h * 0.5 + Math.sin(timeStep * 2) * 10;
+        ctx.fillStyle = '#ff9e00';
+        ctx.beginPath();
+        ctx.ellipse(fx, fy, 10, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(fx - 8, fy);
+        ctx.lineTo(fx - 15, fy - 5);
+        ctx.lineTo(fx - 15, fy + 5);
+        ctx.fill();
+      }
+
+      ctx.restore();
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, y, w, h);
+
+      // Floor Light Projection Trapezoid Beam
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.035)';
+      ctx.beginPath();
+      ctx.moveTo(x - 20, y + h);
+      ctx.lineTo(x + w + 20, y + h);
+      ctx.lineTo(canvas.width - 50, canvas.height - 85);
+      ctx.lineTo(50, canvas.height - 85);
+      ctx.fill();
+    }
+
+    // DRAW THEATER SEAT OBSTACLES
+    function drawTheaterSeats() {
+      const seats = getSeatLayout();
+
+      seats.forEach(seat => {
+        // Armrests
+        ctx.fillStyle = seatColorTheme.arm;
+        ctx.fillRect(seat.x, seat.y, 3, seat.height);
+        ctx.fillRect(seat.x + seat.width - 3, seat.y, 3, seat.height);
+
+        // Seat Backrest
+        ctx.fillStyle = seatColorTheme.main;
+        ctx.fillRect(seat.x + 2, seat.y, seat.width - 4, 7);
+
+        // Cushion
+        ctx.fillStyle = seatColorTheme.cushion;
+        ctx.fillRect(seat.x + 3, seat.y + 7, seat.width - 6, seat.height - 7);
+      });
+    }
+
+    // DRAW EXIT DOORS
+    function drawExitDoors() {
+      const doorW = 50;
+      const doorH = 55;
+
+      const topDoors = [
+        { x: 20, y: 30 },
+        { x: canvas.width - 70, y: 30 }
+      ];
+
+      const unlocked = itemsRemaining === 0;
+      const bottomColor = unlocked ? '#00ff66' : '#ff3333';
+
+      const bottomDoors = [
+        { x: 15, y: canvas.height - 65 },
+        { x: canvas.width - 65, y: canvas.height - 65 }
+      ];
+
+      topDoors.forEach(door => {
+        ctx.fillStyle = '#1c1c1c';
+        ctx.fillRect(door.x, door.y, doorW, doorH);
+        ctx.strokeStyle = '#555555';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(door.x, door.y, doorW, doorH);
+
+        ctx.fillStyle = '#ff3333';
+        ctx.fillRect(door.x + 5, door.y - 12, doorW - 10, 10);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 8px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('EXIT', door.x + doorW / 2, door.y - 4);
+      });
+
+      bottomDoors.forEach(door => {
+        ctx.fillStyle = '#111111';
+        ctx.fillRect(door.x, door.y, doorW, doorH);
+
+        ctx.strokeStyle = bottomColor;
+        ctx.lineWidth = unlocked ? 3 : 1;
+        ctx.strokeRect(door.x, door.y, doorW, doorH);
+
+        ctx.fillStyle = bottomColor;
+        ctx.fillRect(door.x + 3, door.y - 12, doorW - 6, 10);
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 8px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(unlocked ? 'OPEN' : 'EXIT', door.x + doorW / 2, door.y - 4);
+
+        if (unlocked) {
+          ctx.fillStyle = '#00ff66';
+          const pulse = Math.sin(timeStep * 10) * 3;
+          ctx.beginPath();
+          ctx.moveTo(door.x + doorW / 2, door.y + 15 + pulse);
+          ctx.lineTo(door.x + doorW / 2 - 8, door.y + 5 + pulse);
+          ctx.lineTo(door.x + doorW / 2 + 8, door.y + 5 + pulse);
+          ctx.fill();
+        }
+      });
+    }
+
+    // DRAW SNACKS AND DRINKS
+    function drawItems() {
+      items.forEach(item => {
+        if (item.collected) return;
+
+        ctx.save();
+        ctx.translate(item.x, item.y);
+
+        if (item.type === 'popcorn') {
+          ctx.fillStyle = '#e63946';
+          ctx.fillRect(-6, -4, 12, 12);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(-3, -4, 3, 12);
+          ctx.fillRect(2, -4, 3, 12);
+          ctx.fillStyle = '#ffb703';
+          ctx.beginPath();
+          ctx.arc(-3, -6, 3, 0, Math.PI * 2);
+          ctx.arc(2, -6, 3, 0, Math.PI * 2);
+          ctx.arc(0, -8, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+
+        } else if (item.type === 'candy') {
+          ctx.fillStyle = '#ff007f';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 6, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(-6, 0); ctx.lineTo(-10, -4); ctx.lineTo(-10, 4);
+          ctx.moveTo(6, 0); ctx.lineTo(10, -4); ctx.lineTo(10, 4);
+          ctx.fill();
+
+        } else if (item.type === 'drink') {
+          ctx.fillStyle = '#2a9d8f';
+          ctx.fillRect(-4, -4, 8, 12);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(-5, -6, 10, 3);
+          ctx.strokeStyle = '#e76f51';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(0, -6);
+          ctx.lineTo(3, -11);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      });
+    }
+
+    // DRAW STICKMAN PLAYER
+    function drawStickman(x, y, facing, walkFrame) {
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const headRadius = 5;
+      const bodyLength = 15;
+      const legLength = 11;
+      const neckY = y - bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 4;
+
+      ctx.beginPath();
+      ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(x, neckY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+
+      const legSwing = Math.sin(walkFrame) * 6;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - legSwing, y + legLength);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + legSwing, y + legLength);
+      ctx.stroke();
+
+      const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
+      ctx.stroke();
+    }
+
+    function drawHUDOverlay() {
+      if (itemsRemaining > 0) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Treats remaining in theater: ${itemsRemaining}`, canvas.width / 2, canvas.height - 15);
+      } else {
+        ctx.fillStyle = '#00ff66';
+        ctx.font = 'bold 13px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('ALL TREATS COLLECTED! EXIT THROUGH THE BOTTOM DOORS!', canvas.width / 2, canvas.height - 15);
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = '#08080a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const screenW = Math.min(600, canvas.width * 0.65);
+      const screenH = Math.min(110, canvas.height * 0.22);
+      const screenX = (canvas.width - screenW) / 2;
+      const screenY = 25;
+
+      drawMovieScreen(screenX, screenY, screenW, screenH);
+      drawTheaterSeats();
+      drawExitDoors();
+      drawItems();
+      drawStickman(player.x, player.y, player.facing, player.walkFrame);
+      drawHUDOverlay();
+    }
+
+    function animate() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      resizeCanvas();
+      animate();
+    });
+
+    window.onload = function() {
+      resizeCanvas();
+    };
+  </script>
+</body>
+</html>
