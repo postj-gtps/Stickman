@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman Rainforest Rescue: Golden Parrot</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Fredoka', 'Comic Sans MS', 'Trebuchet MS', sans-serif;
+    }
+
+    body {
+      background-color: #0c1a0e;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 12px;
+    }
+
+    /* Top Header & HUD Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1100px;
+      margin-bottom: 8px;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, #1b4313, #2e7d32);
+      border: 3px solid #ffd700;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    h1 {
+      font-size: 20px;
+      color: #ffd700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-shadow: 2px 2px #000;
+    }
+
+    /* Inventory Status Badges */
+    #hud-inventory {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .hud-badge {
+      background: rgba(0, 0, 0, 0.4);
+      border: 2px solid #558b2f;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #aed581;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.3s ease;
+    }
+
+    .hud-badge.collected {
+      background: #ffb300;
+      color: #000;
+      border-color: #ffffff;
+      box-shadow: 0 0 10px #ffd700;
+    }
+
+    .btn-reset {
+      background: #ff5722;
+      color: #ffffff;
+      border: 2px solid #ffffff;
+      padding: 6px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 3px 0 #bf360c;
+      transition: all 0.1s ease-in-out;
+    }
+
+    .btn-reset:hover {
+      background: #f4511e;
+      transform: translateY(-2px);
+    }
+
+    .btn-reset:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+
+    /* Main Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 4px solid #4caf50;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+      background-color: #112a14;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .instructions-bar {
+      margin-top: 8px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #c8e6c9;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 6px 20px;
+      border-radius: 20px;
+      text-align: center;
+      border: 1px solid #4caf50;
+    }
+
+    .instructions-bar span {
+      color: #ffd700;
+      background: #2e7d32;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin: 0 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header & Inventory HUD -->
+  <div id="header">
+    <h1> Rainforest Rescue</h1>
+    
+    <div id="hud-inventory">
+      <div id="badge-engine" class="hud-badge">🔧 Engine</div>
+      <div id="badge-wing" class="hud-badge">🛩️ Wing</div>
+      <div id="badge-prop" class="hud-badge">⚙️ Propeller</div>
+      <div id="badge-fuel" class="hud-badge">⛽ Fuel</div>
+      <div id="badge-parrot" class="hud-badge">🦜 Parrot</div>
+    </div>
+
+    <button class="btn-reset" onclick="resetGame()">New Maze</button>
+  </div>
+
+  <!-- Canvas Wrapper -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+  </div>
+
+  <!-- Movement Controls Prompt -->
+  <div class="instructions-bar">
+    Controls: Use <span>W</span> <span>A</span> <span>S</span> <span>D</span> to Move | Arrow Keys Disabled
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // SOUND FX SYNTHESIZER (Web Audio API)
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new AudioContext();
+    }
+
+    function playSound(type) {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+      if (type === 'pickup') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.2);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'crash') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.6);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.6);
+        osc.start(now);
+        osc.stop(now + 0.6);
+      } else if (type === 'win') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(554.37, now + 0.15);
+        osc.frequency.setValueAtTime(659.25, now + 0.3);
+        osc.frequency.setValueAtTime(880, now + 0.45);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.8);
+        osc.start(now);
+        osc.stop(now + 0.8);
+      }
+    }
+
+    // GAME STATES: 'INTRO', 'PLAYING', 'WIN'
+    let gameState = 'INTRO';
+
+    // KEYBOARD INPUT STATE (STRICT WASD ONLY)
+    const keys = {};
+
+    window.addEventListener('keydown', (e) => {
+      initAudio();
+      // Block arrow keys from movement
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+        return;
+      }
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        e.preventDefault();
+        keys[e.code] = true;
+      }
+      if (gameState === 'INTRO' && e.code === 'Space') {
+        startGameplay();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        keys[e.code] = false;
+      }
+    });
+
+    // RAINFOREST MAZE GENERATOR (Depth-First Search Algorithm)
+    // 1: Jungle Tree Wall | 0: Path | 2: Propeller | 3: Engine | 4: Wing | 5: Fuel | 6: Ancient Temple (Parrot) | 7: Crash Site
+    const COLS = 21;
+    const ROWS = 13;
+    let tileSize = 40;
+    let MAZE_GRID = [];
+
+    function generateRandomMaze() {
+      // 1. Initialize grid with solid tree walls (1)
+      MAZE_GRID = Array.from({ length: ROWS }, () => Array(COLS).fill(1));
+
+      // 2. Randomized Depth-First Search Maze Carving starting from (1, 1)
+      const stack = [[1, 1]];
+      MAZE_GRID[1][1] = 0;
+
+      while (stack.length > 0) {
+        const [cx, cy] = stack[stack.length - 1];
+        const neighbors = [];
+
+        const directions = [[-2, 0], [2, 0], [0, -2], [0, 2]];
+        for (const [dx, dy] of directions) {
+          const nx = cx + dx;
+          const ny = cy + dy;
+          if (nx > 0 && nx < COLS - 1 && ny > 0 && ny < ROWS - 1 && MAZE_GRID[ny][nx] === 1) {
+            neighbors.push([nx, ny, dx, dy]);
+          }
+        }
+
+        if (neighbors.length > 0) {
+          const [nx, ny, dx, dy] = neighbors[Math.floor(Math.random() * neighbors.length)];
+          MAZE_GRID[cy + dy / 2][cx + dx / 2] = 0; // Break wall between
+          MAZE_GRID[ny][nx] = 0; // Open target cell
+          stack.push([nx, ny]);
+        } else {
+          stack.pop();
+        }
+      }
+
+      // 3. Find all available path cells (0) to scatter items randomly
+      const emptyCells = [];
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (MAZE_GRID[r][c] === 0 && !(r === 1 && c === 1)) {
+            emptyCells.push({ r, c });
+          }
+        }
+      }
+
+      // Shuffle empty cells
+      for (let i = emptyCells.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [emptyCells[i], emptyCells[j]] = [emptyCells[j], emptyCells[i]];
+      }
+
+      // Assign Crash Site at (1, 1)
+      MAZE_GRID[1][1] = 7;
+
+      // Randomly assign items to distinct open paths
+      const items = [2, 3, 4, 5, 6]; // Propeller, Engine, Wing, Fuel, Temple/Parrot
+      for (const itemId of items) {
+        if (emptyCells.length > 0) {
+          const { r, c } = emptyCells.pop();
+          MAZE_GRID[r][c] = itemId;
+        }
+      }
+    }
+
+    // INVENTORY DATA
+    const inventory = {
+      engine: false,
+      wing: false,
+      propeller: false,
+      fuel: false,
+      parrot: false
+    };
+
+    // ITEM PICKUP NOTIFICATION POPUP
+    let popUpMessage = "";
+    let popUpTimer = 0;
+
+    function showPopup(msg) {
+      popUpMessage = msg;
+      popUpTimer = 120;
+    }
+
+    // PLAYER STATE
+    const player = {
+      x: 0,
+      y: 0,
+      radius: 12,
+      speed: 3.5,
+      facing: 1, // 1 = Right, -1 = Left
+      walkFrame: 0
+    };
+
+    // INTRO CUTSCENE STATE
+    const introPlane = {
+      x: -100,
+      y: 120,
+      speed: 3.5,
+      smoking: false,
+      crashing: false,
+      angle: 0,
+      timer: 0
+    };
+
+    // WIN SCENE STATE
+    const winPlane = {
+      x: 0,
+      y: 0,
+      angle: 0,
+      scale: 1,
+      takingOff: false,
+      timer: 0
+    };
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+      tileSize = Math.min(canvas.width / COLS, canvas.height / ROWS);
+
+      if (gameState === 'PLAYING' && player.x === 0 && player.y === 0) {
+        resetPlayerToStart();
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    function resetPlayerToStart() {
+      player.x = 1.5 * tileSize;
+      player.y = 1.5 * tileSize;
+      player.facing = 1;
+      player.walkFrame = 0;
+    }
+
+    function resetGame() {
+      generateRandomMaze();
+
+      gameState = 'INTRO';
+      introPlane.x = -100;
+      introPlane.y = canvas.height * 0.25;
+      introPlane.smoking = false;
+      introPlane.crashing = false;
+      introPlane.angle = 0;
+      introPlane.timer = 0;
+
+      inventory.engine = false;
+      inventory.wing = false;
+      inventory.propeller = false;
+      inventory.fuel = false;
+      inventory.parrot = false;
+
+      updateHUD();
+      resetPlayerToStart();
+    }
+
+    function startGameplay() {
+      gameState = 'PLAYING';
+      resetPlayerToStart();
+    }
+
+    function updateHUD() {
+      document.getElementById('badge-engine').classList.toggle('collected', inventory.engine);
+      document.getElementById('badge-wing').classList.toggle('collected', inventory.wing);
+      document.getElementById('badge-prop').classList.toggle('collected', inventory.propeller);
+      document.getElementById('badge-fuel').classList.toggle('collected', inventory.fuel);
+      document.getElementById('badge-parrot').classList.toggle('collected', inventory.parrot);
+    }
+
+    function allItemsCollected() {
+      return inventory.engine && inventory.wing && inventory.propeller && inventory.fuel && inventory.parrot;
+    }
+
+    // COLLISION CHECK AGAINST JUNGLE WALLS
+    function checkWallCollision(px, py) {
+      const r = player.radius;
+      const minCol = Math.floor((px - r) / tileSize);
+      const maxCol = Math.floor((px + r) / tileSize);
+      const minRow = Math.floor((py - r) / tileSize);
+      const maxRow = Math.floor((py + r) / tileSize);
+
+      for (let row = minRow; row <= maxRow; row++) {
+        for (let col = minCol; col <= maxCol; col++) {
+          if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
+            if (MAZE_GRID[row][col] === 1) { // Wall
+              const wx1 = col * tileSize;
+              const wy1 = row * tileSize;
+              const wx2 = wx1 + tileSize;
+              const wy2 = wy1 + tileSize;
+
+              const closestX = Math.max(wx1, Math.min(px, wx2));
+              const closestY = Math.max(wy1, Math.min(py, wy2));
+
+              const dx = px - closestX;
+              const dy = py - closestY;
+              if ((dx * dx + dy * dy) < (r * r)) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+      return false;
+    }
+
+    // MAIN PHYSICS & MOVEMENT UPDATE
+    function updatePhysics() {
+      if (gameState !== 'PLAYING') return;
+
+      let dx = 0;
+      let dy = 0;
+
+      // WASD Input Processing
+      if (keys['KeyW']) dy -= 1;
+      if (keys['KeyS']) dy += 1;
+      if (keys['KeyA']) { dx -= 1; player.facing = -1; }
+      if (keys['KeyD']) { dx += 1; player.facing = 1; }
+
+      // Normalize diagonal speed
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.7071;
+        dy *= 0.7071;
+      }
+
+      // Try X movement
+      const nextX = player.x + dx * player.speed;
+      if (!checkWallCollision(nextX, player.y)) {
+        player.x = nextX;
+      }
+
+      // Try Y movement
+      const nextY = player.y + dy * player.speed;
+      if (!checkWallCollision(player.x, nextY)) {
+        player.y = nextY;
+      }
+
+      // Walk Animation
+      if (dx !== 0 || dy !== 0) {
+        player.walkFrame += 0.2;
+      } else {
+        player.walkFrame = 0;
+      }
+
+      // Check Item Pickups & Maze Interactions
+      const playerCol = Math.floor(player.x / tileSize);
+      const playerRow = Math.floor(player.y / tileSize);
+
+      if (playerRow >= 0 && playerRow < ROWS && playerCol >= 0 && playerCol < COLS) {
+        const tileVal = MAZE_GRID[playerRow][playerCol];
+
+        if (tileVal === 2 && !inventory.propeller) {
+          inventory.propeller = true;
+          playSound('pickup');
+          showPopup("⚙️ Found the Plane Propeller!");
+        } else if (tileVal === 3 && !inventory.engine) {
+          inventory.engine = true;
+          playSound('pickup');
+          showPopup("🔧 Found the Engine!");
+        } else if (tileVal === 4 && !inventory.wing) {
+          inventory.wing = true;
+          playSound('pickup');
+          showPopup("🛩️ Found the Plane Wing!");
+        } else if (tileVal === 5 && !inventory.fuel) {
+          inventory.fuel = true;
+          playSound('pickup');
+          showPopup("⛽ Found the Fuel Tank!");
+        } else if (tileVal === 6 && !inventory.parrot) {
+          inventory.parrot = true;
+          playSound('pickup');
+          showPopup("🦜 Found the Ancient Temple & Golden Parrot!");
+        } else if (tileVal === 7) {
+          // Crash site / Repair pad
+          if (allItemsCollected()) {
+            gameState = 'WIN';
+            winPlane.x = 1.5 * tileSize;
+            winPlane.y = 1.5 * tileSize;
+            winPlane.timer = 0;
+            playSound('win');
+          }
+        }
+      }
+
+      updateHUD();
+    }
+
+    // DRAW STICKMAN PLAYER
+    function drawStickman(x, y, facing, walkFrame) {
+      ctx.save();
+      ctx.strokeStyle = '#ffd700';
+      ctx.fillStyle = '#ff5722';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const headRadius = 6;
+      const bodyLength = 16;
+      const legLength = 12;
+      const neckY = y - bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 4;
+
+      // Safari Hat
+      ctx.fillStyle = '#8d6e63';
+      ctx.beginPath();
+      ctx.ellipse(x, headY - 4, 12, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x, headY - 4, 6, Math.PI, 0);
+      ctx.fill();
+
+      // Head
+      ctx.strokeStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Eyes
+      ctx.fillStyle = '#29b6f6';
+      ctx.beginPath();
+      ctx.arc(x + facing * 2, headY - 1, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Torso
+      ctx.strokeStyle = '#ff9800';
+      ctx.beginPath();
+      ctx.moveTo(x, neckY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+
+      // Legs
+      const legSwing = Math.sin(walkFrame) * 7;
+      ctx.strokeStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - legSwing, y + legLength);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + legSwing, y + legLength);
+      ctx.stroke();
+
+      // Arms
+      const armSwing = Math.sin(walkFrame + Math.PI) * 6;
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x - facing * 5 - armSwing, shoulderY + 7);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x + facing * 5 + armSwing, shoulderY + 7);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // DRAW AIRPLANE
+    function drawAirplane(x, y, scale = 1, angle = 0, showParrot = false) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.scale(scale, scale);
+
+      // Body / Fuselage
+      ctx.fillStyle = '#d32f2f';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 30, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Wings
+      ctx.fillStyle = '#fbc02d';
+      ctx.fillRect(-8, -22, 16, 44);
+      ctx.strokeRect(-8, -22, 16, 44);
+
+      // Tail
+      ctx.fillStyle = '#1976d2';
+      ctx.beginPath();
+      ctx.moveTo(-25, 0);
+      ctx.lineTo(-35, -14);
+      ctx.lineTo(-20, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // Propeller Spinner
+      ctx.fillStyle = '#757575';
+      ctx.beginPath();
+      ctx.arc(30, 0, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Propeller Blades
+      ctx.strokeStyle = '#e0e0e0';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(30, -12);
+      ctx.lineTo(30, 12);
+      ctx.stroke();
+
+      // Golden Parrot on plane tail
+      if (showParrot) {
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.arc(5, -12, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ff3d00';
+        ctx.beginPath();
+        ctx.moveTo(8, -12);
+        ctx.lineTo(12, -10);
+        ctx.lineTo(8, -8);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    // RENDER GAME MAP & OBJECTS
+    function drawMap() {
+      // Floor Background
+      ctx.fillStyle = '#1b381e';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const x = c * tileSize;
+          const y = r * tileSize;
+          const type = MAZE_GRID[r][c];
+
+          if (type === 1) {
+            // Jungle Canopy Wall
+            ctx.fillStyle = '#2e7d32';
+            ctx.fillRect(x, y, tileSize, tileSize);
+            ctx.fillStyle = '#1b5e20';
+            ctx.beginPath();
+            ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize * 0.45, 0, Math.PI * 2);
+            ctx.fill();
+            // Floral accent
+            ctx.fillStyle = '#81c784';
+            ctx.beginPath();
+            ctx.arc(x + tileSize * 0.3, y + tileSize * 0.3, 3, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            // Pathways Grid Pattern
+            ctx.strokeStyle = '#224726';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, tileSize, tileSize);
+          }
+
+          // Render Interactive Collectibles
+          if (type === 2 && !inventory.propeller) {
+            drawItem(x + tileSize / 2, y + tileSize / 2, '⚙️', '#ffb300');
+          } else if (type === 3 && !inventory.engine) {
+            drawItem(x + tileSize / 2, y + tileSize / 2, '🔧', '#29b6f6');
+          } else if (type === 4 && !inventory.wing) {
+            drawItem(x + tileSize / 2, y + tileSize / 2, '🛩️', '#ab47bc');
+          } else if (type === 5 && !inventory.fuel) {
+            drawItem(x + tileSize / 2, y + tileSize / 2, '⛽', '#ef5350');
+          } else if (type === 6) {
+            // Ancient Temple
+            ctx.fillStyle = '#ffa000';
+            ctx.fillRect(x + 4, y + 4, tileSize - 8, tileSize - 8);
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x + 4, y + 4, tileSize - 8, tileSize - 8);
+
+            if (!inventory.parrot) {
+              drawItem(x + tileSize / 2, y + tileSize / 2, '🦜', '#ffd700');
+            }
+          } else if (type === 7) {
+            // Crash Pad / Repair Site
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+            ctx.fillRect(x, y, tileSize, tileSize);
+            ctx.strokeStyle = '#ffd700';
+            ctx.strokeRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+
+            if (!allItemsCollected()) {
+              ctx.fillStyle = '#d32f2f';
+              ctx.font = `${tileSize * 0.5}px sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('🛩️💥', x + tileSize / 2, y + tileSize / 2);
+            } else {
+              drawAirplane(x + tileSize / 2, y + tileSize / 2, 0.6, 0, true);
+            }
+          }
+        }
+      }
+    }
+
+    // DRAW COLLECTIBLE ITEM WITH GLOW
+    function drawItem(cx, cy, symbol, glowColor) {
+      const pulse = Math.sin(Date.now() * 0.008) * 3;
+      ctx.save();
+      ctx.shadowColor = glowColor;
+      ctx.shadowBlur = 12 + pulse;
+      ctx.font = `${tileSize * 0.55}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(symbol, cx, cy);
+      ctx.restore();
+    }
+
+    // DRAW INTRO CUTSCENE
+    function drawIntro() {
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, '#4fc3f7');
+      gradient.addColorStop(0.6, '#81c784');
+      gradient.addColorStop(1, '#1b5e20');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(canvas.width * 0.1, 20, canvas.width * 0.8, 80);
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(canvas.width * 0.1, 20, canvas.width * 0.8, 80);
+
+      ctx.fillStyle = '#ffd700';
+      ctx.font = 'bold 22px Fredoka, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('CRASH IN THE RAINFOREST!', canvas.width / 2, 50);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '14px Fredoka, sans-serif';
+      ctx.fillText('Stickman is searching for the GOLDEN PARROT when his plane develops trouble!', canvas.width / 2, 78);
+
+      introPlane.timer++;
+      if (introPlane.x < canvas.width * 0.5) {
+        introPlane.x += introPlane.speed;
+      } else {
+        introPlane.smoking = true;
+        introPlane.crashing = true;
+        introPlane.x += introPlane.speed * 0.8;
+        introPlane.y += 2.5;
+        introPlane.angle += 0.03;
+      }
+
+      if (introPlane.smoking) {
+        ctx.fillStyle = 'rgba(200, 200, 200, 0.6)';
+        for (let i = 0; i < 5; i++) {
+          ctx.beginPath();
+          ctx.arc(introPlane.x - 30 - (i * 15), introPlane.y + (Math.random() * 10 - 5), 8 + i * 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      drawAirplane(introPlane.x, introPlane.y, 1.2, introPlane.angle);
+
+      if (introPlane.y > canvas.height * 0.75) {
+        playSound('crash');
+        ctx.fillStyle = '#ff5722';
+        ctx.beginPath();
+        ctx.arc(introPlane.x, introPlane.y, 60, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 24px Fredoka, sans-serif';
+        ctx.fillText('MAYDAY! MAYDAY! CRASH LANDING!', canvas.width / 2, canvas.height * 0.5);
+
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(canvas.width / 2 - 140, canvas.height * 0.82, 280, 45);
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 16px Fredoka, sans-serif';
+        ctx.fillText('PRESS [SPACE] OR CLICK TO PLAY', canvas.width / 2, canvas.height * 0.82 + 28);
+      }
+    }
+
+    // DRAW WIN CUTSCENE
+    function drawWin() {
+      drawMap();
+
+      winPlane.timer++;
+      if (winPlane.timer < 100) {
+        winPlane.y -= 2;
+        winPlane.scale += 0.005;
+      } else {
+        winPlane.x += 4;
+        winPlane.y -= 3;
+      }
+
+      drawAirplane(winPlane.x, winPlane.y, winPlane.scale, -0.2, true);
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillRect(canvas.width * 0.15, canvas.height * 0.3, canvas.width * 0.7, 180);
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(canvas.width * 0.15, canvas.height * 0.3, canvas.width * 0.7, 180);
+
+      ctx.fillStyle = '#ffd700';
+      ctx.font = 'bold 28px Fredoka, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🎉 MISSION ACCOMPLISHED! 🎉', canvas.width / 2, canvas.height * 0.3 + 50);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '16px Fredoka, sans-serif';
+      ctx.fillText('You rebuilt the airplane and rescued the Golden Parrot!', canvas.width / 2, canvas.height * 0.3 + 90);
+      ctx.fillText('Stickman is flying safely home!', canvas.width / 2, canvas.height * 0.3 + 120);
+    }
+
+    // DRAW POPUP MESSAGES
+    function drawPopup() {
+      if (popUpTimer > 0) {
+        popUpTimer--;
+        ctx.fillStyle = 'rgba(0,0,0,0.85)';
+        ctx.fillRect(canvas.width / 2 - 200, canvas.height - 60, 400, 40);
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(canvas.width / 2 - 200, canvas.height - 60, 400, 40);
+
+        ctx.fillStyle = '#ffd700';
+        ctx.font = 'bold 15px Fredoka, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(popUpMessage, canvas.width / 2, canvas.height - 35);
+      }
+    }
+
+    // MAIN DRAW & RENDER LOOP
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (gameState === 'INTRO') {
+        drawIntro();
+      } else if (gameState === 'PLAYING') {
+        drawMap();
+        drawStickman(player.x, player.y, player.facing, player.walkFrame);
+        drawPopup();
+
+        if (allItemsCollected()) {
+          ctx.fillStyle = '#ffd700';
+          ctx.font = 'bold 16px Fredoka, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('✨ All parts & Golden Parrot found! Return to the plane crash site to escape! ✨', canvas.width / 2, 25);
+        }
+      } else if (gameState === 'WIN') {
+        drawWin();
+      }
+    }
+
+    function animate() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    canvas.addEventListener('click', () => {
+      initAudio();
+      if (gameState === 'INTRO') {
+        startGameplay();
+      }
+    });
+
+    window.onload = function() {
+      generateRandomMaze();
+      resizeCanvas();
+      animate();
+    };
+  </script>
+</body>
+</html>

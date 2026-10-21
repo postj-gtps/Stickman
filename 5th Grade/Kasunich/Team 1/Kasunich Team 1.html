@@ -56,6 +56,45 @@
  font-weight: bold;
  }
 
+ /* Key Inventory Badge Bar */
+ #key-inventory {
+ display: flex;
+ align-items: center;
+ gap: 8px;
+ background: #1a1a1a;
+ padding: 4px 10px;
+ border-radius: 4px;
+ border: 1px solid #333333;
+ }
+
+ .key-label {
+ font-size: 11px;
+ font-weight: bold;
+ color: #aaa;
+ text-transform: uppercase;
+ margin-right: 2px;
+ }
+
+ .key-badge {
+ font-size: 10px;
+ font-weight: bold;
+ padding: 3px 8px;
+ border-radius: 3px;
+ text-transform: uppercase;
+ transition: all 0.2s ease;
+ opacity: 0.3;
+ border: 1px solid transparent;
+ color: #888888;
+ background: #222222;
+ }
+
+ .key-badge.active.red { opacity: 1; color: #ffffff; background: #c0392b; border-color: #e74c3c; box-shadow: 0 0 8px #e74c3c; }
+ .key-badge.active.blue { opacity: 1; color: #ffffff; background: #2980b9; border-color: #3498db; box-shadow: 0 0 8px #3498db; }
+ .key-badge.active.green { opacity: 1; color: #ffffff; background: #27ae60; border-color: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+ .key-badge.active.yellow { opacity: 1; color: #000000; background: #f1c40f; border-color: #f39c12; box-shadow: 0 0 8px #f1c40f; }
+
+ .key-badge.unlocked { opacity: 0.5; text-decoration: line-through; background: #111111; border-color: #444444; color: #aaaaaa; box-shadow: none; }
+
  .btn-reset {
  background: transparent;
  color: #ffffff;
@@ -135,6 +174,15 @@
  <h1>Stickman City Navigator</h1>
  <div id="location-info">Sector: Stadium</div>
  </div>
+
+ <div id="key-inventory">
+ <span class="key-label">Keys:</span>
+ <span id="badge-red" class="key-badge red">Red</span>
+ <span id="badge-blue" class="key-badge blue">Blue</span>
+ <span id="badge-green" class="key-badge green">Green</span>
+ <span id="badge-yellow" class="key-badge yellow">Yellow</span>
+ </div>
+
  <button class="btn-reset" onclick="resetGame()">Reset Game</button>
  </div>
 
@@ -143,13 +191,13 @@
  
  <div id="victory-modal">
  <h2>Goal Reached!</h2>
- <p>Stickman found the Red & Yellow Fast Food Restaurant (RYFFR)!</p>
+ <p>Stickman unlocked all 4 color walls and reached RYFFR!</p>
  <button class="btn-reset" onclick="resetGame()">Play Again</button>
  </div>
  </div>
 
  <div class="instructions">
- Movement: [WASD] Keys Only (Arrow Keys Disabled) | Exit Stadium to reach city roads!
+ Movement: [WASD] Keys Only | Collect keys & touch matching walls at RYFFR to unlock them!
  </div>
 
  <script>
@@ -170,12 +218,24 @@
  RYFFR: 'Red & Yellow Fast Food Restaurant'
  };
 
+ const KEY_COLORS = {
+ red: { hex: '#e74c3c', name: 'Red Key' },
+ blue: { hex: '#2980b9', name: 'Blue Key' },
+ green: { hex: '#2ecc71', name: 'Green Key' },
+ yellow: { hex: '#f1c40f', name: 'Yellow Key' }
+ };
+
  let cityGrid = [];
  let currentGridX = CENTER;
  let currentGridY = CENTER;
  let ryffrX = 0;
  let ryffrY = 0;
  let hasWon = false;
+
+ // RYFFR Wall & Key State
+ let wallOrder = ['red', 'blue', 'green', 'yellow'];
+ let hasKey = { red: false, blue: false, green: false, yellow: false };
+ let unlockedWalls = { red: false, blue: false, green: false, yellow: false };
 
  // BASELINE SIDE-VIEW STICKMAN
  const player = {
@@ -191,15 +251,28 @@
  return x - Math.floor(x);
  }
 
+ function shuffleArray(arr) {
+ for (let i = arr.length - 1; i > 0; i--) {
+ const j = Math.floor(Math.random() * (i + 1));
+ [arr[i], arr[j]] = [arr[j], arr[i]];
+ }
+ return arr;
+ }
+
  function generateCityMap() {
+ hasKey = { red: false, blue: false, green: false, yellow: false };
+ unlockedWalls = { red: false, blue: false, green: false, yellow: false };
+ wallOrder = shuffleArray(['red', 'blue', 'green', 'yellow']);
+ updateKeyInventoryUI();
+
  cityGrid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null));
 
- cityGrid[CENTER][CENTER] = { type: TILE_TYPES.STADIUM, seed: Math.random() * 1000 };
+ cityGrid[CENTER][CENTER] = { type: TILE_TYPES.STADIUM, seed: Math.random() * 1000, key: null };
 
  const outerCoords = [];
  for (let x = 0; x < GRID_SIZE; x++) {
  for (let y = 0; y < GRID_SIZE; y++) {
- if (x === 0 || x === GRID_SIZE - 1 || y === 0 || y === GRID_SIZE - 1) {
+ if ((x === 0 || x === GRID_SIZE - 1 || y === 0 || y === GRID_SIZE - 1) && !(x === CENTER && y === CENTER)) {
  outerCoords.push({ x, y });
  }
  }
@@ -207,7 +280,7 @@
  const randomOuterIndex = Math.floor(Math.random() * outerCoords.length);
  ryffrX = outerCoords[randomOuterIndex].x;
  ryffrY = outerCoords[randomOuterIndex].y;
- cityGrid[ryffrX][ryffrY] = { type: TILE_TYPES.RYFFR, seed: Math.random() * 1000 };
+ cityGrid[ryffrX][ryffrY] = { type: TILE_TYPES.RYFFR, seed: Math.random() * 1000, key: null };
 
  const interveningTypes = [
  TILE_TYPES.DENSE_CITY,
@@ -216,14 +289,56 @@
  TILE_TYPES.INDUSTRIAL
  ];
 
+ const availableKeyTiles = [];
+
  for (let x = 0; x < GRID_SIZE; x++) {
  for (let y = 0; y < GRID_SIZE; y++) {
  if (!cityGrid[x][y]) {
  const randomType = interveningTypes[Math.floor(Math.random() * interveningTypes.length)];
- cityGrid[x][y] = { type: randomType, seed: Math.floor(Math.random() * 10000) };
+ cityGrid[x][y] = { type: randomType, seed: Math.floor(Math.random() * 10000), key: null };
+ availableKeyTiles.push({ x, y });
  }
  }
  }
+
+ // Scatter 4 keys onto 4 distinct map tiles somewhere on paved roads
+ shuffleArray(availableKeyTiles);
+ const colorKeys = ['red', 'blue', 'green', 'yellow'];
+ for (let i = 0; i < 4 && i < availableKeyTiles.length; i++) {
+ const pos = availableKeyTiles[i];
+ const isHorizontal = Math.random() < 0.5;
+ let xRatio, yRatio;
+
+ if (isHorizontal) {
+ xRatio = 0.12 + Math.random() * 0.76;
+ yRatio = 0.40 + Math.random() * 0.20;
+ } else {
+ xRatio = 0.40 + Math.random() * 0.20;
+ yRatio = 0.12 + Math.random() * 0.76;
+ }
+
+ cityGrid[pos.x][pos.y].key = colorKeys[i];
+ cityGrid[pos.x][pos.y].keyXRatio = xRatio;
+ cityGrid[pos.x][pos.y].keyYRatio = yRatio;
+ }
+ }
+
+ function updateKeyInventoryUI() {
+ Object.keys(KEY_COLORS).forEach(color => {
+ const badge = document.getElementById(`badge-${color}`);
+ if (badge) {
+ if (unlockedWalls[color]) {
+ badge.className = `key-badge unlocked ${color}`;
+ badge.innerText = `${color.toUpperCase()} (UNLOCKED)`;
+ } else if (hasKey[color]) {
+ badge.className = `key-badge active ${color}`;
+ badge.innerText = `${color.toUpperCase()} (HELD)`;
+ } else {
+ badge.className = `key-badge ${color}`;
+ badge.innerText = color.toUpperCase();
+ }
+ }
+ });
  }
 
  function resizeCanvas() {
@@ -267,6 +382,7 @@
  function resetGame() {
  currentGridX = CENTER;
  currentGridY = CENTER;
+ generateCityMap();
  resetPlayerToCenter();
  hasWon = false;
  document.getElementById('victory-modal').style.display = 'none';
@@ -294,28 +410,52 @@
  };
  }
 
- // WALKABILITY CHECK (ROADS VS STADIUM ARENA)
+ // WALKABILITY CHECK (WALLS BLOCK UNTIL EXPLICITLY TOUCHED AND UNLOCKED)
  function isWalkable(px, py) {
  const b = getRoadBounds();
  const currentTile = cityGrid[currentGridX][currentGridY];
 
  if (currentTile.type === TILE_TYPES.STADIUM) {
- // 1. Stadium Field / Track Inner Oval Bounds
  const rx = canvas.width * 0.38;
  const ry = canvas.height * 0.38;
  const cx = canvas.width / 2;
  const cy = canvas.height / 2;
  const inStadiumField = (Math.pow(px - cx, 2) / Math.pow(rx, 2) + Math.pow(py - cy, 2) / Math.pow(ry, 2)) <= 1;
 
- // 2. N/S/E/W Exits Corridor Bounds (Matches adjacent 25% road alignments)
  const inNorthExit = (px >= b.minX && px <= b.maxX && py <= b.minY);
  const inSouthExit = (px >= b.minX && px <= b.maxX && py >= b.maxY);
  const inWestExit = (py >= b.minY && py <= b.maxY && px <= b.minX);
  const inEastExit = (py >= b.minY && py <= b.maxY && px >= b.maxX);
 
  return inStadiumField || inNorthExit || inSouthExit || inWestExit || inEastExit;
- } else {
- // standard plus-sign road network
+ } 
+ else if (currentTile.type === TILE_TYPES.RYFFR) {
+ const inHorizontalRoad = (py >= b.minY && py <= b.maxY);
+ const inVerticalRoad = (px >= b.minX && px <= b.maxX);
+ if (!inHorizontalRoad && !inVerticalRoad) return false;
+
+ // RYFFR Color Wall Blocking Logic
+ const cx = canvas.width / 2;
+ const cy = canvas.height / 2;
+ const distFromCenter = Math.hypot(px - cx, py - cy);
+
+ const bw = b.roadW * 0.85;
+ const bh = b.roadH * 0.85;
+ const baseBuildingRadius = Math.max(bw, bh) / 2;
+
+ for (let i = 0; i < 4; i++) {
+ const colorKey = wallOrder[i];
+ const pad = (4 - i) * 16;
+ const wallRadius = baseBuildingRadius + pad;
+
+ // Wall blocks passage until UNLOCKED (Holding key alone doesn't pass until touched)
+ if (!unlockedWalls[colorKey] && distFromCenter < wallRadius + 6) {
+ return false;
+ }
+ }
+ return true;
+ } 
+ else {
  const inHorizontalRoad = (py >= b.minY && py <= b.maxY);
  const inVerticalRoad = (px >= b.minX && px <= b.maxX);
  return inHorizontalRoad || inVerticalRoad;
@@ -364,6 +504,52 @@
  player.walkFrame = 0;
  }
 
+ const currentTile = cityGrid[currentGridX][currentGridY];
+
+ // 1. Check Key Pickup Collision (Pick up key into inventory)
+ if (currentTile.key && !hasKey[currentTile.key]) {
+ const keyX = currentTile.keyXRatio * canvas.width;
+ const keyY = currentTile.keyYRatio * canvas.height;
+ const distToKey = Math.hypot(player.x - keyX, player.y - keyY);
+ if (distToKey < 25) {
+ hasKey[currentTile.key] = true;
+ updateKeyInventoryUI();
+ }
+ }
+
+ // 2. Check Wall Touch Unlocking at RYFFR Screen
+ if (currentTile.type === TILE_TYPES.RYFFR) {
+ const b = getRoadBounds();
+ const cx = canvas.width / 2;
+ const cy = canvas.height / 2;
+ const distFromCenter = Math.hypot(player.x - cx, player.y - cy);
+
+ const bw = b.roadW * 0.85;
+ const bh = b.roadH * 0.85;
+ const baseBuildingRadius = Math.max(bw, bh) / 2;
+
+ for (let i = 0; i < 4; i++) {
+ const colorKey = wallOrder[i];
+ const pad = (4 - i) * 16;
+ const wallRadius = baseBuildingRadius + pad;
+
+ // If Stickman holds matching key, hasn't unlocked wall yet, and touches the barrier:
+ if (hasKey[colorKey] && !unlockedWalls[colorKey]) {
+ if (Math.abs(distFromCenter - wallRadius) < 18) {
+ unlockedWalls[colorKey] = true;
+ updateKeyInventoryUI();
+ }
+ }
+ }
+
+ // Check RYFFR Goal Trigger
+ const distToRYFFR = Math.hypot(player.x - cx, player.y - cy);
+ if (distToRYFFR < 35) {
+ hasWon = true;
+ document.getElementById('victory-modal').style.display = 'block';
+ }
+ }
+
  const margin = 10;
  const w = canvas.width;
  const h = canvas.height;
@@ -401,15 +587,6 @@
  updateLocationUI();
  } else {
  player.y = h - margin;
- }
- }
-
- const currentTile = cityGrid[currentGridX][currentGridY];
- if (currentTile.type === TILE_TYPES.RYFFR) {
- const dist = Math.hypot(player.x - w / 2, player.y - h / 2);
- if (dist < 60) {
- hasWon = true;
- document.getElementById('victory-modal').style.display = 'block';
  }
  }
  }
@@ -470,25 +647,47 @@
  }
  }
 
+ function drawKeyItem(x, y, colorKey) {
+ const colorHex = KEY_COLORS[colorKey].hex;
+ ctx.save();
+ ctx.translate(x, y);
+
+ const pulse = Math.sin(Date.now() * 0.006) * 3;
+
+ ctx.fillStyle = colorHex;
+ ctx.strokeStyle = colorHex;
+ ctx.shadowColor = colorHex;
+ ctx.shadowBlur = 12 + pulse;
+
+ ctx.lineWidth = 3;
+ ctx.beginPath();
+ ctx.arc(-8, 0, 7, 0, Math.PI * 2);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.moveTo(-1, 0); ctx.lineTo(12, 0);
+ ctx.moveTo(6, 0); ctx.lineTo(6, 6);
+ ctx.moveTo(10, 0); ctx.lineTo(10, 6);
+ ctx.stroke();
+
+ ctx.restore();
+ }
+
  // ==================== SECTOR DRAWER FUNCTIONS ====================
 
- // 1. OVAL SPORTS STADIUM WITH NORTH, SOUTH, EAST, WEST TUNNEL EXITS
  function drawStadium(w, h) {
  const b = getRoadBounds();
  const cx = w / 2;
  const cy = h / 2;
 
- // Concrete / Outer Arena Floor
  ctx.fillStyle = '#11161b';
  ctx.fillRect(0, 0, w, h);
 
- // Outer Oval Wall
  ctx.fillStyle = '#2c3e50';
  ctx.beginPath();
  ctx.ellipse(cx, cy, w * 0.47, h * 0.47, 0, 0, Math.PI * 2);
  ctx.fill();
 
- // Layered Bleachers (Concentric Oval Seating Tiers)
  const tierColors = ['#1f2a36', '#283747', '#34495e', '#2c3e50'];
  const crowdColors = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#ecf0f1', '#e67e22', '#9b59b6'];
 
@@ -500,7 +699,6 @@
  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
  ctx.fill();
 
- // Spectator Crowds
  ctx.strokeStyle = '#111';
  ctx.lineWidth = 1;
  for (let angle = 0; angle < Math.PI * 2; angle += 0.08) {
@@ -513,21 +711,18 @@
  }
  }
 
- // 4 Concrete Illuminated Tunnel Corridors (Leading N, S, E, W to Roads)
  ctx.fillStyle = '#2c3e50';
- ctx.fillRect(b.minX, 0, b.roadW, b.minY); // North Exit
- ctx.fillRect(b.minX, b.maxY, b.roadW, h - b.maxY); // South Exit
- ctx.fillRect(0, b.minY, b.minX, b.roadH); // West Exit
- ctx.fillRect(b.maxX, b.minY, w - b.maxX, b.roadH); // East Exit
+ ctx.fillRect(b.minX, 0, b.roadW, b.minY);
+ ctx.fillRect(b.minX, b.maxY, b.roadW, h - b.maxY);
+ ctx.fillRect(0, b.minY, b.minX, b.roadH);
+ ctx.fillRect(b.maxX, b.minY, w - b.maxX, b.roadH);
 
- // Yellow Curb Trim on Tunnel Corridors
  ctx.fillStyle = '#f1c40f';
  ctx.fillRect(b.minX, 0, 4, b.minY); ctx.fillRect(b.maxX - 4, 0, 4, b.minY);
  ctx.fillRect(b.minX, b.maxY, 4, h - b.maxY); ctx.fillRect(b.maxX - 4, b.maxY, 4, h - b.maxY);
  ctx.fillRect(0, b.minY, b.minX, 4); ctx.fillRect(0, b.maxY - 4, b.minX, 4);
  ctx.fillRect(b.maxX, b.minY, w - b.maxX, 4); ctx.fillRect(b.maxX, b.maxY - 4, w - b.maxX, 4);
 
- // Tunnel Exit Signboards
  ctx.fillStyle = '#111';
  ctx.fillRect(cx - 35, b.minY - 14, 70, 12);
  ctx.fillRect(cx - 35, b.maxY + 2, 70, 12);
@@ -537,8 +732,7 @@
  ctx.fillText('NORTH EXIT', cx, b.minY - 5);
  ctx.fillText('SOUTH EXIT', cx, b.maxY + 11);
 
- // Running Track Oval
- ctx.fillStyle = '#a04000'; // Terracotta Red
+ ctx.fillStyle = '#a04000';
  ctx.beginPath();
  ctx.ellipse(cx, cy, w * 0.38, h * 0.38, 0, 0, Math.PI * 2);
  ctx.fill();
@@ -547,19 +741,16 @@
  ctx.lineWidth = 1;
  ctx.stroke();
 
- // Track Lane Lines
  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
  ctx.beginPath();
  ctx.ellipse(cx, cy, w * 0.35, h * 0.35, 0, 0, Math.PI * 2);
  ctx.stroke();
 
- // Central Grass Field
  ctx.fillStyle = '#27ae60';
  ctx.beginPath();
  ctx.ellipse(cx, cy, w * 0.32, h * 0.32, 0, 0, Math.PI * 2);
  ctx.fill();
 
- // Field Yard Markings
  ctx.strokeStyle = '#ffffff';
  ctx.lineWidth = 1.5;
  for (let x = cx - w * 0.22; x <= cx + w * 0.22; x += 18) {
@@ -569,7 +760,6 @@
  ctx.stroke();
  }
 
- // Midfield Circle & Logo
  ctx.beginPath();
  ctx.arc(cx, cy, 22, 0, Math.PI * 2);
  ctx.stroke();
@@ -577,27 +767,22 @@
  ctx.font = 'bold 16px sans-serif';
  ctx.fillText('★', cx, cy + 5);
 
- // Yellow Goalposts at East and West Field Ends
  ctx.strokeStyle = '#f1c40f';
  ctx.lineWidth = 2;
- // West Goalpost
  const gxW = cx - w * 0.24;
  ctx.beginPath(); ctx.moveTo(gxW, cy - 14); ctx.lineTo(gxW, cy + 14); ctx.stroke();
  ctx.beginPath(); ctx.moveTo(gxW, cy); ctx.lineTo(gxW - 8, cy); ctx.stroke();
- // East Goalpost
  const gxE = cx + w * 0.24;
  ctx.beginPath(); ctx.moveTo(gxE, cy - 14); ctx.lineTo(gxE, cy + 14); ctx.stroke();
  ctx.beginPath(); ctx.moveTo(gxE, cy); ctx.lineTo(gxE + 8, cy); ctx.stroke();
 
- // Sideline Benches & Water Coolers
  ctx.fillStyle = '#34495e';
  ctx.fillRect(cx - 30, cy - h * 0.26, 60, 5);
  ctx.fillRect(cx - 30, cy + h * 0.25, 60, 5);
- ctx.fillStyle = '#2980b9'; // Water Coolers
+ ctx.fillStyle = '#2980b9';
  ctx.fillRect(cx - 38, cy - h * 0.27, 5, 7);
  ctx.fillRect(cx + 33, cy + h * 0.24, 5, 7);
 
- // Stadium Scoreboard Jumbotron (Top Outer Wall)
  ctx.fillStyle = '#000000';
  ctx.fillRect(cx - 70, 8, 140, 22);
  ctx.strokeStyle = '#f1c40f';
@@ -607,7 +792,6 @@
  ctx.font = 'bold 10px monospace';
  ctx.fillText('HOME 24 - GUEST 21 | Q4 01:45', cx, 23);
 
- // Floodlight Steel Towers in 4 Corners
  const towers = [
  { x: 20, y: 20 }, { x: w - 20, y: 20 },
  { x: 20, y: h - 20 }, { x: w - 20, y: h - 20 }
@@ -622,7 +806,6 @@
  });
  }
 
- // 2. DENSE CITY
  function drawDenseCity(w, h, seed) {
  ctx.fillStyle = '#111111';
  ctx.fillRect(0, 0, w, h);
@@ -678,7 +861,6 @@
  drawPlusSignRoad(w, h);
  }
 
- // 3. PARK
  function drawPark(w, h, seed) {
  ctx.fillStyle = '#27ae60';
  ctx.fillRect(0, 0, w, h);
@@ -732,7 +914,6 @@
  drawPlusSignRoad(w, h);
  }
 
- // 4. RESIDENTIAL
  function drawResidential(w, h, seed) {
  ctx.fillStyle = '#2ecc71';
  ctx.fillRect(0, 0, w, h);
@@ -800,7 +981,6 @@
  drawPlusSignRoad(w, h);
  }
 
- // 5. INDUSTRIAL
  function drawIndustrial(w, h, seed) {
  ctx.fillStyle = '#212a31';
  ctx.fillRect(0, 0, w, h);
@@ -886,7 +1066,6 @@
  drawPlusSignRoad(w, h);
  }
 
- // 6. RYFFR RESTAURANT
  function drawRYFFRScreen(w, h) {
  ctx.fillStyle = '#111111';
  ctx.fillRect(0, 0, w, h);
@@ -912,16 +1091,58 @@
 
  drawPlusSignRoad(w, h);
 
- const bw = b.roadW * 0.9;
- const bh = b.roadH * 0.9;
+ const bw = b.roadW * 0.85;
+ const bh = b.roadH * 0.85;
  const bx = w / 2 - bw / 2;
  const by = h / 2 - bh / 2;
+
+ for (let i = 0; i < 4; i++) {
+ const colorKey = wallOrder[i];
+ const colorHex = KEY_COLORS[colorKey].hex;
+ const isUnlocked = unlockedWalls[colorKey];
+
+ const pad = (4 - i) * 16;
+ const wx = bx - pad;
+ const wy = by - pad;
+ const ww = bw + pad * 2;
+ const wh = bh + pad * 2;
+
+ if (!isUnlocked) {
+ ctx.strokeStyle = colorHex;
+ ctx.lineWidth = 4;
+ ctx.shadowColor = colorHex;
+ ctx.shadowBlur = 10;
+ ctx.strokeRect(wx, wy, ww, wh);
+ ctx.shadowBlur = 0;
+
+ ctx.fillStyle = colorHex;
+ ctx.fillRect(wx + ww / 2 - 28, wy - 6, 56, 12);
+ ctx.fillStyle = (colorKey === 'yellow') ? '#000000' : '#ffffff';
+ ctx.font = 'bold 7px monospace';
+ ctx.textAlign = 'center';
+
+ // Status on wall badge (LOCKED vs TOUCH TO UNLOCK)
+ if (hasKey[colorKey]) {
+ ctx.fillText('TOUCH TO UNLOCK', wx + ww / 2, wy + 3);
+ } else {
+ ctx.fillText('LOCKED', wx + ww / 2, wy + 3);
+ }
+ } else {
+ ctx.strokeStyle = colorHex;
+ ctx.lineWidth = 1.5;
+ ctx.setLineDash([4, 8]);
+ ctx.globalAlpha = 0.3;
+ ctx.strokeRect(wx, wy, ww, wh);
+ ctx.setLineDash([]);
+ ctx.globalAlpha = 1.0;
+ }
+ }
 
  ctx.fillStyle = '#c0392b';
  ctx.fillRect(bx, by, bw, bh);
 
  ctx.strokeStyle = '#f1c40f';
- ctx.lineWidth = 5;
+ ctx.lineWidth = 4;
  ctx.strokeRect(bx, by, bw, bh);
 
  ctx.fillStyle = '#f1c40f';
@@ -939,7 +1160,6 @@
  ctx.fillRect(b.maxX + 12, b.minY + 12, 12, 10);
  }
 
- // BASELINE SIDE-VIEW STICKMAN RENDERER
  function drawStickman(x, y, facing, walkFrame) {
  ctx.strokeStyle = '#ffffff';
  ctx.fillStyle = '#ffffff';
@@ -1014,6 +1234,12 @@
  case TILE_TYPES.RYFFR:
  drawRYFFRScreen(w, h);
  break;
+ }
+
+ if (currentTile.key && !hasKey[currentTile.key]) {
+ const keyX = currentTile.keyXRatio * w;
+ const keyY = currentTile.keyYRatio * h;
+ drawKeyItem(keyX, keyY, currentTile.key);
  }
  }
 

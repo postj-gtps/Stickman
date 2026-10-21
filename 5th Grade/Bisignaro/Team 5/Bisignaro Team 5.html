@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Stickman Ocean Diver</title>
+ <style>
+ * {
+ box-sizing: border-box;
+ user-select: none;
+ margin: 0;
+ padding: 0;
+ font-family: 'Fredoka', 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+ }
+
+ body {
+ background-color: #0d1b2a;
+ color: #ffffff;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: flex-start;
+ height: 100vh;
+ overflow: hidden;
+ padding: 16px;
+ }
+
+ /* Top Header Bar */
+ #header {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ width: 100%;
+ max-width: 1100px;
+ margin-bottom: 12px;
+ padding: 8px 16px;
+ background: #1b263b;
+ border-radius: 12px;
+ border: 3px solid #415a77;
+ box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+ }
+
+ #title-container {
+ display: flex;
+ flex-direction: column;
+ }
+
+ h1 {
+ font-size: 20px;
+ letter-spacing: 1px;
+ text-transform: uppercase;
+ font-weight: 800;
+ color: #e0e1dd;
+ text-shadow: 2px 2px 0px #000;
+ }
+
+ #env-tag {
+ font-size: 13px;
+ font-weight: bold;
+ color: #00f0ff;
+ text-shadow: 1px 1px 0px #000;
+ }
+
+ .btn-reset {
+ background: #ff4757;
+ color: #ffffff;
+ border: 2px solid #ffffff;
+ border-radius: 8px;
+ padding: 8px 20px;
+ font-size: 15px;
+ font-weight: bold;
+ cursor: pointer;
+ text-transform: uppercase;
+ letter-spacing: 1px;
+ transition: transform 0.1s ease, background 0.15s ease;
+ box-shadow: 0 4px 0px #b33939;
+ }
+
+ .btn-reset:hover {
+ background: #ff6b81;
+ }
+
+ .btn-reset:active {
+ transform: translateY(3px);
+ box-shadow: 0 1px 0px #b33939;
+ }
+
+ /* Main Canvas Container */
+ #canvas-wrapper {
+ position: relative;
+ width: 100%;
+ max-width: 1100px;
+ flex-grow: 1;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ border-radius: 16px;
+ overflow: hidden;
+ border: 4px solid #778da9;
+ box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+ }
+
+ canvas {
+ display: block;
+ width: 100%;
+ height: 100%;
+ }
+
+ .instructions {
+ margin-top: 10px;
+ font-size: 13px;
+ font-weight: bold;
+ color: #e0e1dd;
+ text-align: center;
+ background: rgba(0,0,0,0.4);
+ padding: 6px 16px;
+ border-radius: 20px;
+ }
+ </style>
+</head>
+<body>
+
+ <!-- Header Section -->
+ <div id="header">
+ <div id="title-container">
+ <h1>Stickman Ocean Diver</h1>
+ <div id="env-tag">Location: Loading...</div>
+ </div>
+ <button class="btn-reset" onclick="resetSimulation()">Change Ocean!</button>
+ </div>
+
+ <!-- Canvas Container -->
+ <div id="canvas-wrapper">
+ <canvas id="simCanvas"></canvas>
+ </div>
+
+ <div class="instructions">
+ 🎮 Controls: [W] Swim Up | [A] Left | [S] Dive Down | [D] Right (WASD Only)
+ </div>
+
+ <script>
+ const canvas = document.getElementById('simCanvas');
+ const ctx = canvas.getContext('2d');
+ const envTag = document.getElementById('env-tag');
+
+ // KEYBOARD INPUT STATE
+ const keys = {};
+
+ // OCEAN ENVIRONMENTS CONFIG
+ const OCEAN_TYPES = [
+ {
+ name: "Treasure Shipwreck",
+ skyTop: "#ff9a9e", skyBottom: "#fecfef",
+ waterTop: "#005c97", waterBottom: "#363795",
+ accent: "#ffd700",
+ type: "shipwreck"
+ },
+ {
+ name: "Deep Abyss",
+ skyTop: "#2c3e50", skyBottom: "#000000",
+ waterTop: "#0f2027", waterBottom: "#000508",
+ accent: "#00ffff",
+ type: "abyss"
+ },
+ {
+ name: "Lush Coral Reef",
+ skyTop: "#89f7fe", skyBottom: "#66a6ff",
+ waterTop: "#00c6ff", waterBottom: "#0072ff",
+ accent: "#ff5252",
+ type: "coral"
+ },
+ {
+ name: "Kelp Forest",
+ skyTop: "#a8e6cf", skyBottom: "#dbede6",
+ waterTop: "#11998e", waterBottom: "#38ef7d",
+ accent: "#2ecc71",
+ type: "kelp"
+ }
+ ];
+
+ let currentEnv = OCEAN_TYPES[0];
+ let animTime = 0;
+ const particles = [];
+ const fishList = [];
+
+ // STICKMAN PLAYER STATE
+ const player = {
+ x: 0,
+ y: 0,
+ speed: 4.8,
+ facing: 1, // 1 = Right, -1 = Left
+ walkFrame: 0,
+ isUnderwater: false
+ };
+
+ function resizeCanvas() {
+ const wrapper = document.getElementById('canvas-wrapper');
+ canvas.width = wrapper.clientWidth;
+ canvas.height = wrapper.clientHeight;
+ 
+ if (player.x === 0 && player.y === 0) {
+ resetSimulation();
+ }
+ }
+
+ window.addEventListener('resize', resizeCanvas);
+
+ // STRICT WASD KEYBOARD CONTROLS (Arrow keys explicitly ignored)
+ window.addEventListener('keydown', (e) => {
+ if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+ e.preventDefault();
+ keys[e.code] = true;
+ }
+ });
+
+ window.addEventListener('keyup', (e) => {
+ if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+ keys[e.code] = false;
+ }
+ });
+
+ function resetSimulation() {
+ // Select a random ocean type
+ const randomIndex = Math.floor(Math.random() * OCEAN_TYPES.length);
+ currentEnv = OCEAN_TYPES[randomIndex];
+ envTag.innerText = "Location: " + currentEnv.name;
+
+ const waterLevel = canvas.height * 0.22;
+ const boatX = canvas.width / 2;
+ 
+ // Start Stickman standing on the boat deck
+ player.x = boatX;
+ player.y = waterLevel - 15;
+ player.facing = 1;
+ player.walkFrame = 0;
+ player.isUnderwater = false;
+
+ // Generate ambient particles / aquatic life
+ initParticles();
+ }
+
+ function initParticles() {
+ particles.length = 0;
+ fishList.length = 0;
+
+ // Underwater air bubbles & theme particles
+ for (let i = 0; i < 40; i++) {
+ particles.push({
+ x: Math.random() * canvas.width,
+ y: canvas.height * 0.25 + Math.random() * (canvas.height * 0.75),
+ r: 2 + Math.random() * 4,
+ speedY: 0.5 + Math.random() * 1.2,
+ pulse: Math.random() * Math.PI * 2
+ });
+ }
+
+ // Decorative swimming fish
+ for (let i = 0; i < 8; i++) {
+ fishList.push({
+ x: Math.random() * canvas.width,
+ y: canvas.height * 0.35 + Math.random() * (canvas.height * 0.55),
+ speed: (0.8 + Math.random() * 1.5) * (Math.random() < 0.5 ? 1 : -1),
+ color: ['#ff5252', '#ffda79', '#ff793f', '#34ace0', '#706fd3'][Math.floor(Math.random() * 5)],
+ size: 10 + Math.random() * 8
+ });
+ }
+ }
+
+ function updatePhysics() {
+ animTime += 0.04;
+ const waterLevel = canvas.height * 0.22;
+ const boatWidth = 180;
+ const boatX = canvas.width / 2;
+
+ // Check if player is submerged underwater
+ player.isUnderwater = player.y > waterLevel + 10;
+
+ // Movement Vector Calculation
+ let dx = 0;
+ let dy = 0;
+
+ if (keys['KeyW'] || keys['Keyw']) dy -= 1;
+ if (keys['KeyS'] || keys['Keys']) dy += 1;
+ if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
+ if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+
+ // Normalize diagonal movement vector speed
+ if (dx !== 0 && dy !== 0) {
+ dx *= 0.7071;
+ dy *= 0.7071;
+ }
+
+ // Apply movement speed (slightly slower underwater for drag effect)
+ const moveSpeed = player.isUnderwater ? player.speed * 0.85 : player.speed;
+ player.x += dx * moveSpeed;
+ player.y += dy * moveSpeed;
+
+ // Boat Deck Platform Collision (When standing on boat)
+ const isOnBoatX = player.x >= boatX - boatWidth / 2 && player.x <= boatX + boatWidth / 2;
+ if (!player.isUnderwater && isOnBoatX && dy >= 0 && player.y < waterLevel) {
+ // Clamp player feet to boat deck
+ player.y = Math.min(player.y, waterLevel - 15);
+ }
+
+ // Keep stickman inside canvas boundaries
+ const margin = 20;
+ player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
+ player.y = Math.max(margin + 10, Math.min(canvas.height - margin - 10, player.y));
+
+ // Movement animation frame step
+ if (dx !== 0 || dy !== 0) {
+ player.walkFrame += player.isUnderwater ? 0.15 : 0.25;
+ 
+ // Spawn swimmer bubbles when moving underwater
+ if (player.isUnderwater && Math.random() < 0.3) {
+ particles.push({
+ x: player.x,
+ y: player.y - 10,
+ r: 2 + Math.random() * 3,
+ speedY: 0.8 + Math.random() * 1,
+ pulse: 0
+ });
+ }
+ } else {
+ player.walkFrame = 0;
+ }
+
+ // Update background particles & fish
+ particles.forEach(p => {
+ p.y -= p.speedY;
+ p.x += Math.sin(animTime + p.pulse) * 0.5;
+ if (p.y < waterLevel) {
+ p.y = canvas.height - 10;
+ p.x = Math.random() * canvas.width;
+ }
+ });
+
+ fishList.forEach(f => {
+ f.x += f.speed;
+ if (f.x > canvas.width + 30) f.x = -30;
+ if (f.x < -30) f.x = canvas.width + 30;
+ });
+ }
+
+ function drawEnvironment() {
+ const waterLevel = canvas.height * 0.22;
+
+ // 1. Sky Background
+ const skyGrad = ctx.createLinearGradient(0, 0, 0, waterLevel);
+ skyGrad.addColorStop(0, currentEnv.skyTop);
+ skyGrad.addColorStop(1, currentEnv.skyBottom);
+ ctx.fillStyle = skyGrad;
+ ctx.fillRect(0, 0, canvas.width, waterLevel);
+
+ // Sun / Moon in sky
+ ctx.fillStyle = "rgba(ffffff, 0.8)";
+ ctx.beginPath();
+ ctx.arc(canvas.width - 80, 45, 25, 0, Math.PI * 2);
+ ctx.fillStyle = currentEnv.type === 'abyss' ? '#f1f2f6' : '#ffeaa7';
+ ctx.fill();
+
+ // 2. Ocean Water Background
+ const waterGrad = ctx.createLinearGradient(0, waterLevel, 0, canvas.height);
+ waterGrad.addColorStop(0, currentEnv.waterTop);
+ waterGrad.addColorStop(1, currentEnv.waterBottom);
+ ctx.fillStyle = waterGrad;
+ ctx.fillRect(0, waterLevel, canvas.width, canvas.height - waterLevel);
+
+ // 3. Theme-Specific Underwater Scenery
+ const seaFloorY = canvas.height - 20;
+
+ if (currentEnv.type === 'shipwreck') {
+ // Ocean floor sand
+ ctx.fillStyle = '#d4a373';
+ ctx.beginPath();
+ ctx.ellipse(canvas.width * 0.7, seaFloorY, 300, 40, 0, 0, Math.PI * 2);
+ ctx.fill();
+
+ // Sunken Pirate Ship Hull
+ ctx.fillStyle = '#4a2c11';
+ ctx.beginPath();
+ ctx.moveTo(canvas.width * 0.55, seaFloorY);
+ ctx.lineTo(canvas.width * 0.85, seaFloorY - 20);
+ ctx.lineTo(canvas.width * 0.9, seaFloorY - 80);
+ ctx.lineTo(canvas.width * 0.65, seaFloorY - 50);
+ ctx.closePath();
+ ctx.fill();
+ ctx.strokeStyle = '#2b1704';
+ ctx.lineWidth = 4;
+ ctx.stroke();
+
+ // Mast & Broken Sail
+ ctx.fillRect(canvas.width * 0.75, seaFloorY - 140, 10, 80);
+
+ // Glowing Treasure Chest
+ ctx.fillStyle = '#ffd700';
+ ctx.fillRect(canvas.width * 0.6, seaFloorY - 30, 35, 25);
+ ctx.strokeStyle = '#b8860b';
+ ctx.strokeRect(canvas.width * 0.6, seaFloorY - 30, 35, 25);
+
+ // Chest Sparkles
+ ctx.fillStyle = '#ffffff';
+ for (let i = 0; i < 5; i++) {
+ const sparkX = canvas.width * 0.6 + 5 + Math.sin(animTime * 3 + i) * 12;
+ const sparkY = seaFloorY - 35 + Math.cos(animTime * 2 + i) * 10;
+ ctx.fillRect(sparkX, sparkY, 3, 3);
+ }
+
+ } else if (currentEnv.type === 'abyss') {
+ // Bioluminescent Vents & Crystals
+ for (let i = 0; i < 5; i++) {
+ const cx = canvas.width * (0.15 + i * 0.2);
+ ctx.fillStyle = '#00ffff';
+ ctx.beginPath();
+ ctx.moveTo(cx - 15, seaFloorY + 10);
+ ctx.lineTo(cx, seaFloorY - 50 - (i % 2) * 20);
+ ctx.lineTo(cx + 15, seaFloorY + 10);
+ ctx.fill();
+ }
+
+ // Floating Bioluminescent Jellyfish
+ for (let i = 0; i < 3; i++) {
+ const jx = canvas.width * (0.2 + i * 0.3);
+ const jy = canvas.height * 0.4 + Math.sin(animTime + i) * 25;
+ ctx.fillStyle = 'rgba(0, 255, 240, 0.6)';
+ ctx.beginPath();
+ ctx.arc(jx, jy, 22, Math.PI, 0);
+ ctx.fill();
+ 
+ ctx.strokeStyle = 'rgba(0, 255, 240, 0.8)';
+ ctx.lineWidth = 2;
+ for (let t = -15; t <= 15; t += 10) {
+ ctx.beginPath();
+ ctx.moveTo(jx + t, jy);
+ ctx.lineTo(jx + t + Math.sin(animTime * 2 + t) * 6, jy + 30);
+ ctx.stroke();
+ }
+ }
+
+ } else if (currentEnv.type === 'coral') {
+ // Colorful Ocean Bed
+ ctx.fillStyle = '#f8c291';
+ ctx.fillRect(0, seaFloorY - 15, canvas.width, 35);
+
+ // Coral Structures
+ const colors = ['#ff5252', '#ff793f', '#eccc68', '#b33771', '#6d214f'];
+ for (let i = 0; i < 12; i++) {
+ const cx = 40 + i * (canvas.width / 11);
+ ctx.fillStyle = colors[i % colors.length];
+ ctx.beginPath();
+ ctx.arc(cx, seaFloorY - 10, 20 + (i % 3) * 8, Math.PI, 0);
+ ctx.fill();
+ }
+
+ } else if (currentEnv.type === 'kelp') {
+ // Swaying Kelp Stalks
+ ctx.strokeStyle = '#2ed573';
+ ctx.lineWidth = 12;
+ ctx.lineCap = 'round';
+
+ for (let i = 0; i < 14; i++) {
+ const kx = 30 + i * (canvas.width / 13);
+ ctx.beginPath();
+ ctx.moveTo(kx, canvas.height);
+ const sway = Math.sin(animTime + i) * 20;
+ ctx.quadraticCurveTo(kx + sway, canvas.height * 0.6, kx - sway, waterLevel + 20);
+ ctx.stroke();
+ }
+ }
+
+ // 4. Draw Swimming Fish
+ fishList.forEach(f => {
+ ctx.fillStyle = f.color;
+ ctx.beginPath();
+ ctx.ellipse(f.x, f.y, f.size, f.size * 0.5, 0, 0, Math.PI * 2);
+ ctx.fill();
+ // Tail
+ ctx.beginPath();
+ const tailDir = f.speed > 0 ? -1 : 1;
+ ctx.moveTo(f.x + tailDir * f.size, f.y);
+ ctx.lineTo(f.x + tailDir * (f.size + 8), f.y - 6);
+ ctx.lineTo(f.x + tailDir * (f.size + 8), f.y + 6);
+ ctx.closePath();
+ ctx.fill();
+ });
+
+ // 5. Draw Bubbles
+ ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+ ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+ ctx.lineWidth = 1.5;
+ particles.forEach(p => {
+ ctx.beginPath();
+ ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.stroke();
+ });
+
+ // 6. Draw Animated Water Surface Waves
+ ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+ ctx.beginPath();
+ ctx.moveTo(0, waterLevel);
+ for (let x = 0; x <= canvas.width; x += 30) {
+ const waveY = waterLevel + Math.sin(animTime * 2 + x * 0.02) * 5;
+ ctx.lineTo(x, waveY);
+ }
+ ctx.lineTo(canvas.width, waterLevel + 15);
+ ctx.lineTo(0, waterLevel + 15);
+ ctx.closePath();
+ ctx.fill();
+
+ // 7. Draw The Boat
+ drawBoat(canvas.width / 2, waterLevel);
+ }
+
+ function drawBoat(x, waterY) {
+ const boatWidth = 180;
+ const boatHeight = 35;
+ const bobY = waterY + Math.sin(animTime * 1.5) * 3; // Gently floating boat
+
+ // Boat Hull
+ ctx.fillStyle = '#8e44ad'; // Vibrant purple hull
+ ctx.beginPath();
+ ctx.moveTo(x - boatWidth / 2, bobY - 10);
+ ctx.lineTo(x + boatWidth / 2, bobY - 10);
+ ctx.lineTo(x + boatWidth / 2 - 25, bobY + boatHeight);
+ ctx.lineTo(x - boatWidth / 2 + 25, bobY + boatHeight);
+ ctx.closePath();
+ ctx.fill();
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 3;
+ ctx.stroke();
+
+ // Wooden Deck Trim
+ ctx.fillStyle = '#f1c40f';
+ ctx.fillRect(x - boatWidth / 2 - 5, bobY - 12, boatWidth + 10, 6);
+
+ // Flag Mast
+ ctx.fillStyle = '#ffffff';
+ ctx.fillRect(x - 5, bobY - 80, 5, 70);
+
+ // Colorful Sail/Flag
+ ctx.fillStyle = '#e74c3c';
+ ctx.beginPath();
+ ctx.moveTo(x, bobY - 80);
+ ctx.lineTo(x + 45, bobY - 60);
+ ctx.lineTo(x, bobY - 40);
+ ctx.closePath();
+ ctx.fill();
+ }
+
+ function drawStickman(x, y, facing, walkFrame, isUnderwater) {
+ ctx.strokeStyle = '#ffffff';
+ ctx.fillStyle = '#ffffff';
+ ctx.lineWidth = 3.5;
+ ctx.lineCap = 'round';
+ ctx.lineJoin = 'round';
+
+ const headRadius = 7;
+ const bodyLength = 18;
+ const legLength = 14;
+ const neckY = y - bodyLength;
+ const headY = neckY - headRadius;
+ const shoulderY = neckY + 4;
+
+ if (isUnderwater) {
+ // --- UNDERWATER SWIMMING STICKMAN ---
+ // Draw Scuba Mask
+ ctx.beginPath();
+ ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+ ctx.fillStyle = '#fffa65';
+ ctx.fill();
+ ctx.stroke();
+
+ // Mask Goggles
+ ctx.fillStyle = '#00d2d3';
+ ctx.fillRect(x + (facing === 1 ? 0 : -6), headY - 3, 7, 5);
+
+ // Swimming Body (Slight Horizontal Angle Effect)
+ ctx.beginPath();
+ ctx.moveTo(x, neckY);
+ ctx.lineTo(x - facing * 4, y);
+ ctx.stroke();
+
+ // Swimming Kick Legs
+ const legKick = Math.sin(walkFrame * 2) * 10;
+ ctx.beginPath();
+ ctx.moveTo(x - facing * 4, y);
+ ctx.lineTo(x - facing * 12 - legKick, y + 8);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.moveTo(x - facing * 4, y);
+ ctx.lineTo(x - facing * 12 + legKick, y + 12);
+ ctx.stroke();
+
+ // Swimming Arms
+ const armStroke = Math.cos(walkFrame * 2) * 12;
+ ctx.beginPath();
+ ctx.moveTo(x, shoulderY);
+ ctx.lineTo(x + facing * 12 + armStroke, shoulderY + 8);
+ ctx.stroke();
+
+ } else {
+ // --- ON-BOAT / ABOVE WATER STICKMAN ---
+ // Head
+ ctx.beginPath();
+ ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+ ctx.fillStyle = '#fffa65'; // Vibrant Yellow Head
+ ctx.fill();
+ ctx.stroke();
+
+ // Eye Direction Indicator
+ ctx.fillStyle = '#000000';
+ ctx.beginPath();
+ ctx.arc(x + facing * 3, headY - 1, 1.2, 0, Math.PI * 2);
+ ctx.fill();
+
+ // Torso
+ ctx.beginPath();
+ ctx.moveTo(x, neckY);
+ ctx.lineTo(x, y);
+ ctx.stroke();
+
+ // Walking / Standing Legs
+ const legSwing = Math.sin(walkFrame) * 8;
+ ctx.beginPath();
+ ctx.moveTo(x, y);
+ ctx.lineTo(x - legSwing, y + legLength);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.moveTo(x, y);
+ ctx.lineTo(x + legSwing, y + legLength);
+ ctx.stroke();
+
+ // Arms
+ const armSwing = Math.sin(walkFrame + Math.PI) * 6;
+ ctx.beginPath();
+ ctx.moveTo(x, shoulderY);
+ ctx.lineTo(x - facing * 5 - armSwing, shoulderY + 8);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.moveTo(x, shoulderY);
+ ctx.lineTo(x + facing * 5 + armSwing, shoulderY + 8);
+ ctx.stroke();
+ }
+ }
+
+ function draw() {
+ // Render environment background
+ drawEnvironment();
+
+ // Render Stickman Player
+ drawStickman(player.x, player.y, player.facing, player.walkFrame, player.isUnderwater);
+ }
+
+ function animate() {
+ updatePhysics();
+ draw();
+ requestAnimationFrame(animate);
+ }
+
+ window.onload = function() {
+ resizeCanvas();
+ animate();
+ };
+ </script>
+</body>
+</html>

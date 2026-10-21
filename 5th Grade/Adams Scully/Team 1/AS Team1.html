@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Stickman Engine - Aztec Jungle</title>
+ <title>Stickman Engine - Aztec Jungle Hazards</title>
  <style>
  * {
  box-sizing: border-box;
@@ -98,7 +98,7 @@
 
  <!-- Header Section -->
  <div id="header">
- <h1>Stickman Engine: Aztec Jungle</h1>
+ <h1>Stickman Engine: Jungle Hazards</h1>
  <button class="btn-reset" onclick="resetSimulation()">Reset Game</button>
  </div>
 
@@ -108,7 +108,7 @@
  </div>
 
  <div class="instructions">
- Movement: [W][A][S][D] Only (Arrow Keys Disabled)
+ Movement: [W][A][S][D] Only (Arrow Keys Disabled) | Escape Anaconda: Spam [W]&amp;[S] | Escape Vine: Spam [A]&amp;[D]
  </div>
 
  <script>
@@ -131,16 +131,23 @@
  chestplate: false,
  leggings: false,
  shield: false
- }
+ },
+ trappedBy: null, // null, 'anaconda', 'vine'
+ trapProgress: 0,
+ trapTarget: 8,
+ trappedEnemy: null
  };
 
- // GAME OBJECTS
+ // GAME OBJECTS & HAZARDS
  let coins = [];
  let armorItems = [];
  let trees = [];
  let flowers = [];
  let monkeys = [];
  let birds = [];
+ let anacondas = [];
+ let angryRocks = [];
+ let rockSpawnTimer = 0;
 
  function resizeCanvas() {
  const wrapper = document.getElementById('canvas-wrapper');
@@ -152,11 +159,49 @@
 
  window.addEventListener('resize', resizeCanvas);
 
- // STRICT WASD CONTROLS HANDLER (EXCLUDES ARROW KEYS)
+ // KEYBOARD INPUT & TRAP ESCAPE HANDLER
  window.addEventListener('keydown', (e) => {
  const key = e.key.toLowerCase();
+ 
+ // Explicitly block arrow keys
+ if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+ e.preventDefault();
+ return;
+ }
+
  if (['w', 'a', 's', 'd'].includes(key)) {
  e.preventDefault();
+
+ // Handle Anaconda Squeeze Escape Mechanics (Spam W and S)
+ if (player.trappedBy === 'anaconda') {
+ if (!e.repeat && (key === 'w' || key === 's')) {
+ player.trapProgress++;
+ if (player.trapProgress >= player.trapTarget) {
+ player.trappedBy = null;
+ if (player.trappedEnemy) {
+ player.trappedEnemy.cooldown = 180; // Repel snake for 3s
+ player.trappedEnemy = null;
+ }
+ }
+ }
+ return;
+ }
+
+ // Handle Vine Tangle Escape Mechanics (Spam A and D)
+ if (player.trappedBy === 'vine') {
+ if (!e.repeat && (key === 'a' || key === 'd')) {
+ player.trapProgress++;
+ if (player.trapProgress >= player.trapTarget) {
+ player.trappedBy = null;
+ if (player.trappedEnemy) {
+ player.trappedEnemy.cooldown = 240; // Retract vine for 4s
+ player.trappedEnemy = null;
+ }
+ }
+ }
+ return;
+ }
+
  keys[key] = true;
  }
  });
@@ -173,21 +218,24 @@
  const h = canvas.height;
  const groundTop = h * 0.35;
 
- // Generate Trees
+ // Generate Trees with Vine Traps
  trees = [];
- const treeCount = 7;
+ const treeCount = 6;
  for (let i = 0; i < treeCount; i++) {
  trees.push({
- x: (w / (treeCount + 1)) * (i + 1) + (Math.random() * 40 - 20),
+ x: (w / (treeCount + 1)) * (i + 1) + (Math.random() * 30 - 15),
  y: groundTop + Math.random() * (h - groundTop - 80),
- scale: 0.8 + Math.random() * 0.4
+ scale: 0.8 + Math.random() * 0.4,
+ hasVine: i % 2 === 0, // Alternating trees feature trap vines
+ vineLength: 45,
+ vineCooldown: 0
  });
  }
 
  // Generate Flowers
  flowers = [];
- const colors = ['#ff4d6d', '#ff007f', '#ffb703', '#00f5d4', '#e0aaff'];
- for (let i = 0; i < 25; i++) {
+ const colors = ['#ff4d6d', '#ff007f', '#00f5d4', '#e0aaff', '#ff6b35'];
+ for (let i = 0; i < 20; i++) {
  flowers.push({
  x: Math.random() * (w - 40) + 20,
  y: groundTop + 30 + Math.random() * (h - groundTop - 50),
@@ -196,7 +244,7 @@
  });
  }
 
- // Generate Monkeys in Trees
+ // Generate Monkeys
  monkeys = [];
  trees.slice(0, 3).forEach(tree => {
  monkeys.push({
@@ -205,11 +253,10 @@
  });
  });
 
- // Generate Exotic Birds
+ // Generate Birds
  birds = [
  { x: w * 0.2, y: h * 0.18, color: '#ff0055', wing: 0 },
- { x: w * 0.75, y: h * 0.22, color: '#00bbf9', wing: 1 },
- { x: w * 0.85, y: h * 0.12, color: '#f15bb5', wing: 2 }
+ { x: w * 0.75, y: h * 0.22, color: '#00bbf9', wing: 1 }
  ];
 
  // Generate Gold Coins
@@ -223,13 +270,42 @@
  });
  }
 
- // Generate Gold Armor Items
+ // Generate Gold Armor
  armorItems = [
  { type: 'helmet', name: 'Golden Helmet', x: w * 0.2, y: groundTop + 60, collected: false },
  { type: 'chestplate', name: 'Golden Chestplate', x: w * 0.8, y: groundTop + 80, collected: false },
  { type: 'leggings', name: 'Golden Leggings', x: w * 0.35, y: h - 60, collected: false },
  { type: 'shield', name: 'Golden Shield', x: w * 0.65, y: h - 100, collected: false }
  ];
+
+ // Generate Anacondas
+ anacondas = [
+ { x: w * 0.25, y: groundTop + 100, speed: 1.2, cooldown: 0, anim: 0 },
+ { x: w * 0.75, y: h - 90, speed: 1.4, cooldown: 0, anim: 1.5 }
+ ];
+
+ // Reset Angry Rolling Rocks
+ angryRocks = [];
+ rockSpawnTimer = 0;
+ }
+
+ function spawnAngryRock() {
+ const w = canvas.width;
+ const h = canvas.height;
+ const groundTop = h * 0.38;
+ 
+ const fromLeft = Math.random() < 0.5;
+ const startX = fromLeft ? -30 : w + 30;
+ const startY = groundTop + Math.random() * (h - groundTop - 40);
+ const speed = (3 + Math.random() * 2) * (fromLeft ? 1 : -1);
+
+ angryRocks.push({
+ x: startX,
+ y: startY,
+ vx: speed,
+ radius: 18,
+ angle: 0
+ });
  }
 
  function resetSimulation() {
@@ -239,6 +315,9 @@
  player.walkFrame = 0;
  player.coinsCollected = 0;
  player.armor = { helmet: false, chestplate: false, leggings: false, shield: false };
+ player.trappedBy = null;
+ player.trapProgress = 0;
+ player.trappedEnemy = null;
 
  keys['w'] = false;
  keys['a'] = false;
@@ -249,6 +328,8 @@
  }
 
  function updatePhysics() {
+ // Disable standard movement if trapped by enemy
+ if (!player.trappedBy) {
  let dx = 0;
  let dy = 0;
 
@@ -257,51 +338,114 @@
  if (keys['a']) { dx -= 1; player.facing = -1; }
  if (keys['d']) { dx += 1; player.facing = 1; }
 
- // Normalize diagonal movement speed
  if (dx !== 0 && dy !== 0) {
  dx *= 0.7071;
  dy *= 0.7071;
  }
 
- // Update stickman position
  player.x += dx * player.speed;
  player.y += dy * player.speed;
 
- // Keep stickman inside jungle ground area
  const margin = 20;
  const minY = canvas.height * 0.38;
  const maxY = canvas.height - 20;
  player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
  player.y = Math.max(minY, Math.min(maxY, player.y));
 
- // Walk animation cycle updates
  if (dx !== 0 || dy !== 0) {
  player.walkFrame += 0.25;
  } else {
  player.walkFrame = 0;
  }
+ }
 
  // Item Pickups Check
  const pickupRadius = 22;
 
- // Pick up coins
  coins.forEach(coin => {
- if (!coin.collected) {
- const dist = Math.hypot(player.x - coin.x, player.y - coin.y);
- if (dist < pickupRadius) {
+ if (!coin.collected && Math.hypot(player.x - coin.x, player.y - coin.y) < pickupRadius) {
  coin.collected = true;
  player.coinsCollected++;
  }
+ });
+
+ armorItems.forEach(item => {
+ if (!item.collected && Math.hypot(player.x - item.x, player.y - item.y) < pickupRadius) {
+ item.collected = true;
+ player.armor[item.type] = true;
  }
  });
 
- // Pick up armor
- armorItems.forEach(item => {
- if (!item.collected) {
- const dist = Math.hypot(player.x - item.x, player.y - item.y);
- if (dist < pickupRadius) {
- item.collected = true;
- player.armor[item.type] = true;
+ // --- HAZARD 1: ANACONDA AI & SQUEEZE TRAP ---
+ anacondas.forEach(snake => {
+ snake.anim += 0.08;
+ if (snake.cooldown > 0) {
+ snake.cooldown--;
+ return;
+ }
+
+ if (player.trappedBy === 'anaconda' && player.trappedEnemy === snake) {
+ // Keep snake anchored around player while squeezing
+ snake.x = player.x;
+ snake.y = player.y;
+ return;
+ }
+
+ // Slither towards player
+ const dist = Math.hypot(player.x - snake.x, player.y - snake.y);
+ if (dist > 10) {
+ snake.x += ((player.x - snake.x) / dist) * snake.speed;
+ snake.y += ((player.y - snake.y) / dist) * snake.speed;
+ }
+
+ // Trigger Anaconda Squeeze Trap
+ if (!player.trappedBy && dist < 18) {
+ player.trappedBy = 'anaconda';
+ player.trapProgress = 0;
+ player.trappedEnemy = snake;
+ }
+ });
+
+ // --- HAZARD 2: ANGRY ROLLING ROCKS ---
+ rockSpawnTimer++;
+ if (rockSpawnTimer > 180) { // Spawn rock every ~3 seconds
+ spawnAngryRock();
+ rockSpawnTimer = 0;
+ }
+
+ for (let i = angryRocks.length - 1; i >= 0; i--) {
+ const rock = angryRocks[i];
+ rock.x += rock.vx;
+ rock.angle += rock.vx * 0.08;
+
+ // Check rock collision with player
+ const dist = Math.hypot(player.x - rock.x, player.y - rock.y);
+ if (dist < rock.radius + 10) {
+ // Rock hit: knock back player sideways
+ player.x += rock.vx * 2;
+ }
+
+ // Remove rocks off screen
+ if (rock.x < -50 || rock.x > canvas.width + 50) {
+ angryRocks.splice(i, 1);
+ }
+ }
+
+ // --- HAZARD 3: VINE TRAPS FROM TREES ---
+ trees.forEach(tree => {
+ if (tree.hasVine) {
+ if (tree.vineCooldown > 0) {
+ tree.vineCooldown--;
+ return;
+ }
+
+ const vineTipX = tree.x;
+ const vineTipY = tree.y + tree.vineLength;
+
+ if (!player.trappedBy && Math.hypot(player.x - vineTipX, player.y - vineTipY) < 22) {
+ player.trappedBy = 'vine';
+ player.trapProgress = 0;
+ player.trappedEnemy = tree;
  }
  }
  });
@@ -314,14 +458,12 @@
  const centerX = w * 0.5;
  const baseY = h * 0.38;
 
- // Far distance sky gradient
  const skyGrad = ctx.createLinearGradient(0, 0, 0, baseY);
  skyGrad.addColorStop(0, '#1a3c40');
  skyGrad.addColorStop(1, '#2d5a27');
  ctx.fillStyle = skyGrad;
  ctx.fillRect(0, 0, w, baseY);
 
- // Golden Aztec Temple Steps
  const steps = 6;
  const stepHeight = 14;
  let currentWidth = pyramidBaseWidth;
@@ -330,7 +472,6 @@
  const stepY = baseY - (i + 1) * stepHeight;
  const stepX = centerX - currentWidth / 2;
 
- // Gold Pyramid Gradient
  const goldGrad = ctx.createLinearGradient(stepX, stepY, stepX + currentWidth, stepY + stepHeight);
  goldGrad.addColorStop(0, '#b8860b');
  goldGrad.addColorStop(0.5, '#ffd700');
@@ -345,7 +486,6 @@
  currentWidth -= pyramidBaseWidth / (steps + 2);
  }
 
- // Temple Top Structure
  const topW = currentWidth * 0.7;
  const topH = 16;
  const topX = centerX - topW / 2;
@@ -355,21 +495,8 @@
  ctx.fillRect(topX, topY, topW, topH);
  ctx.strokeRect(topX, topY, topW, topH);
 
- // Temple Doorway
  ctx.fillStyle = '#221200';
  ctx.fillRect(centerX - 5, topY + 4, 10, topH - 4);
-
- // Stairway down the middle
- ctx.fillStyle = '#da10b';
- ctx.beginPath();
- ctx.moveTo(centerX - 12, baseY);
- ctx.lineTo(centerX + 12, baseY);
- ctx.lineTo(centerX + 6, topY + topH);
- ctx.lineTo(centerX - 6, topY + topH);
- ctx.closePath();
- ctx.fillStyle = '#d4af37';
- ctx.fill();
- ctx.stroke();
  }
 
  function drawJungleBackground() {
@@ -377,58 +504,63 @@
  const h = canvas.height;
  const groundTop = h * 0.35;
 
- // Jungle Ground
  const groundGrad = ctx.createLinearGradient(0, groundTop, 0, h);
  groundGrad.addColorStop(0, '#1e4620');
  groundGrad.addColorStop(1, '#0d280f');
  ctx.fillStyle = groundGrad;
  ctx.fillRect(0, groundTop, w, h - groundTop);
 
- // Jungle Flowers
  flowers.forEach(flower => {
  ctx.fillStyle = flower.color;
  ctx.beginPath();
  ctx.arc(flower.x, flower.y, flower.radius, 0, Math.PI * 2);
  ctx.fill();
- ctx.fillStyle = '#ffff55';
+ ctx.fillStyle = '#ffffff';
  ctx.beginPath();
  ctx.arc(flower.x, flower.y, flower.radius * 0.4, 0, Math.PI * 2);
  ctx.fill();
  });
 
- // Jungle Trees
  trees.forEach(tree => {
  const trunkW = 14 * tree.scale;
  const trunkH = 60 * tree.scale;
 
- // Trunk
  ctx.fillStyle = '#4a2c11';
  ctx.fillRect(tree.x - trunkW / 2, tree.y - trunkH, trunkW, trunkH);
 
- // Leaf Canopy
  ctx.fillStyle = '#1b5e20';
  ctx.beginPath();
  ctx.arc(tree.x, tree.y - trunkH - 10, 30 * tree.scale, 0, Math.PI * 2);
  ctx.arc(tree.x - 18 * tree.scale, tree.y - trunkH, 22 * tree.scale, 0, Math.PI * 2);
  ctx.arc(tree.x + 18 * tree.scale, tree.y - trunkH, 22 * tree.scale, 0, Math.PI * 2);
  ctx.fill();
+
+ // Draw Hanging Tree Vines
+ if (tree.hasVine && tree.vineCooldown === 0) {
+ ctx.strokeStyle = '#2d6a4f';
+ ctx.lineWidth = 3;
+ ctx.beginPath();
+ ctx.moveTo(tree.x, tree.y - trunkH + 10);
+ const wave = Math.sin(Date.now() * 0.003 + tree.x) * 6;
+ ctx.quadraticCurveTo(tree.x + wave, tree.y, tree.x, tree.y + tree.vineLength);
+ ctx.stroke();
+
+ // Vine Leaf tip
+ ctx.fillStyle = '#52b788';
+ ctx.beginPath();
+ ctx.arc(tree.x, tree.y + tree.vineLength, 5, 0, Math.PI * 2);
+ ctx.fill();
+ }
  });
 
- // Monkeys
  monkeys.forEach(m => {
  ctx.fillStyle = '#795548';
  ctx.beginPath();
- ctx.arc(m.x, m.y, 6, 0, Math.PI * 2); // Body
- ctx.arc(m.x, m.y - 7, 4.5, 0, Math.PI * 2); // Head
- ctx.fill();
- // Face
- ctx.fillStyle = '#d7ccc8';
- ctx.beginPath();
- ctx.arc(m.x, m.y - 7, 2, 0, Math.PI * 2);
+ ctx.arc(m.x, m.y, 6, 0, Math.PI * 2);
+ ctx.arc(m.x, m.y - 7, 4.5, 0, Math.PI * 2);
  ctx.fill();
  });
 
- // Exotic Birds
  birds.forEach(b => {
  b.wing += 0.1;
  const wingY = Math.sin(b.wing) * 3;
@@ -436,23 +568,95 @@
  ctx.beginPath();
  ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
  ctx.fill();
- // Beak
+ });
+ }
+
+ function drawHazards() {
+ // 1. Anacondas
+ anacondas.forEach(snake => {
+ const isTrapping = player.trappedBy === 'anaconda' && player.trappedEnemy === snake;
+ ctx.save();
+ ctx.translate(snake.x, snake.y);
+
+ ctx.strokeStyle = '#2d6a4f';
+ ctx.fillStyle = '#40916c';
+ ctx.lineWidth = 6;
+ ctx.lineCap = 'round';
+
+ if (isTrapping) {
+ // Wrapped around stickman
+ ctx.beginPath();
+ ctx.arc(0, -10, 14, 0, Math.PI * 2);
+ ctx.stroke();
+ ctx.beginPath();
+ ctx.arc(0, -5, 10, 0, Math.PI * 2);
+ ctx.stroke();
+ } else {
+ // Slither wave shape
+ ctx.beginPath();
+ ctx.moveTo(-20, 0);
+ ctx.quadraticCurveTo(-10, Math.sin(snake.anim) * 8, 0, 0);
+ ctx.quadraticCurveTo(10, Math.sin(snake.anim + 1.5) * 8, 20, 0);
+ ctx.stroke();
+ }
+
+ // Snake Head & Glowing Yellow Eyes
+ ctx.fillStyle = '#1b4332';
+ ctx.beginPath();
+ ctx.arc(isTrapping ? 10 : 20, -2, 5, 0, Math.PI * 2);
+ ctx.fill();
+
  ctx.fillStyle = '#ffb703';
  ctx.beginPath();
- ctx.arc(b.x + 3, b.y, 1.5, 0, Math.PI * 2);
+ ctx.arc(isTrapping ? 12 : 22, -3, 1.5, 0, Math.PI * 2);
  ctx.fill();
- // Wing
- ctx.strokeStyle = b.color;
+
+ ctx.restore();
+ });
+
+ // 2. Angry Rolling Rocks
+ angryRocks.forEach(rock => {
+ ctx.save();
+ ctx.translate(rock.x, rock.y);
+ ctx.rotate(rock.angle);
+
+ // Bony Rock Texture
+ ctx.fillStyle = '#6c757d';
+ ctx.strokeStyle = '#343a40';
  ctx.lineWidth = 2;
  ctx.beginPath();
- ctx.moveTo(b.x - 2, b.y);
- ctx.lineTo(b.x - 6, b.y - 4 + wingY);
+ ctx.arc(0, 0, rock.radius, 0, Math.PI * 2);
+ ctx.fill();
  ctx.stroke();
+
+ // Angry Face Expression
+ ctx.fillStyle = '#ff0000'; // Angry Red Eyes
+ ctx.beginPath();
+ ctx.arc(-6, -4, 3, 0, Math.PI * 2);
+ ctx.arc(6, -4, 3, 0, Math.PI * 2);
+ ctx.fill();
+
+ // Slanted Angry Eyebrows
+ ctx.strokeStyle = '#000000';
+ ctx.lineWidth = 2;
+ ctx.beginPath();
+ ctx.moveTo(-10, -9);
+ ctx.lineTo(-3, -6);
+ ctx.moveTo(10, -9);
+ ctx.lineTo(3, -6);
+ ctx.stroke();
+
+ // Open Angry Mouth
+ ctx.fillStyle = '#000000';
+ ctx.beginPath();
+ ctx.arc(0, 5, 5, 0, Math.PI);
+ ctx.fill();
+
+ ctx.restore();
  });
  }
 
  function drawCollectibles() {
- // Gold Coins
  coins.forEach(coin => {
  if (!coin.collected) {
  ctx.fillStyle = '#ffd700';
@@ -469,13 +673,10 @@
  }
  });
 
- // Gold Armor Items
  armorItems.forEach(item => {
  if (!item.collected) {
  ctx.save();
  ctx.translate(item.x, item.y);
- 
- // Glowing aura around armor
  ctx.fillStyle = 'rgba(255, 215, 0, 0.25)';
  ctx.beginPath();
  ctx.arc(0, 0, 14, 0, Math.PI * 2);
@@ -537,12 +738,10 @@
  ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
  ctx.stroke();
 
- // Eye direction
  ctx.beginPath();
  ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
  ctx.fill();
 
- // GOLD HELMET OVERLAY
  if (player.armor.helmet) {
  ctx.fillStyle = '#ffd700';
  ctx.strokeStyle = '#b8860b';
@@ -559,7 +758,6 @@
  ctx.lineTo(x, y);
  ctx.stroke();
 
- // GOLD CHESTPLATE OVERLAY
  if (player.armor.chestplate) {
  ctx.fillStyle = '#ffd700';
  ctx.strokeStyle = '#b8860b';
@@ -581,25 +779,23 @@
  ctx.lineTo(x + legSwing, y + legLength);
  ctx.stroke();
 
- // Reset line width
  ctx.lineWidth = 1.8;
  ctx.strokeStyle = '#ffffff';
 
- // 4. Back Arm
+ // 4. Arms
+ const frontArmEndX = x + facing * 4 + armSwing;
+ const frontArmEndY = shoulderY + 6;
+
  ctx.beginPath();
  ctx.moveTo(x, shoulderY);
  ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
  ctx.stroke();
 
- // 5. Front Arm
- const frontArmEndX = x + facing * 4 + armSwing;
- const frontArmEndY = shoulderY + 6;
  ctx.beginPath();
  ctx.moveTo(x, shoulderY);
  ctx.lineTo(frontArmEndX, frontArmEndY);
  ctx.stroke();
 
- // GOLD SHIELD OVERLAY
  if (player.armor.shield) {
  ctx.fillStyle = '#ffd700';
  ctx.strokeStyle = '#b8860b';
@@ -608,22 +804,74 @@
  ctx.fill();
  ctx.stroke();
  }
+
+ // OVERLAY TRAP VISUALS (Vine Tangle)
+ if (player.trappedBy === 'vine') {
+ ctx.strokeStyle = '#2d6a4f';
+ ctx.lineWidth = 3;
+ ctx.beginPath();
+ ctx.arc(x, y - 10, 12, 0, Math.PI * 2);
+ ctx.arc(x, y - 5, 16, 0, Math.PI * 2);
+ ctx.stroke();
+ }
  }
 
- function drawHUD() {
+ function drawTrapVignetteAndHUD() {
+ const w = canvas.width;
+ const h = canvas.height;
+
+ // Anaconda Red Squeeze Vignette Overlay
+ if (player.trappedBy === 'anaconda') {
+ const pulse = (Math.sin(Date.now() * 0.01) + 1) * 0.15 + 0.25;
+ ctx.fillStyle = `rgba(220, 20, 60, ${pulse})`;
+ 
+ // Screen edge red border marks
+ ctx.fillRect(0, 0, w, 16);
+ ctx.fillRect(0, h - 16, w, 16);
+ ctx.fillRect(0, 0, 16, h);
+ ctx.fillRect(w - 16, 0, 16, h);
+
+ // Emergency Escape Text Prompt
+ ctx.fillStyle = '#ff4d4d';
+ ctx.font = 'bold 20px "Courier New", monospace';
+ ctx.textAlign = 'center';
+ ctx.fillText('ANACONDA SQUEEZE! SPAM [W] AND [S] TO ESCAPE!', w / 2, h * 0.22);
+ 
+ // Escape Progress Bar
+ const barW = 200;
+ const progress = player.trapProgress / player.trapTarget;
+ ctx.strokeStyle = '#ffffff';
+ ctx.strokeRect(w / 2 - barW / 2, h * 0.25, barW, 12);
+ ctx.fillStyle = '#ff0055';
+ ctx.fillRect(w / 2 - barW / 2, h * 0.25, barW * progress, 12);
+ }
+
+ // Vine Trap Text Prompt
+ if (player.trappedBy === 'vine') {
+ ctx.fillStyle = '#52b788';
+ ctx.font = 'bold 20px "Courier New", monospace';
+ ctx.textAlign = 'center';
+ ctx.fillText('TANGLED IN VINES! SPAM [A] AND [D] TO CUT FREE!', w / 2, h * 0.22);
+
+ const barW = 200;
+ const progress = player.trapProgress / player.trapTarget;
+ ctx.strokeStyle = '#ffffff';
+ ctx.strokeRect(w / 2 - barW / 2, h * 0.25, barW, 12);
+ ctx.fillStyle = '#74c69d';
+ ctx.fillRect(w / 2 - barW / 2, h * 0.25, barW * progress, 12);
+ }
+
+ // Standard HUD
  ctx.fillStyle = '#ffffff';
  ctx.font = '12px "Courier New", monospace';
  ctx.textAlign = 'left';
 
- // Coin counter
  ctx.fillStyle = '#ffd700';
  ctx.fillText(`COINS: ${player.coinsCollected} / ${coins.length}`, 15, 25);
 
- // Armor status display
  const collectedArmorCount = Object.values(player.armor).filter(Boolean).length;
  ctx.fillText(`ARMOR PIECES: ${collectedArmorCount} / 4`, 15, 45);
 
- // Mini Inventory list on HUD
  const itemsList = [
  player.armor.helmet ? '[X] Helmet' : '[ ] Helmet',
  player.armor.chestplate ? '[X] Chestplate' : '[ ] Chestplate',
@@ -632,24 +880,16 @@
  ];
  ctx.fillStyle = '#a3e635';
  ctx.font = '10px "Courier New", monospace';
- ctx.fillText(itemsList.join('  '), 15, 62);
+ ctx.fillText(itemsList.join(' '), 15, 62);
  }
 
  function draw() {
- // Draw Far Aztec Pyramid Sky
  drawAztecPyramid();
-
- // Draw Jungle Ground, Plants, & Animals
  drawJungleBackground();
-
- // Draw Collectible Items
+ drawHazards();
  drawCollectibles();
-
- // Draw Stickman Player
  drawStickman(player.x, player.y, player.facing, player.walkFrame);
-
- // Draw HUD Overlay
- drawHUD();
+ drawTrapVignetteAndHUD();
  }
 
  function animate() {
