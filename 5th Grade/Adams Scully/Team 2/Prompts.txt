@@ -1,0 +1,26 @@
+Attached is the current state of code.  Please update with the following changes:
+
+
+Teams:
+Player Team is red.
+Opponent Team is Blue.
+
+Player team consists of Stickman, a big, slow (.9x stickman's speed), but strong stickman, and a half-size, 1.1x as fast stickman.  Opponent Team is the same, but Opponent stickman will not be controlled by a player.
+
+Powers:  Big stickman has BOUNCE power.  When he tags someone, they bounce off of him, moving away in the direction of the bounce proportional to the speed that big stickman was moving.
+Medium stickman has SNEAK power.  For the PC stickman, when the player hits the spacebar, he turns invisible for 3 seconds, but can move during that time, and cannot be tagged by the opposing team.  SNEAK power has a 10 second cooldown timer after activation.
+Small stickman has TRIP power.  When he tags an opponent, the opponent drops prone for 3 seconds and cannot move during that time.
+
+At game start, the player selects which stickman they want to play.  The player then assigns the other stickmen roles, which will dictate their behavior.  Finally, the player decides how many points a game will consist of.  (i.e., first to get x points is the winner.)
+
+Roles:
+
+Defense:  Defense role's job is to prevent the opposing team from getting to the flag in the first place.  They should go after any player that crosses the halfway line, including if the opponent has the flag, but cannot cross over the halfway line themselves.
+Offense:  Their job is to go after the flag and return it to the end zone, avoiding opponents along the way.  They may play the entirety of the field, but cannot tag players from the other team.
+Pursuit: Their job is to chase opposing players that have the flag.  They may play the entire field, but can only pursue players that have their team's flag.
+
+Tagging:  If a player is tagged while in the opposing side, they suffer the BOUNCE penalty, or the TRIP penalty.  If a player is tagged by the regular stickman, they are teleported back to their own end zone, but otherwise suffer no additional penalty.  Any player who is tagged while carrying a flag drops the flag where they were tagged.
+
+Flags:  A dropped flag may be picked up by either team.  The team whose flag it is, upon picking up the flag, has the flag immediately put back in their end zone.  If the opposing team picks up a dropped flag, the player that picks it up will try to get the flag back to their own end zone to score a point.
+
+Opponent roles:  Roles will be assigned randomly to the opponent team each game, to ensure gameplay variety and replayability.

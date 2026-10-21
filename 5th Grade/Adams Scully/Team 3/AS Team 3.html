@@ -10,7 +10,7 @@
  user-select: none;
  margin: 0;
  padding: 0;
- font-family: 'Courier New', Courier, monospace, sans-serif;
+ font-family: 'Comic Sans MS', 'Fredoka', 'Arial Rounded MT Bold', sans-serif;
  }
 
  body {
@@ -22,7 +22,7 @@
  justify-content: flex-start;
  height: 100vh;
  overflow: hidden;
- padding: 16px;
+ padding: 12px;
  }
 
  /* Top Header Bar */
@@ -31,26 +31,31 @@
  justify-content: space-between;
  align-items: center;
  width: 100%;
- max-width: 1100px;
- margin-bottom: 12px;
- padding-bottom: 8px;
- border-bottom: 1px solid #00d2ff;
+ max-width: 1200px;
+ margin-bottom: 8px;
+ padding: 8px 16px;
+ background: #072242;
+ border: 3px solid #00f0ff;
+ border-radius: 12px;
+ box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
  }
 
  h1 {
- font-size: 18px;
- letter-spacing: 2px;
+ font-size: 20px;
+ letter-spacing: 1px;
  text-transform: uppercase;
- font-weight: bold;
- color: #00d2ff;
+ font-weight: 900;
+ color: #00f0ff;
+ text-shadow: 2px 2px 0px #000;
  }
 
  .stats-container {
  display: flex;
  gap: 20px;
  align-items: center;
- font-size: 14px;
- font-weight: bold;
+ font-size: 15px;
+ font-weight: 900;
+ text-shadow: 1px 1px 0px #000;
  }
 
  .stat-item {
@@ -60,28 +65,36 @@
  }
 
  .btn-reset {
- background: transparent;
- color: #00d2ff;
- border: 1px solid #00d2ff;
- padding: 6px 16px;
+ background: #ff0055;
+ color: #ffffff;
+ border: 2px solid #ffffff;
+ border-radius: 8px;
+ padding: 6px 18px;
  font-size: 14px;
- font-weight: bold;
+ font-weight: 900;
  cursor: pointer;
  text-transform: uppercase;
  letter-spacing: 1px;
- transition: all 0.15s ease-in-out;
+ box-shadow: 0 4px 0 #990033;
+ transition: all 0.1s ease;
  }
 
  .btn-reset:hover {
- background: #00d2ff;
- color: #030a16;
+ background: #ff2a75;
+ transform: translateY(-2px);
+ box-shadow: 0 6px 0 #990033;
+ }
+
+ .btn-reset:active {
+ transform: translateY(2px);
+ box-shadow: 0 2px 0 #990033;
  }
 
  /* Main Canvas Container */
  #canvas-wrapper {
  position: relative;
  width: 100%;
- max-width: 1100px;
+ max-width: 1200px;
  flex-grow: 1;
  display: flex;
  justify-content: center;
@@ -90,17 +103,21 @@
 
  canvas {
  background-color: #051329;
- border: 1px solid #00d2ff;
+ border: 4px solid #00f0ff;
+ border-radius: 16px;
  display: block;
  width: 100%;
  height: 100%;
+ box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
  }
 
  .instructions {
- margin-top: 8px;
- font-size: 11px;
- color: #64b5f6;
+ margin-top: 6px;
+ font-size: 13px;
+ font-weight: bold;
+ color: #70e0ff;
  text-align: center;
+ text-shadow: 1px 1px 0 #000;
  }
  </style>
 </head>
@@ -110,10 +127,11 @@
  <div id="header">
  <h1>Stickman Ocean Diver</h1>
  <div class="stats-container">
- <div class="stat-item">LEVEL: <span id="level-display" style="color:#00d2ff">1</span></div>
- <div class="stat-item">TREASURE: <span id="treasure-display" style="color:#ffd700">0</span></div>
+ <div class="stat-item">LEVEL: <span id="level-display" style="color:#00f0ff">1</span></div>
+ <div class="stat-item">CARRIED: $<span id="carried-display" style="color:#ffcc00">0</span></div>
+ <div class="stat-item">SECURED: $<span id="secured-display" style="color:#00ffcc">0</span></div>
  </div>
- <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+ <button class="btn-reset" onclick="resetGame()">Reset Game</button>
  </div>
 
  <!-- Canvas Container -->
@@ -122,64 +140,94 @@
  </div>
 
  <div class="instructions">
- [WASD] Move (Exclusive Movement Keys) | Swim to surface to refill oxygen
+ 🎮 Movement: [W][A][S][D] Keys Only | Open chests & swim treasure up to the Motorboat to clear levels!
  </div>
 
  <script>
  const canvas = document.getElementById('simCanvas');
  const ctx = canvas.getContext('2d');
 
- // KEYBOARD INPUT STATE (Strictly WASD)
+ // KEYBOARD INPUT STATE (Strictly WASD - Arrow keys explicitly blocked)
  const keys = {};
 
  // STICKMAN PLAYER STATE
  const player = {
  x: 0,
  y: 0,
- speed: 4.5,
+ speed: 4.8,
  facing: 1, // 1 = Right, -1 = Left
- walkFrame: 0
+ walkFrame: 0,
+ invulnerableTimer: 0
+ };
+
+ // MOTORBOAT DIVE BASE STATE
+ const motorboat = {
+ x: 0,
+ y: 0,
+ width: 110,
+ height: 32
  };
 
  // GAME ENVIRONMENT & MECHANICS STATE
- let surfaceY = 50;
+ let surfaceY = 65;
  let seabedY = 0;
  let maxOxygen = 100;
  let currentOxygen = 100;
- let collectedTreasure = 0;
+ 
+ let carriedTreasure = 0;
+ let securedTreasure = 0;
  let currentLevel = 1;
+
  let alertMessage = "";
  let alertTimer = 0;
+ let alertColor = "#ffd700";
 
+ let isGameOver = false;
+
+ // OCTOPUS GRAB MECHANIC STATE
+ let grabbedByOctopusTimer = 0;
+ let grabbingOctopus = null;
+
+ // ENTITIES
  let corals = [];
  let chests = [];
  let wreckedShip = null;
  let bubbles = [];
+ let zapParticles = [];
  let waveOffset = 0;
+
+ let jellyfishList = [];
+ let octopusList = [];
+ let sharkList = [];
 
  function resizeCanvas() {
  const wrapper = document.getElementById('canvas-wrapper');
  canvas.width = wrapper.clientWidth;
  canvas.height = wrapper.clientHeight;
  
- seabedY = canvas.height - 45;
+ seabedY = canvas.height - 50;
 
  if (player.x === 0 && player.y === 0) {
- resetSimulation();
+ resetGame();
  } else {
  calculateOxygenCapacity();
+ motorboat.x = canvas.width / 2;
+ motorboat.y = surfaceY;
  }
  }
 
  window.addEventListener('resize', resizeCanvas);
 
- // CONTROLS HANDLERS - STRICTLY WASD ONLY (Arrow keys explicitly ignored)
+ // CONTROLS HANDLERS - STRICTLY WASD ONLY (Arrow keys explicitly blocked)
  window.addEventListener('keydown', (e) => {
  const key = e.key.toLowerCase();
  if (['w', 'a', 's', 'd'].includes(key) || ['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
  e.preventDefault();
  keys[e.code] = true;
  keys[key] = true;
+ }
+ if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+ e.preventDefault();
  }
  });
 
@@ -190,10 +238,10 @@
  });
 
  function calculateOxygenCapacity() {
- // 2.5x the time it takes to travel straight from surface to sea bed
+ // 5.0x travel time from surface to seabed
  const verticalDistance = seabedY - surfaceY;
  const travelTimeFrames = verticalDistance / player.speed;
- maxOxygen = travelTimeFrames * 2.5;
+ maxOxygen = travelTimeFrames * 5.0;
  currentOxygen = maxOxygen;
  }
 
@@ -202,22 +250,20 @@
  chests = [];
  bubbles = [];
 
- // Random Corals and Sea Plants along sea bed
- const coralCount = Math.floor(canvas.width / 45);
+ const coralCount = Math.floor(canvas.width / 40);
  for (let i = 0; i < coralCount; i++) {
  const cx = Math.random() * (canvas.width - 40) + 20;
- const type = Math.floor(Math.random() * 3); // 0 = Kelp, 1 = Branching Coral, 2 = Brain/Cluster Coral
- const height = 20 + Math.random() * 40;
- const colorHue = [120, 320, 20, 280, 180][Math.floor(Math.random() * 5)];
+ const type = Math.floor(Math.random() * 3);
+ const height = 25 + Math.random() * 45;
+ const colorHue = [120, 310, 35, 270, 190][Math.floor(Math.random() * 5)];
  corals.push({ x: cx, height: height, type: type, hue: colorHue });
  }
 
- // 15% Chance of a Wrecked Ship on the sea bed
  if (Math.random() < 0.15) {
  wreckedShip = {
  x: 100 + Math.random() * (canvas.width - 250),
- width: 110,
- height: 60
+ width: 120,
+ height: 65
  };
  } else {
  wreckedShip = null;
@@ -226,38 +272,152 @@
  // Hidden Treasure Chests on each level (3 to 5 chests)
  const numChests = 3 + Math.floor(Math.random() * 3);
  for (let i = 0; i < numChests; i++) {
- const chestX = 60 + Math.random() * (canvas.width - 120);
+ const chestX = 70 + Math.random() * (canvas.width - 140);
  chests.push({
  x: chestX,
- y: seabedY - 12,
+ y: seabedY - 14,
  opened: false,
+ delivered: false,
  value: 100 + Math.floor(Math.random() * 150)
  });
  }
  }
 
- function resetSimulation() {
- surfaceY = 50;
- seabedY = canvas.height - 45;
+ function spawnEnemies() {
+ jellyfishList = [];
+ octopusList = [];
+ sharkList = [];
+
+ const numJellyfish = 2 * currentLevel;
+ const numOctopus = 1 * currentLevel;
+ const numSharks = Math.floor(currentLevel / 3);
+
+ const minY = surfaceY + 50;
+ const maxY = seabedY - 50;
+
+ // Speeds slowed down to 66% of baseline
+ for (let i = 0; i < numJellyfish; i++) {
+ const dir = Math.random() < 0.5 ? 1 : -1;
+ jellyfishList.push({
+ x: Math.random() * (canvas.width - 60) + 30,
+ y: minY + Math.random() * (maxY - minY),
+ vx: (0.8 + Math.random() * 1.0) * dir,
+ phase: Math.random() * Math.PI * 2,
+ radius: 18
+ });
+ }
+
+ for (let i = 0; i < numOctopus; i++) {
+ const dir = Math.random() < 0.5 ? 1 : -1;
+ octopusList.push({
+ x: Math.random() * (canvas.width - 80) + 40,
+ y: minY + Math.random() * (maxY - minY),
+ vx: (0.66 + Math.random() * 0.8) * dir,
+ vy: (Math.random() - 0.5) * 0.5,
+ pulse: Math.random() * Math.PI * 2,
+ radius: 22
+ });
+ }
+
+ for (let i = 0; i < numSharks; i++) {
+ const dir = Math.random() < 0.5 ? 1 : -1;
+ sharkList.push({
+ x: Math.random() * (canvas.width - 100) + 50,
+ y: minY + Math.random() * (maxY - minY),
+ vx: (1.45 + Math.random() * 1.05) * dir,
+ tailAngle: 0,
+ radius: 28
+ });
+ }
+ }
+
+ function resetGame() {
+ currentLevel = 1;
+ carriedTreasure = 0;
+ securedTreasure = 0;
+ isGameOver = false;
+ grabbedByOctopusTimer = 0;
+ grabbingOctopus = null;
+ resetLevel();
+ }
+
+ function resetLevel() {
+ surfaceY = 65;
+ seabedY = canvas.height - 50;
  player.x = canvas.width / 2;
  player.y = surfaceY;
  player.facing = 1;
  player.walkFrame = 0;
- 
+ player.invulnerableTimer = 0;
+ grabbedByOctopusTimer = 0;
+ grabbingOctopus = null;
+ carriedTreasure = 0;
+
+ motorboat.x = canvas.width / 2;
+ motorboat.y = surfaceY;
+
  calculateOxygenCapacity();
  generateSeabedFeatures();
+ spawnEnemies();
  updateUI();
  }
 
  function updateUI() {
  document.getElementById('level-display').innerText = currentLevel;
- document.getElementById('treasure-display').innerText = collectedTreasure;
+ document.getElementById('carried-display').innerText = carriedTreasure;
+ document.getElementById('secured-display').innerText = securedTreasure;
+ }
+
+ function triggerZapEffect(x, y) {
+ for (let i = 0; i < 16; i++) {
+ const angle = Math.random() * Math.PI * 2;
+ const spd = 2 + Math.random() * 4;
+ zapParticles.push({
+ x: x,
+ y: y,
+ vx: Math.cos(angle) * spd,
+ vy: Math.sin(angle) * spd,
+ life: 25,
+ color: Math.random() < 0.5 ? '#00ffff' : '#ffff00'
+ });
+ }
+ }
+
+ function dropCarriedTreasure() {
+ if (carriedTreasure > 0) {
+ carriedTreasure = 0;
+ chests.forEach(chest => {
+ if (!chest.delivered) {
+ chest.opened = false;
+ }
+ });
+ updateUI();
+ }
  }
 
  function updatePhysics() {
- waveOffset += 0.05;
+ if (isGameOver) return;
 
- // WASD Movement Vector
+ waveOffset += 0.05;
+ if (player.invulnerableTimer > 0) player.invulnerableTimer--;
+
+ // --- 1. MOVEMENT & OCTOPUS GRAB MECHANIC ---
+ if (grabbedByOctopusTimer > 0) {
+ grabbedByOctopusTimer--;
+ if (grabbingOctopus) {
+ player.x = grabbingOctopus.x;
+ player.y = grabbingOctopus.y + 10;
+ }
+ currentOxygen = Math.max(0, currentOxygen - 1.5);
+
+ if (grabbedByOctopusTimer <= 0) {
+ grabbingOctopus = null;
+ alertMessage = "FREED FROM OCTOPUS!";
+ alertColor = "#00f0ff";
+ alertTimer = 60;
+ }
+ } else {
+ // Standard WASD Movement
  let dx = 0;
  let dy = 0;
 
@@ -274,171 +434,309 @@
  player.x += dx * player.speed;
  player.y += dy * player.speed;
 
- // Keep Stickman inside boundaries
- const margin = 15;
- player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
- player.y = Math.max(surfaceY - 10, Math.min(seabedY - 12, player.y));
-
  if (dx !== 0 || dy !== 0) {
  player.walkFrame += 0.2;
- // Generate underwater movement bubbles
  if (Math.random() < 0.25 && player.y > surfaceY) {
  bubbles.push({
  x: player.x + (Math.random() * 8 - 4),
  y: player.y - 10,
- radius: 1 + Math.random() * 3,
- speed: 0.5 + Math.random() * 1
+ radius: 2 + Math.random() * 3,
+ speed: 0.8 + Math.random() * 1.2
  });
  }
  } else {
  player.walkFrame = 0;
  }
+ }
 
- // Update ambient bubbles
+ // Screen boundaries
+ const margin = 16;
+ player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
+ player.y = Math.max(surfaceY - 10, Math.min(seabedY - 14, player.y));
+
+ // Ambient Bubbles
  for (let i = bubbles.length - 1; i >= 0; i--) {
  bubbles[i].y -= bubbles[i].speed;
- if (bubbles[i].y < surfaceY) {
- bubbles.splice(i, 1);
- }
+ if (bubbles[i].y < surfaceY) bubbles.splice(i, 1);
  }
 
- // OXYGEN MECHANIC
+ // Zap Particles
+ for (let i = zapParticles.length - 1; i >= 0; i--) {
+ const p = zapParticles[i];
+ p.x += p.vx;
+ p.y += p.vy;
+ p.life--;
+ if (p.life <= 0) zapParticles.splice(i, 1);
+ }
+
+ // --- 2. OXYGEN MECHANIC ---
  if (player.y > surfaceY) {
- // Submerged: Deplete Oxygen
  currentOxygen -= 1;
-
  if (currentOxygen <= 0) {
  currentOxygen = 0;
  triggerOxygenDepletion();
+ return;
  }
  } else {
- // At Surface: Replenish Oxygen
- currentOxygen = Math.min(maxOxygen, currentOxygen + 5);
+ // Replenish oxygen at surface
+ currentOxygen = Math.min(maxOxygen, currentOxygen + 6);
  }
 
- // CHEST INTERACTION & GOAL
- let remainingUnopened = 0;
- chests.forEach(chest => {
- if (!chest.opened) {
- const dist = Math.hypot(player.x - chest.x, player.y - chest.y);
- if (dist < 28) {
- chest.opened = true;
- collectedTreasure += chest.value;
- updateUI();
- alertMessage = `Opened Chest! +$${chest.value}`;
- alertTimer = 90;
- } else {
- remainingUnopened++;
+ // --- 3. ENEMY MOVEMENT WITH FRAME BOUNCING ---
+
+ // A. JELLYFISH
+ jellyfishList.forEach(jelly => {
+ jelly.x += jelly.vx;
+ jelly.phase += 0.08;
+ jelly.y += Math.sin(jelly.phase) * 0.8;
+
+ if (jelly.x - jelly.radius <= 10) {
+ jelly.x = 10 + jelly.radius;
+ jelly.vx *= -1;
+ } else if (jelly.x + jelly.radius >= canvas.width - 10) {
+ jelly.x = canvas.width - 10 - jelly.radius;
+ jelly.vx *= -1;
+ }
+
+ if (player.invulnerableTimer <= 0) {
+ const dist = Math.hypot(player.x - jelly.x, player.y - jelly.y);
+ if (dist < jelly.radius + 12) {
+ triggerZapEffect(player.x, player.y);
+ dropCarriedTreasure();
+ alertMessage = "⚡ ZAPPED BY JELLYFISH! Dropped carried treasure! ⚡";
+ alertColor = "#ff0080";
+ alertTimer = 120;
+ player.invulnerableTimer = 90;
  }
  }
  });
 
- // Advance to next level if all chests collected
- if (remainingUnopened === 0 && chests.length > 0) {
- currentLevel++;
- alertMessage = `LEVEL ${currentLevel} CLEARED! Diving Deeper...`;
- alertTimer = 120;
- generateSeabedFeatures();
+ // B. OCTOPUS
+ octopusList.forEach(octo => {
+ octo.x += octo.vx;
+ octo.pulse += 0.06;
+ octo.y += Math.cos(octo.pulse) * 0.5;
+
+ if (octo.x - octo.radius <= 15) {
+ octo.x = 15 + octo.radius;
+ octo.vx *= -1;
+ } else if (octo.x + octo.radius >= canvas.width - 15) {
+ octo.x = canvas.width - 15 - octo.radius;
+ octo.vx *= -1;
+ }
+
+ if (grabbedByOctopusTimer <= 0 && player.invulnerableTimer <= 0) {
+ const dist = Math.hypot(player.x - octo.x, player.y - octo.y);
+ if (dist < octo.radius + 12) {
+ grabbedByOctopusTimer = 300;
+ grabbingOctopus = octo;
+ alertMessage = "🐙 OCTOPUS GRAB! Trapped for 5 Seconds! 🐙";
+ alertColor = "#ff6600";
+ alertTimer = 180;
+ }
+ }
+ });
+
+ // C. SHARK
+ sharkList.forEach(shark => {
+ shark.x += shark.vx;
+ shark.tailAngle += 0.15;
+
+ if (shark.x - shark.radius <= 25) {
+ shark.x = 25 + shark.radius;
+ shark.vx *= -1;
+ } else if (shark.x + shark.radius >= canvas.width - 25) {
+ shark.x = canvas.width - 25 - shark.radius;
+ shark.vx *= -1;
+ }
+
+ const dist = Math.hypot(player.x - shark.x, player.y - shark.y);
+ if (dist < shark.radius + 10) {
+ isGameOver = true;
+ alertMessage = "🦈 EATEN BY SHARK! GAME OVER! 🦈";
+ alertColor = "#ff0000";
+ alertTimer = 9999;
+ }
+ });
+
+ // --- 4. CHEST INTERACTION & MOTORBOAT DELIVERIES ---
+
+ chests.forEach(chest => {
+ if (!chest.opened) {
+ const dist = Math.hypot(player.x - chest.x, player.y - chest.y);
+ if (dist < 30) {
+ chest.opened = true;
+ carriedTreasure += chest.value;
  updateUI();
+ alertMessage = `🎒 CARRIED TREASURE +$${chest.value}! Bring to Motorboat!`;
+ alertColor = "#ffd700";
+ alertTimer = 100;
+ }
+ }
+ });
+
+ const distToBoat = Math.hypot(player.x - motorboat.x, player.y - surfaceY);
+ if (distToBoat < 65 && player.y <= surfaceY + 15) {
+ if (carriedTreasure > 0) {
+ securedTreasure += carriedTreasure;
+ alertMessage = `🛥️ SECURED $${carriedTreasure} IN MOTORBOAT! 🛥️`;
+ alertColor = "#00ffcc";
+ alertTimer = 120;
+ carriedTreasure = 0;
+ 
+ chests.forEach(chest => {
+ if (chest.opened) chest.delivered = true;
+ });
+ updateUI();
+ }
+ }
+
+ const allOpened = chests.every(c => c.opened);
+ const allDelivered = chests.every(c => c.delivered);
+ if (allOpened && allDelivered && carriedTreasure === 0 && chests.length > 0) {
+ currentLevel++;
+ alertMessage = `🎉 LEVEL ${currentLevel} CLEARED! Diving Deeper! 🎉`;
+ alertColor = "#00ffcc";
+ alertTimer = 150;
+ resetLevel();
  }
  }
 
  function triggerOxygenDepletion() {
- alertMessage = "RAN OUT OF OXYGEN! Dropped all collected treasure!";
- alertTimer = 150;
-
- // Drop all treasure to the sea bed: Close chests and drop coins
- collectedTreasure = 0;
- updateUI();
-
- chests.forEach(chest => {
- chest.opened = false; // Chests re-lock/reset on seabed when lost
- });
-
- // Float stickman back to surface
- player.y = surfaceY;
- currentOxygen = maxOxygen;
+ isGameOver = true;
+ alertMessage = "🫧 RAN OUT OF OXYGEN! GAME OVER! 🫧";
+ alertColor = "#ff0055";
+ alertTimer = 9999;
  }
 
- /* --- DRAWING FUNCTIONS --- */
+ /* --- CARTOON DRAWING FUNCTIONS --- */
 
  function drawBackground() {
- // Ocean Gradient (Surface blue to deep navy seabed)
  const oceanGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
- oceanGrad.addColorStop(0, '#1a6fba');
- oceanGrad.addColorStop(0.2, '#0c447c');
- oceanGrad.addColorStop(0.7, '#072448');
- oceanGrad.addColorStop(1, '#030d1d');
+ oceanGrad.addColorStop(0, '#0077be');
+ oceanGrad.addColorStop(0.3, '#004f8b');
+ oceanGrad.addColorStop(0.8, '#002654');
+ oceanGrad.addColorStop(1, '#00112c');
  ctx.fillStyle = oceanGrad;
  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
- // Light Rays
  ctx.save();
- ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
- for (let i = 0; i < 4; i++) {
+ ctx.fillStyle = 'rgba(0, 240, 255, 0.05)';
+ for (let i = 0; i < 5; i++) {
  ctx.beginPath();
- ctx.moveTo(canvas.width * (0.2 + i * 0.25), 0);
- ctx.lineTo(canvas.width * (0.1 + i * 0.25), canvas.height);
- ctx.lineTo(canvas.width * (0.2 + i * 0.25), canvas.height);
+ ctx.moveTo(canvas.width * (0.15 + i * 0.2), 0);
+ ctx.lineTo(canvas.width * (0.05 + i * 0.2), canvas.height);
+ ctx.lineTo(canvas.width * (0.18 + i * 0.2), canvas.height);
  ctx.closePath();
  ctx.fill();
  }
  ctx.restore();
 
- // Surface Water Waves
- ctx.fillStyle = '#00d2ff';
  ctx.beginPath();
  ctx.moveTo(0, 0);
  ctx.lineTo(0, surfaceY);
  for (let x = 0; x <= canvas.width; x += 20) {
- const y = surfaceY + Math.sin(x * 0.03 + waveOffset) * 4;
+ const y = surfaceY + Math.sin(x * 0.04 + waveOffset) * 5;
  ctx.lineTo(x, y);
  }
  ctx.lineTo(canvas.width, 0);
  ctx.closePath();
- ctx.fillStyle = 'rgba(0, 210, 255, 0.3)';
+ ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
  ctx.fill();
 
- ctx.strokeStyle = '#00d2ff';
- ctx.lineWidth = 2;
+ ctx.strokeStyle = '#00ffff';
+ ctx.lineWidth = 4;
  ctx.stroke();
 
- // Sea Bed Base
- ctx.fillStyle = '#c2a649';
+ ctx.fillStyle = '#e6be44';
  ctx.fillRect(0, seabedY, canvas.width, canvas.height - seabedY);
 
- ctx.fillStyle = '#8e7427';
- ctx.fillRect(0, seabedY, canvas.width, 4);
+ ctx.fillStyle = '#b89228';
+ ctx.fillRect(0, seabedY, canvas.width, 6);
+ }
+
+ function drawMotorboat() {
+ ctx.save();
+ const bx = motorboat.x;
+ const by = surfaceY - 10;
+
+ ctx.fillStyle = '#ff3300';
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 3;
+
+ ctx.beginPath();
+ ctx.moveTo(bx - 55, by);
+ ctx.lineTo(bx - 42, by + 22);
+ ctx.lineTo(bx + 48, by + 22);
+ ctx.lineTo(bx + 62, by - 2);
+ ctx.closePath();
+ ctx.fill();
+ ctx.stroke();
+
+ ctx.fillStyle = '#ffffff';
+ ctx.fillRect(bx - 48, by - 4, 104, 6);
+
+ ctx.fillStyle = '#00f0ff';
+ ctx.beginPath();
+ ctx.moveTo(bx + 5, by - 4);
+ ctx.lineTo(bx + 22, by - 22);
+ ctx.lineTo(bx + 40, by - 4);
+ ctx.closePath();
+ ctx.fill();
+ ctx.stroke();
+
+ ctx.fillStyle = '#222222';
+ ctx.fillRect(bx - 58, by - 6, 10, 22);
+
+ ctx.strokeStyle = '#dddddd';
+ ctx.lineWidth = 3;
+ ctx.beginPath();
+ ctx.moveTo(bx - 30, by - 4);
+ ctx.lineTo(bx - 30, by - 36);
+ ctx.stroke();
+
+ ctx.fillStyle = '#ff0000';
+ ctx.fillRect(bx - 30, by - 36, 22, 14);
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 2;
+ ctx.beginPath();
+ ctx.moveTo(bx - 30, by - 36);
+ ctx.lineTo(bx - 8, by - 22);
+ ctx.stroke();
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = '900 11px Comic Sans MS, sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText('DIVE BASE', bx, by + 15);
+
+ ctx.restore();
  }
 
  function drawCoralsAndPlants() {
  corals.forEach(c => {
  ctx.save();
- ctx.fillStyle = `hsl(${c.hue}, 70%, 50%)`;
- ctx.strokeStyle = `hsl(${c.hue}, 70%, 40%)`;
- ctx.lineWidth = 2;
+ ctx.fillStyle = `hsl(${c.hue}, 90%, 55%)`;
+ ctx.strokeStyle = `hsl(${c.hue}, 90%, 35%)`;
+ ctx.lineWidth = 3;
 
  if (c.type === 0) {
- // Swaying Kelp / Seaweed
  ctx.beginPath();
  ctx.moveTo(c.x, seabedY);
- const sway = Math.sin(waveOffset + c.x) * 8;
+ const sway = Math.sin(waveOffset + c.x) * 10;
  ctx.quadraticCurveTo(c.x + sway, seabedY - c.height / 2, c.x + sway / 2, seabedY - c.height);
- ctx.lineWidth = 4;
+ ctx.lineWidth = 6;
  ctx.stroke();
  } else if (c.type === 1) {
- // Branching Coral
  ctx.beginPath();
  ctx.moveTo(c.x, seabedY);
  ctx.lineTo(c.x, seabedY - c.height);
- ctx.lineTo(c.x - 8, seabedY - c.height - 10);
- ctx.moveTo(c.x, seabedY - c.height + 5);
- ctx.lineTo(c.x + 8, seabedY - c.height - 8);
+ ctx.lineTo(c.x - 12, seabedY - c.height - 12);
+ ctx.moveTo(c.x, seabedY - c.height + 6);
+ ctx.lineTo(c.x + 12, seabedY - c.height - 10);
  ctx.stroke();
  } else {
- // Cluster / Brain Coral
  ctx.beginPath();
- ctx.arc(c.x, seabedY - 10, 12, Math.PI, 0);
+ ctx.arc(c.x, seabedY - 12, 15, Math.PI, 0);
  ctx.fill();
  ctx.stroke();
  }
@@ -453,42 +751,25 @@
  const sx = wreckedShip.x;
  const sy = seabedY;
 
- // Hull
- ctx.fillStyle = '#3d2314';
- ctx.strokeStyle = '#21120a';
- ctx.lineWidth = 2;
+ ctx.fillStyle = '#5c3317';
+ ctx.strokeStyle = '#2d180a';
+ ctx.lineWidth = 3;
 
  ctx.beginPath();
  ctx.moveTo(sx, sy);
- ctx.lineTo(sx + 10, sy - 30);
- ctx.lineTo(sx + 90, sy - 35);
- ctx.lineTo(sx + 110, sy);
+ ctx.lineTo(sx + 12, sy - 35);
+ ctx.lineTo(sx + 100, sy - 40);
+ ctx.lineTo(sx + 120, sy);
  ctx.closePath();
  ctx.fill();
  ctx.stroke();
 
- // Broken Mast
- ctx.strokeStyle = '#4a2c19';
- ctx.lineWidth = 5;
+ ctx.strokeStyle = '#3d200d';
+ ctx.lineWidth = 6;
  ctx.beginPath();
- ctx.moveTo(sx + 50, sy - 33);
- ctx.lineTo(sx + 65, sy - 80); // Tilted mast
+ ctx.moveTo(sx + 55, sy - 38);
+ ctx.lineTo(sx + 75, sy - 90);
  ctx.stroke();
-
- // Crossbeam & Shredded Sail
- ctx.lineWidth = 3;
- ctx.beginPath();
- ctx.moveTo(sx + 45, sy - 65);
- ctx.lineTo(sx + 75, sy - 60);
- ctx.stroke();
-
- ctx.fillStyle = 'rgba(200, 200, 200, 0.3)';
- ctx.beginPath();
- ctx.moveTo(sx + 50, sy - 64);
- ctx.lineTo(sx + 70, sy - 60);
- ctx.lineTo(sx + 58, sy - 45);
- ctx.closePath();
- ctx.fill();
 
  ctx.restore();
  }
@@ -496,82 +777,221 @@
  function drawChests() {
  chests.forEach(chest => {
  ctx.save();
- if (chest.opened) {
- // Open Chest
- ctx.fillStyle = '#8b5a2b';
- ctx.fillRect(chest.x - 12, chest.y - 8, 24, 14);
- // Gold glow/treasure inside
- ctx.fillStyle = '#ffd700';
- ctx.fillRect(chest.x - 10, chest.y - 12, 20, 6);
- ctx.strokeStyle = '#ffffff';
- ctx.strokeRect(chest.x - 10, chest.y - 12, 20, 6);
- } else {
- // Closed Chest
- ctx.fillStyle = '#cd853f';
- ctx.strokeStyle = '#5c3a21';
+ if (chest.delivered) {
+ ctx.fillStyle = '#555555';
+ ctx.fillRect(chest.x - 14, chest.y - 8, 28, 16);
+ ctx.strokeStyle = '#888888';
  ctx.lineWidth = 2;
- ctx.fillRect(chest.x - 12, chest.y - 12, 24, 16);
- ctx.strokeRect(chest.x - 12, chest.y - 12, 24, 16);
-
- // Gold Lock / Trim
+ ctx.strokeRect(chest.x - 14, chest.y - 8, 28, 16);
+ } else if (chest.opened) {
+ ctx.fillStyle = '#8b4513';
+ ctx.fillRect(chest.x - 14, chest.y - 8, 28, 16);
  ctx.fillStyle = '#ffd700';
- ctx.fillRect(chest.x - 3, chest.y - 6, 6, 6);
+ ctx.fillRect(chest.x - 12, chest.y - 14, 24, 8);
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 2;
+ ctx.strokeRect(chest.x - 12, chest.y - 14, 24, 8);
+ } else {
+ ctx.fillStyle = '#ff9900';
+ ctx.strokeStyle = '#663300';
+ ctx.lineWidth = 3;
+ ctx.fillRect(chest.x - 14, chest.y - 14, 28, 18);
+ ctx.strokeRect(chest.x - 14, chest.y - 14, 28, 18);
+
+ ctx.fillStyle = '#ffd700';
+ ctx.fillRect(chest.x - 4, chest.y - 8, 8, 8);
+ ctx.strokeRect(chest.x - 4, chest.y - 8, 8, 8);
  }
  ctx.restore();
  });
  }
 
- function drawBubbles() {
+ function drawJellyfish() {
+ jellyfishList.forEach(jelly => {
  ctx.save();
- ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
- ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
- bubbles.forEach(b => {
+ ctx.translate(jelly.x, jelly.y);
+ const facing = jelly.vx >= 0 ? 1 : -1;
+ ctx.scale(facing, 1);
+
+ const grad = ctx.createRadialGradient(0, -4, 2, 0, 0, jelly.radius);
+ grad.addColorStop(0, '#ff99dd');
+ grad.addColorStop(1, '#ff00aa');
+ ctx.fillStyle = grad;
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 2;
+
  ctx.beginPath();
- ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+ ctx.arc(0, 0, jelly.radius, Math.PI, 0);
+ ctx.quadraticCurveTo(0, 6, -jelly.radius, 0);
  ctx.fill();
  ctx.stroke();
- });
+
+ ctx.strokeStyle = '#ff80df';
+ ctx.lineWidth = 2.5;
+ for (let i = -12; i <= 12; i += 8) {
+ ctx.beginPath();
+ ctx.moveTo(i, 2);
+ const wave = Math.sin(jelly.phase + i) * 6;
+ ctx.quadraticCurveTo(i + wave, 14, i - wave, 24);
+ ctx.stroke();
+ }
+
+ ctx.fillStyle = '#ffffff';
+ ctx.beginPath();
+ ctx.arc(-5, -6, 4, 0, Math.PI * 2);
+ ctx.arc(5, -6, 4, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.fillStyle = '#000000';
+ ctx.beginPath();
+ ctx.arc(-5, -6, 2, 0, Math.PI * 2);
+ ctx.arc(5, -6, 2, 0, Math.PI * 2);
+ ctx.fill();
+
  ctx.restore();
+ });
+ }
+
+ function drawOctopus() {
+ octopusList.forEach(octo => {
+ ctx.save();
+ ctx.translate(octo.x, octo.y);
+ const facing = octo.vx >= 0 ? 1 : -1;
+ ctx.scale(facing, 1);
+
+ ctx.strokeStyle = '#ff5500';
+ ctx.lineWidth = 5;
+ ctx.lineCap = 'round';
+ for (let i = 0; i < 5; i++) {
+ const angle = (i - 2) * 0.4;
+ const wave = Math.sin(octo.pulse + i) * 10;
+ ctx.beginPath();
+ ctx.moveTo(Math.cos(angle) * 10, Math.sin(angle) * 10 + 6);
+ ctx.quadraticCurveTo(Math.cos(angle) * 25 + wave, Math.sin(angle) * 25 + 12, Math.cos(angle) * 35, Math.sin(angle) * 35 + wave);
+ ctx.stroke();
+ }
+
+ ctx.fillStyle = '#ff6600';
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 2.5;
+ ctx.beginPath();
+ ctx.arc(0, -6, octo.radius, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.stroke();
+
+ ctx.fillStyle = '#ffffff';
+ ctx.beginPath();
+ ctx.arc(6, -8, 6, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.fillStyle = '#000000';
+ ctx.beginPath();
+ ctx.arc(8, -8, 3, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.restore();
+ });
+ }
+
+ function drawSharks() {
+ sharkList.forEach(shark => {
+ ctx.save();
+ ctx.translate(shark.x, shark.y);
+ const facing = shark.vx >= 0 ? 1 : -1;
+ ctx.scale(facing, 1);
+
+ const tailSway = Math.sin(shark.tailAngle) * 8;
+ ctx.fillStyle = '#005580';
+ ctx.beginPath();
+ ctx.moveTo(-28, 0);
+ ctx.lineTo(-45, -18 + tailSway);
+ ctx.lineTo(-38, 0);
+ ctx.lineTo(-45, 18 + tailSway);
+ ctx.closePath();
+ ctx.fill();
+
+ ctx.fillStyle = '#0077b6';
+ ctx.strokeStyle = '#00ffff';
+ ctx.lineWidth = 2.5;
+
+ ctx.beginPath();
+ ctx.moveTo(35, 0);
+ ctx.quadraticCurveTo(10, -22, -28, -8);
+ ctx.lineTo(-28, 8);
+ ctx.quadraticCurveTo(10, 22, 35, 0);
+ ctx.closePath();
+ ctx.fill();
+ ctx.stroke();
+
+ ctx.fillStyle = '#005580';
+ ctx.beginPath();
+ ctx.moveTo(0, -14);
+ ctx.lineTo(-10, -32);
+ ctx.lineTo(-20, -10);
+ ctx.closePath();
+ ctx.fill();
+
+ ctx.fillStyle = '#ffffff';
+ ctx.beginPath();
+ ctx.moveTo(15, 6);
+ ctx.lineTo(25, 0);
+ ctx.lineTo(20, 8);
+ ctx.lineTo(15, 2);
+ ctx.closePath();
+ ctx.fill();
+
+ ctx.fillStyle = '#ff0000';
+ ctx.beginPath();
+ ctx.arc(18, -6, 3.5, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.restore();
+ });
  }
 
  function drawStickman(x, y, facing, walkFrame) {
  ctx.save();
+
+ if (player.invulnerableTimer > 0 && Math.floor(player.invulnerableTimer / 4) % 2 === 0) {
+ ctx.strokeStyle = '#ffff00';
+ } else {
  ctx.strokeStyle = '#ffffff';
+ }
+
  ctx.fillStyle = '#ffffff';
- ctx.lineWidth = 1.8;
+ ctx.lineWidth = 2.5;
  ctx.lineCap = 'round';
  ctx.lineJoin = 'round';
 
- const headRadius = 5;
- const bodyLength = 15;
- const legLength = 11;
+ const headRadius = 6;
+ const bodyLength = 16;
+ const legLength = 12;
  const neckY = y - bodyLength;
  const headY = neckY - headRadius;
  const shoulderY = neckY + 4;
 
- // Swimming tilt angle
- const swimTilt = (keys['KeyW'] || keys['w']) ? -0.2 : 0;
  ctx.translate(x, y);
- ctx.rotate(swimTilt * facing);
+ if (grabbedByOctopusTimer > 0) {
+ ctx.rotate(Math.sin(grabbedByOctopusTimer * 0.2) * 0.4);
+ }
  ctx.translate(-x, -y);
 
- // 1. Head & Diving Goggles
+ // Head & Diving Mask
  ctx.beginPath();
  ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
  ctx.stroke();
 
- // Goggles
- ctx.fillStyle = '#00d2ff';
- ctx.fillRect(x + facing * 1, headY - 2, facing * 4, 3);
+ ctx.fillStyle = '#00f0ff';
+ ctx.fillRect(x + facing * 1, headY - 3, facing * 5, 4);
 
- // 2. Torso
+ // Torso
  ctx.beginPath();
  ctx.moveTo(x, neckY);
  ctx.lineTo(x, y);
  ctx.stroke();
 
- // 3. Swimming Leg Kick
- const legSwing = Math.sin(walkFrame) * 7;
+ // Legs
+ const legSwing = Math.sin(walkFrame) * 8;
  ctx.beginPath();
  ctx.moveTo(x, y);
  ctx.lineTo(x - legSwing, y + legLength);
@@ -582,73 +1002,148 @@
  ctx.lineTo(x + legSwing, y + legLength);
  ctx.stroke();
 
- // 4. Arms (Swimming Stroke)
- const armSwing = Math.sin(walkFrame + Math.PI) * 6;
+ // Arms
+ const armSwing = Math.sin(walkFrame + Math.PI) * 7;
  ctx.beginPath();
  ctx.moveTo(x, shoulderY);
- ctx.lineTo(x - facing * 5 - armSwing, shoulderY + 5);
+ ctx.lineTo(x - facing * 6 - armSwing, shoulderY + 6);
  ctx.stroke();
 
  ctx.beginPath();
  ctx.moveTo(x, shoulderY);
- ctx.lineTo(x + facing * 5 + armSwing, shoulderY + 5);
+ ctx.lineTo(x + facing * 6 + armSwing, shoulderY + 6);
  ctx.stroke();
 
+ // Carried Treasure Bag
+ if (carriedTreasure > 0) {
+ ctx.fillStyle = '#ffd700';
+ ctx.strokeStyle = '#996600';
+ ctx.lineWidth = 2;
+ ctx.beginPath();
+ ctx.arc(x - facing * 10, y - 8, 7, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.stroke();
+ }
+
+ ctx.restore();
+ }
+
+ function drawZapParticles() {
+ zapParticles.forEach(p => {
+ ctx.save();
+ ctx.fillStyle = p.color;
+ ctx.beginPath();
+ ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.restore();
+ });
+ }
+
+ function drawBubbles() {
+ ctx.save();
+ ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+ ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+ bubbles.forEach(b => {
+ ctx.beginPath();
+ ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.stroke();
+ });
  ctx.restore();
  }
 
  function drawOxygenMeter() {
- const barWidth = 180;
- const barHeight = 12;
- const x = 16;
- const y = surfaceY + 16;
+ const barWidth = 220;
+ const barHeight = 16;
+ const x = 20;
+ const y = surfaceY + 20;
  const pct = Math.max(0, currentOxygen / maxOxygen);
 
  ctx.save();
- // Label
  ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 11px Courier New';
- ctx.fillText('OXYGEN SUPPLY:', x, y - 5);
+ ctx.font = '900 13px Comic Sans MS, sans-serif';
+ ctx.shadowColor = '#000000';
+ ctx.shadowBlur = 4;
+ ctx.fillText('OXYGEN TANK:', x, y - 6);
 
- // Bar Background
- ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
- ctx.strokeStyle = '#00d2ff';
- ctx.lineWidth = 1;
+ ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+ ctx.strokeStyle = '#00f0ff';
+ ctx.lineWidth = 2;
  ctx.fillRect(x, y, barWidth, barHeight);
  ctx.strokeRect(x, y, barWidth, barHeight);
 
- // Bar Fill
- ctx.fillStyle = pct > 0.3 ? '#00d2ff' : '#ff4d4d';
- ctx.fillRect(x + 1, y + 1, (barWidth - 2) * pct, barHeight - 2);
+ let barColor = '#00f0ff';
+ if (pct < 0.25) barColor = '#ff0055';
+ else if (pct < 0.5) barColor = '#ffcc00';
+
+ ctx.fillStyle = barColor;
+ ctx.fillRect(x + 2, y + 2, (barWidth - 4) * pct, barHeight - 4);
  ctx.restore();
  }
 
  function drawAlerts() {
- if (alertTimer > 0) {
+ if (alertTimer > 0 && !isGameOver) {
  alertTimer--;
  ctx.save();
- ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
- ctx.fillRect(canvas.width / 2 - 220, canvas.height / 2 - 20, 440, 40);
- ctx.strokeStyle = '#ffd700';
- ctx.strokeRect(canvas.width / 2 - 220, canvas.height / 2 - 20, 440, 40);
+ ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
+ ctx.fillRect(canvas.width / 2 - 270, canvas.height / 2 - 30, 540, 60);
+ ctx.strokeStyle = alertColor;
+ ctx.lineWidth = 3;
+ ctx.strokeRect(canvas.width / 2 - 270, canvas.height / 2 - 30, 540, 60);
 
- ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 13px Courier New';
+ ctx.fillStyle = alertColor;
+ ctx.font = '900 16px Comic Sans MS, sans-serif';
  ctx.textAlign = 'center';
- ctx.fillText(alertMessage, canvas.width / 2, canvas.height / 2 + 5);
+ ctx.fillText(alertMessage, canvas.width / 2, canvas.height / 2 + 6);
  ctx.restore();
  }
  }
 
+ function drawGameOverScreen() {
+ if (!isGameOver) return;
+
+ ctx.save();
+ ctx.fillStyle = 'rgba(3, 10, 22, 0.88)';
+ ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+ ctx.fillStyle = '#ff0055';
+ ctx.font = '900 36px Comic Sans MS, sans-serif';
+ ctx.textAlign = 'center';
+ ctx.shadowColor = '#000000';
+ ctx.shadowBlur = 8;
+ ctx.fillText('GAME OVER!', canvas.width / 2, canvas.height / 2 - 40);
+
+ ctx.fillStyle = alertColor;
+ ctx.font = '900 18px Comic Sans MS, sans-serif';
+ ctx.fillText(alertMessage, canvas.width / 2, canvas.height / 2 + 5);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = '900 16px Comic Sans MS, sans-serif';
+ ctx.fillText(`Final Level Reached: ${currentLevel}`, canvas.width / 2, canvas.height / 2 + 40);
+ ctx.fillText(`Secured Treasure: $${securedTreasure}`, canvas.width / 2, canvas.height / 2 + 65);
+
+ ctx.fillStyle = '#00f0ff';
+ ctx.font = '900 15px Comic Sans MS, sans-serif';
+ ctx.fillText('Click "Reset Game" above to try again!', canvas.width / 2, canvas.height / 2 + 105);
+
+ ctx.restore();
+ }
+
  function draw() {
  drawBackground();
+ drawMotorboat();
  drawWreckedShip();
  drawCoralsAndPlants();
  drawChests();
+ drawJellyfish();
+ drawOctopus();
+ drawSharks();
  drawBubbles();
+ drawZapParticles();
  drawStickman(player.x, player.y, player.facing, player.walkFrame);
  drawOxygenMeter();
  drawAlerts();
+ drawGameOverScreen();
  }
 
  function animate() {
