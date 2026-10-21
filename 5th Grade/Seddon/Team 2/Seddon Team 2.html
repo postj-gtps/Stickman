@@ -2,20 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Top-Down Stickman Arcade Maze</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seddon Team 2 - Top-Down Arcade Engine</title>
   <style>
     * {
       box-sizing: border-box;
       user-select: none;
-      -webkit-user-select: none;
       margin: 0;
       padding: 0;
       font-family: 'Courier New', Courier, monospace, sans-serif;
     }
 
     body {
-      background-color: #000000;
+      background-color: #04020a;
       color: #ffffff;
       display: flex;
       flex-direction: column;
@@ -35,43 +34,48 @@
       max-width: 1300px;
       margin-bottom: 8px;
       padding-bottom: 6px;
-      border-bottom: 1px solid #ffffff;
+      border-bottom: 3px solid #ff00ff;
     }
 
     h1 {
-      font-size: 16px;
+      font-size: 18px;
       letter-spacing: 2px;
       text-transform: uppercase;
       font-weight: bold;
       color: #00ffff;
+      text-shadow: 0 0 10px #00ffff;
     }
 
     .level-badge {
-      font-size: 14px;
-      color: #ff00aa;
+      font-size: 15px;
+      color: #ffff00;
       font-weight: bold;
       letter-spacing: 1px;
+      text-shadow: 0 0 10px #ffff00;
     }
 
     .btn-reset {
-      background: transparent;
+      background: #ff00aa;
       color: #ffffff;
-      border: 1px solid #00ffff;
-      padding: 4px 14px;
+      border: 2px solid #ffffff;
+      padding: 6px 18px;
       font-size: 13px;
       font-weight: bold;
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 1px;
+      border-radius: 6px;
+      box-shadow: 0 0 12px #ff00aa;
       transition: all 0.15s ease-in-out;
     }
 
     .btn-reset:hover {
-      background: #00ffff;
+      background: #ffffff;
       color: #000000;
+      box-shadow: 0 0 16px #ffffff;
     }
 
-    /* Main Canvas Container */
+    /* Canvas Container */
     #canvas-wrapper {
       position: relative;
       width: 100%;
@@ -80,58 +84,25 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      touch-action: none;
     }
 
     canvas {
-      background-color: #05050a;
-      border: 1px solid #ffffff;
+      background-color: #080314;
+      border: 3px solid #00ffff;
+      box-shadow: 0 0 20px #00ffff;
       display: block;
       width: 100%;
       height: 100%;
-    }
-
-    /* Chromebook Touchscreen WASD Overlay */
-    #touch-controls {
-      position: absolute;
-      bottom: 16px;
-      left: 16px;
-      display: grid;
-      grid-template-columns: repeat(3, 48px);
-      grid-template-rows: repeat(2, 48px);
-      gap: 6px;
-      z-index: 10;
-      opacity: 0.75;
-    }
-
-    .touch-btn {
-      background: rgba(15, 15, 30, 0.85);
-      border: 1px solid #00ffff;
-      color: #00ffff;
-      font-weight: bold;
-      font-size: 18px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
       border-radius: 6px;
-      touch-action: manipulation;
     }
-
-    .touch-btn:active {
-      background: #00ffff;
-      color: #000000;
-    }
-
-    .btn-w { grid-column: 2; grid-row: 1; }
-    .btn-a { grid-column: 1; grid-row: 2; }
-    .btn-s { grid-column: 2; grid-row: 2; }
-    .btn-d { grid-column: 3; grid-row: 2; }
 
     .instructions {
       margin-top: 6px;
-      font-size: 11px;
-      color: #8888aa;
+      font-size: 12px;
+      color: #ff9900;
       text-align: center;
+      font-weight: bold;
+      letter-spacing: 1px;
     }
   </style>
 </head>
@@ -139,7 +110,7 @@
 
   <!-- Header Section -->
   <div id="header">
-    <h1>Top-Down Arcade Maze Engine</h1>
+    <h1>Arcade Maze - Enemy Attack!</h1>
     <span id="level-display" class="level-badge">LEVEL: 1</span>
     <button class="btn-reset" onclick="resetSimulation()">Reset Level</button>
   </div>
@@ -147,25 +118,17 @@
   <!-- Canvas Container -->
   <div id="canvas-wrapper">
     <canvas id="simCanvas"></canvas>
-
-    <!-- Touchscreen WASD Overlay for Chromebooks -->
-    <div id="touch-controls">
-      <div class="touch-btn btn-w" id="t-w">W</div>
-      <div class="touch-btn btn-a" id="t-a">A</div>
-      <div class="touch-btn btn-s" id="t-s">S</div>
-      <div class="touch-btn btn-d" id="t-d">D</div>
-    </div>
   </div>
 
   <div class="instructions">
-    [WASD Exclusive Movement] | Touch D-Pad enabled for Chromebooks
+    [WASD Exclusive Movement] Avoid Ghosts, Rockets, Bouncing Pong Balls & Ceiling Claws!
   </div>
 
   <script>
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
 
-    // INPUT STATE (WASD Keyboard & Touch)
+    // KEYBOARD INPUT STATE
     const keys = {};
 
     // MAZE & GRID CONFIG
@@ -173,10 +136,22 @@
     let transitionTimer = 0;
     const GRID_COLS = 15; // Must be odd for DFS maze generation
     const GRID_ROWS = 9;
-    let grid = []; // 1 = Cabinet Wall, 0 = Hallway Walkway
-    let cabinetGames = []; // Stores index (0..4) of game scene on each cabinet screen
+    let grid = []; // 1 = Cabinet Wall, 0 = Walkway
+    let cabinetGames = []; // 0 = Space Defender, 1 = Maze Muncher, 2 = Pong, 3 = Cyber Racer, 4 = Pixel Jump
+    let cabinetFacings = []; // Direction vector { dx, dy } per cabinet
     let cellW = 0;
     let cellH = 0;
+
+    // RANDOMIZED ENEMY TYPE UNLOCK ORDER (Generated on page load)
+    // 0 = Space Defender Rocket, 1 = Neon Ghost, 2 = Bouncing Pong Ball, 3 = Ceiling Claw
+    let enemyTypeOrder = [0, 1, 2, 3];
+
+    function shuffleEnemyOrder() {
+      for (let i = enemyTypeOrder.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [enemyTypeOrder[i], enemyTypeOrder[j]] = [enemyTypeOrder[j], enemyTypeOrder[i]];
+      }
+    }
 
     // DOORS STATE
     let entranceDoor = { gridX: 0, gridY: 0, x: 0, y: 0, w: 0, h: 0, side: 'LEFT' };
@@ -186,11 +161,23 @@
     const player = {
       x: 0,
       y: 0,
-      radius: 12, // Character collision radius
+      radius: 12,
       speed: 4.2,
-      facing: 1,  // 1 = Right, -1 = Left
-      walkFrame: 0
+      facing: 1,
+      walkFrame: 0,
+      isCaptured: false
     };
+
+    // ACTIVE HAZARDS STATE
+    let ghosts = [];
+    let pongMachines = [];
+    let pongBalls = [];
+    let rocketLaunchers = [];
+    let rockets = [];
+    let explosions = [];
+    let clawTraps = [];
+
+    const GHOST_COLORS = ['#ff0055', '#00ffff', '#ffcc00', '#ff00ff', '#00ff66'];
 
     function resizeCanvas() {
       const wrapper = document.getElementById('canvas-wrapper');
@@ -225,24 +212,29 @@
       }
     });
 
-    // Chromebook Touchscreen Handlers
-    function bindTouch(id, code) {
-      const btn = document.getElementById(id);
-      btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[code] = true; });
-      btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[code] = false; });
-      btn.addEventListener('mousedown', (e) => { keys[code] = true; });
-      btn.addEventListener('mouseup', (e) => { keys[code] = false; });
+    // Helper: Find direction a cabinet faces toward an open path
+    function getCabinetFacingDir(r, c) {
+      const dirs = [
+        { dx: 0, dy: 1 },  // SOUTH
+        { dx: 0, dy: -1 }, // NORTH
+        { dx: 1, dy: 0 },  // EAST
+        { dx: -1, dy: 0 }  // WEST
+      ];
+      for (let d of dirs) {
+        let nr = r + d.dy;
+        let nc = c + d.dx;
+        if (nr >= 0 && nr < GRID_ROWS && nc >= 0 && nc < GRID_COLS && grid[nr][nc] === 0) {
+          return d;
+        }
+      }
+      return dirs[0];
     }
 
-    bindTouch('t-w', 'KeyW');
-    bindTouch('t-a', 'KeyA');
-    bindTouch('t-s', 'KeyS');
-    bindTouch('t-d', 'KeyD');
-
-    // PROCEDURAL MAZE GENERATION (DFS)
+    // PROCEDURAL MAZE GENERATION
     function generateMaze() {
       grid = Array(GRID_ROWS).fill(0).map(() => Array(GRID_COLS).fill(1));
       cabinetGames = Array(GRID_ROWS).fill(0).map(() => Array(GRID_COLS).fill(0));
+      cabinetFacings = Array(GRID_ROWS).fill(0).map(() => Array(GRID_COLS).fill(null));
 
       function stackCarve(cx, cy) {
         const stack = [[cx, cy]];
@@ -277,16 +269,7 @@
 
       stackCarve(1, 1);
 
-      // Randomly assign 1 of 5 pre-made video game scenes to each cabinet
-      for (let r = 0; r < GRID_ROWS; r++) {
-        for (let c = 0; c < GRID_COLS; c++) {
-          if (grid[r][c] === 1) {
-            cabinetGames[r][c] = Math.floor(Math.random() * 5);
-          }
-        }
-      }
-
-      // RANDOM ENTRANCE & EXIT DOORS ON OPPOSITE SIDES
+      // RANDOM ENTRANCE AND EXIT DOORS ON OPPOSITE SIDES
       const isHorizontalAxis = Math.random() < 0.5;
       const validOddRows = [1, 3, 5, 7];
       const validOddCols = [1, 3, 5, 7, 9, 11, 13];
@@ -309,6 +292,96 @@
 
         grid[0][entryX] = 0;
         grid[GRID_ROWS - 1][exitX] = 0;
+      }
+
+      // ASSIGN GAME TYPES & FACINGS TO CABINET TILES
+      const cabinetListByGame = { 0: [], 1: [], 2: [], 3: [], 4: [] };
+
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          if (grid[r][c] === 1) {
+            const game = Math.floor(Math.random() * 5);
+            cabinetGames[r][c] = game;
+            const facing = getCabinetFacingDir(r, c);
+            cabinetFacings[r][c] = facing;
+            cabinetListByGame[game].push({ r, c, facing });
+          }
+        }
+      }
+
+      // CLEAR ACTIVE HAZARD LISTS
+      ghosts = [];
+      pongMachines = [];
+      pongBalls = [];
+      rocketLaunchers = [];
+      rockets = [];
+      explosions = [];
+      clawTraps = [];
+
+      // CALCULATE ACTIVE ENEMY TYPES & SPAWN MACHINES BASED ON LEVEL
+      // L1 = 1 type (1 machine), L2 = 2 types (1 machine ea), L3 = 3 types, L4 = 4 types
+      // L5+ = 4 types (2 machines ea on L5, 3 on L6, etc.)
+      const numActiveTypes = Math.min(4, level);
+      const machinesPerType = level <= 4 ? 1 : (level - 3);
+
+      for (let t = 0; t < numActiveTypes; t++) {
+        const enemyTypeID = enemyTypeOrder[t];
+
+        if (enemyTypeID === 0) {
+          // SPACE DEFENDER ROCKETS (Game 0)
+          let candidates = [...cabinetListByGame[0], ...cabinetListByGame[3]];
+          for (let i = 0; i < Math.min(machinesPerType, candidates.length); i++) {
+            const chosen = candidates.splice(Math.floor(Math.random() * candidates.length), 1)[0];
+            rocketLaunchers.push({
+              c: chosen.c, r: chosen.r,
+              facing: chosen.facing,
+              cooldown: Math.random() * 600
+            });
+          }
+        } else if (enemyTypeID === 1) {
+          // NEON GHOSTS (Game 1)
+          let candidates = [...cabinetListByGame[1]];
+          for (let i = 0; i < Math.min(machinesPerType, candidates.length); i++) {
+            const chosen = candidates.splice(Math.floor(Math.random() * candidates.length), 1)[0];
+            const speedFactor = 0.45 + Math.random() * 0.10; // 50% +/- 5% speed
+            ghosts.push({
+              x: (chosen.c + 0.5) * cellW,
+              y: (chosen.r + 0.5) * cellH,
+              speed: player.speed * speedFactor,
+              color: GHOST_COLORS[Math.floor(Math.random() * GHOST_COLORS.length)]
+            });
+          }
+        } else if (enemyTypeID === 2) {
+          // BOUNCING PONG MACHINES (Game 2)
+          let candidates = [...cabinetListByGame[2]];
+          for (let i = 0; i < Math.min(machinesPerType, candidates.length); i++) {
+            const chosen = candidates.splice(Math.floor(Math.random() * candidates.length), 1)[0];
+            const fireInterval = (0.5 + Math.random() * 1.0) * 60; // 1.0s +/- 0.5s rate set for level
+            pongMachines.push({
+              c: chosen.c, r: chosen.r,
+              facing: chosen.facing,
+              fireInterval: fireInterval,
+              cooldown: Math.random() * fireInterval
+            });
+          }
+        } else if (enemyTypeID === 3) {
+          // CEILING CLAW TRAP (Game 1 / Maze Muncher)
+          let candidates = [...cabinetListByGame[1], ...cabinetListByGame[4]];
+          for (let i = 0; i < Math.min(machinesPerType, candidates.length); i++) {
+            const chosen = candidates.splice(Math.floor(Math.random() * candidates.length), 1)[0];
+            const triggerX = chosen.c + chosen.facing.dx;
+            const triggerY = chosen.r + chosen.facing.dy;
+            if (triggerX >= 0 && triggerX < GRID_COLS && triggerY >= 0 && triggerY < GRID_ROWS) {
+              clawTraps.push({
+                targetGridX: triggerX,
+                targetGridY: triggerY,
+                state: 'IDLE',
+                clawY: 0,
+                timer: 0
+              });
+            }
+          }
+        }
       }
 
       updateDoorCoordinates();
@@ -335,10 +408,10 @@
       player.y = entranceDoor.y + cellH / 2;
       player.facing = 1;
       player.walkFrame = 0;
+      player.isCaptured = false;
       document.getElementById('level-display').innerText = `LEVEL: ${level}`;
     }
 
-    // COLLISION & PHYSICS HANDLING
     function checkCabinetCollision(px, py) {
       const pr = player.radius;
       for (let r = 0; r < GRID_ROWS; r++) {
@@ -346,11 +419,8 @@
           if (grid[r][c] === 1) {
             const bx = c * cellW;
             const by = r * cellH;
-            const bw = cellW;
-            const bh = cellH;
-
-            if (px + pr > bx && px - pr < bx + bw &&
-                py + pr > by && py - pr < by + bh) {
+            if (px + pr > bx && px - pr < bx + cellW &&
+                py + pr > by && py - pr < by + cellH) {
               return true;
             }
           }
@@ -359,194 +429,282 @@
       return false;
     }
 
+    // UPDATE PHYSICS & ENEMY AI
     function updatePhysics() {
-      let dx = 0;
-      let dy = 0;
+      if (!player.isCaptured) {
+        let dx = 0;
+        let dy = 0;
 
-      if (keys['KeyW']) dy -= 1;
-      if (keys['KeyS']) dy += 1;
-      if (keys['KeyA']) { dx -= 1; player.facing = -1; }
-      if (keys['KeyD']) { dx += 1; player.facing = 1; }
+        if (keys['KeyW']) dy -= 1;
+        if (keys['KeyS']) dy += 1;
+        if (keys['KeyA']) { dx -= 1; player.facing = -1; }
+        if (keys['KeyD']) { dx += 1; player.facing = 1; }
 
-      if (dx !== 0 && dy !== 0) {
-        dx *= 0.7071;
-        dy *= 0.7071;
+        if (dx !== 0 && dy !== 0) {
+          dx *= 0.7071;
+          dy *= 0.7071;
+        }
+
+        const moveX = dx * player.speed;
+        const moveY = dy * player.speed;
+
+        if (!checkCabinetCollision(player.x + moveX, player.y)) {
+          player.x += moveX;
+        }
+        if (!checkCabinetCollision(player.x, player.y + moveY)) {
+          player.y += moveY;
+        }
+
+        const margin = 12;
+        player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
+        player.y = Math.max(margin, Math.min(canvas.height - margin, player.y));
+
+        if (dx !== 0 || dy !== 0) {
+          player.walkFrame += 0.25;
+        } else {
+          player.walkFrame = 0;
+        }
       }
 
-      const moveX = dx * player.speed;
-      const moveY = dy * player.speed;
+      // 1. NEON GHOSTS (Chase player through walls)
+      for (let g of ghosts) {
+        const angle = Math.atan2(player.y - g.y, player.x - g.x);
+        g.x += Math.cos(angle) * g.speed;
+        g.y += Math.sin(angle) * g.speed;
 
-      if (!checkCabinetCollision(player.x + moveX, player.y)) {
-        player.x += moveX;
-      }
-      if (!checkCabinetCollision(player.x, player.y + moveY)) {
-        player.y += moveY;
-      }
-
-      const margin = 12;
-      player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
-      player.y = Math.max(margin, Math.min(canvas.height - margin, player.y));
-
-      if (dx !== 0 || dy !== 0) {
-        player.walkFrame += 0.25;
-      } else {
-        player.walkFrame = 0;
+        const dist = Math.hypot(player.x - g.x, player.y - g.y);
+        if (dist < player.radius + 10 && !player.isCaptured) {
+          player.x = entranceDoor.x + cellW / 2;
+          player.y = entranceDoor.y + cellH / 2;
+        }
       }
 
-      // LEVEL COMPLETE CHECK
+      // 2. PONG MACHINES & BOUNCING BALLS
+      for (let pm of pongMachines) {
+        pm.cooldown--;
+        if (pm.cooldown <= 0) {
+          pm.cooldown = pm.fireInterval;
+          const startX = (pm.c + 0.5) * cellW + pm.facing.dx * (cellW * 0.4);
+          const startY = (pm.r + 0.5) * cellH + pm.facing.dy * (cellH * 0.4);
+          
+          // Perpendicular base angle
+          const perpAngle = Math.atan2(pm.facing.dy, pm.facing.dx);
+          // Random offset within 90-degree arc (-45 deg to +45 deg)
+          const randomOffset = (Math.random() - 0.5) * (Math.PI / 2);
+          const launchAngle = perpAngle + randomOffset;
+          const ballSpeed = 5.0;
+
+          pongBalls.push({
+            x: startX,
+            y: startY,
+            vx: Math.cos(launchAngle) * ballSpeed,
+            vy: Math.sin(launchAngle) * ballSpeed,
+            radius: 5,
+            bounces: 0,
+            maxBounces: 8
+          });
+        }
+      }
+
+      for (let i = pongBalls.length - 1; i >= 0; i--) {
+        let b = pongBalls[i];
+        let nextX = b.x + b.vx;
+        let nextY = b.y + b.vy;
+
+        // Check horizontal bounce
+        let nextGridCX = Math.floor((b.vx > 0 ? nextX + b.radius : nextX - b.radius) / cellW);
+        let currentGridCY = Math.floor(b.y / cellH);
+        if (nextGridCX < 0 || nextGridCX >= GRID_COLS || grid[currentGridCY][nextGridCX] === 1) {
+          b.vx *= -1;
+          b.bounces++;
+        } else {
+          b.x += b.vx;
+        }
+
+        // Check vertical bounce
+        let currentGridCX = Math.floor(b.x / cellW);
+        let nextGridCY = Math.floor((b.vy > 0 ? nextY + b.radius : nextY - b.radius) / cellH);
+        if (nextGridCY < 0 || nextGridCY >= GRID_ROWS || grid[nextGridCY][currentGridCX] === 1) {
+          b.vy *= -1;
+          b.bounces++;
+        } else {
+          b.y += b.vy;
+        }
+
+        // Hit player check
+        const distToPlayer = Math.hypot(player.x - b.x, player.y - b.y);
+        if (distToPlayer < player.radius + b.radius && !player.isCaptured) {
+          player.x = entranceDoor.x + cellW / 2;
+          player.y = entranceDoor.y + cellH / 2;
+          pongBalls.splice(i, 1);
+          continue;
+        }
+
+        if (b.bounces >= b.maxBounces) {
+          pongBalls.splice(i, 1);
+        }
+      }
+
+      // 3. ROCKET LAUNCHERS & 3x3 AOE EXPLOSIONS
+      for (let rl of rocketLaunchers) {
+        rl.cooldown--;
+        if (rl.cooldown <= 0) {
+          rl.cooldown = 600; // 1 rocket every 10 seconds
+          rockets.push({
+            x: (rl.c + 0.5) * cellW + rl.facing.dx * (cellW * 0.5),
+            y: (rl.r + 0.5) * cellH + rl.facing.dy * (cellH * 0.5),
+            vx: rl.facing.dx * 7,
+            vy: rl.facing.dy * 7
+          });
+        }
+      }
+
+      for (let i = rockets.length - 1; i >= 0; i--) {
+        let r = rockets[i];
+        r.x += r.vx;
+        r.y += r.vy;
+
+        const gridC = Math.floor(r.x / cellW);
+        const gridR = Math.floor(r.y / cellH);
+
+        if (gridC < 0 || gridC >= GRID_COLS || gridR < 0 || gridR >= GRID_ROWS || grid[gridR][gridC] === 1) {
+          explosions.push({
+            centerC: gridC,
+            centerR: gridR,
+            radius: 0,
+            maxRadius: cellW * 1.5,
+            duration: 25
+          });
+
+          const pGridC = Math.floor(player.x / cellW);
+          const pGridR = Math.floor(player.y / cellH);
+          if (Math.abs(pGridC - gridC) <= 1 && Math.abs(pGridR - gridR) <= 1) {
+            player.x = entranceDoor.x + cellW / 2;
+            player.y = entranceDoor.y + cellH / 2;
+          }
+
+          rockets.splice(i, 1);
+        }
+      }
+
+      for (let i = explosions.length - 1; i >= 0; i--) {
+        let ex = explosions[i];
+        ex.radius += ex.maxRadius / 25;
+        ex.duration--;
+        if (ex.duration <= 0) explosions.splice(i, 1);
+      }
+
+      // 4. CEILING CLAW TRAPS
+      const pGridX = Math.floor(player.x / cellW);
+      const pGridY = Math.floor(player.y / cellH);
+
+      for (let claw of clawTraps) {
+        if (claw.state === 'IDLE') {
+          if (pGridX === claw.targetGridX && pGridY === claw.targetGridY) {
+            claw.state = 'DROPPING';
+            claw.clawY = 0;
+          }
+        } else if (claw.state === 'DROPPING') {
+          claw.clawY += 4;
+          if (claw.clawY >= cellH * 0.7) {
+            if (pGridX === claw.targetGridX && pGridY === claw.targetGridY) {
+              claw.state = 'GRABBED';
+              player.isCaptured = true;
+              claw.timer = 35;
+            } else {
+              claw.state = 'RETRACTING';
+            }
+          }
+        } else if (claw.state === 'GRABBED') {
+          claw.timer--;
+          player.x = (claw.targetGridX + 0.5) * cellW;
+          player.y = (claw.targetGridY + 0.5) * cellH - claw.clawY + 10;
+
+          if (claw.timer <= 0) {
+            let openTiles = [];
+            for (let r = 0; r < GRID_ROWS; r++) {
+              for (let c = 0; c < GRID_COLS; c++) {
+                if (grid[r][c] === 0) openTiles.push({ c, r });
+              }
+            }
+            const randTile = openTiles[Math.floor(Math.random() * openTiles.length)];
+            player.x = (randTile.c + 0.5) * cellW;
+            player.y = (randTile.r + 0.5) * cellH;
+            player.isCaptured = false;
+            claw.state = 'RETRACTING';
+          }
+        } else if (claw.state === 'RETRACTING') {
+          claw.clawY -= 4;
+          if (claw.clawY <= 0) claw.state = 'IDLE';
+        }
+      }
+
+      // LEVEL WIN CHECK
       const distToExit = Math.hypot(player.x - (exitDoor.x + cellW / 2), player.y - (exitDoor.y + cellH / 2));
       if (distToExit < cellW * 0.45 && transitionTimer === 0) {
         level++;
         transitionTimer = 25;
-        generateMaze();
-        player.x = entranceDoor.x + cellW / 2;
-        player.y = entranceDoor.y + cellH / 2;
-        document.getElementById('level-display').innerText = `LEVEL: ${level}`;
+        resetSimulation();
       }
 
       if (transitionTimer > 0) transitionTimer--;
     }
 
-    // DRAWING THE 5 PRE-MADE VIDEO GAME CABINET SCREENS (TOP-DOWN CRT VIEW)
+    // DRAW CRT CABINET SCREENS
     function drawGameScreen(sx, sy, sw, sh, gameType) {
-      // Screen Bezel Background
       ctx.fillStyle = '#020205';
       ctx.fillRect(sx, sy, sw, sh);
 
       ctx.save();
       ctx.beginPath();
       ctx.rect(sx, sy, sw, sh);
-      ctx.clip(); // Clip graphics within CRT screen bounds
+      ctx.clip();
 
-      if (gameType === 0) {
-        // --- GAME 1: SPACE DEFENDER ---
+      if (gameType === 0) { // SPACE DEFENDER
         ctx.fillStyle = '#04041a';
         ctx.fillRect(sx, sy, sw, sh);
-        // Stars
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(sx + sw * 0.2, sy + sh * 0.2, 2, 2);
-        ctx.fillRect(sx + sw * 0.7, sy + sh * 0.3, 2, 2);
-        ctx.fillRect(sx + sw * 0.5, sy + sh * 0.7, 2, 2);
-        // Alien Row
         ctx.fillStyle = '#00ff66';
         ctx.fillRect(sx + sw * 0.2, sy + sh * 0.25, sw * 0.15, sh * 0.15);
-        ctx.fillRect(sx + sw * 0.45, sy + sh * 0.25, sw * 0.15, sh * 0.15);
-        ctx.fillRect(sx + sw * 0.7, sy + sh * 0.25, sw * 0.15, sh * 0.15);
-        // Player Starship
+        ctx.fillRect(sx + sw * 0.65, sy + sh * 0.25, sw * 0.15, sh * 0.15);
         ctx.fillStyle = '#00ffff';
-        ctx.beginPath();
-        ctx.moveTo(sx + sw * 0.5, sy + sh * 0.7);
-        ctx.lineTo(sx + sw * 0.35, sy + sh * 0.9);
-        ctx.lineTo(sx + sw * 0.65, sy + sh * 0.9);
-        ctx.closePath();
-        ctx.fill();
-        // Lasers
-        ctx.fillStyle = '#ff0055';
-        ctx.fillRect(sx + sw * 0.48, sy + sh * 0.45, 2, sh * 0.2);
-
-      } else if (gameType === 1) {
-        // --- GAME 2: MAZE MUNCHER ---
+        ctx.fillRect(sx + sw * 0.42, sy + sh * 0.7, sw * 0.16, sh * 0.2);
+      } else if (gameType === 1) { // MAZE MUNCHER
         ctx.fillStyle = '#000000';
         ctx.fillRect(sx, sy, sw, sh);
-        // Maze Walls
-        ctx.strokeStyle = '#2222ff';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(sx + 3, sy + 3, sw - 6, sh - 6);
-        ctx.strokeRect(sx + sw * 0.3, sy + sh * 0.35, sw * 0.4, sh * 0.3);
-        // Food Dots
-        ctx.fillStyle = '#ffccaa';
-        ctx.fillRect(sx + sw * 0.18, sy + sh * 0.2, 2, 2);
-        ctx.fillRect(sx + sw * 0.82, sy + sh * 0.2, 2, 2);
-        ctx.fillRect(sx + sw * 0.18, sy + sh * 0.8, 2, 2);
-        // Yellow Player Dot
         ctx.fillStyle = '#ffff00';
         ctx.beginPath();
-        ctx.arc(sx + sw * 0.2, sy + sh * 0.5, Math.min(sw, sh) * 0.12, 0.2 * Math.PI, 1.8 * Math.PI);
-        ctx.lineTo(sx + sw * 0.2, sy + sh * 0.5);
+        ctx.arc(sx + sw * 0.3, sy + sh * 0.5, Math.min(sw, sh) * 0.15, 0.2 * Math.PI, 1.8 * Math.PI);
+        ctx.lineTo(sx + sw * 0.3, sy + sh * 0.5);
         ctx.fill();
-        // Ghost
         ctx.fillStyle = '#ff0000';
-        ctx.fillRect(sx + sw * 0.75, sy + sh * 0.45, sw * 0.15, sh * 0.2);
-
-      } else if (gameType === 2) {
-        // --- GAME 3: RETRO PONG ---
+        ctx.fillRect(sx + sw * 0.7, sy + sh * 0.4, sw * 0.18, sh * 0.22);
+      } else if (gameType === 2) { // RETRO PONG
         ctx.fillStyle = '#0a0a0a';
         ctx.fillRect(sx, sy, sw, sh);
-        // Center Dashed Net
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([2, 3]);
-        ctx.beginPath();
-        ctx.moveTo(sx + sw / 2, sy);
-        ctx.lineTo(sx + sw / 2, sy + sh);
-        ctx.stroke();
-        ctx.setLineDash([]); // Reset dash
-        // Paddles
         ctx.fillStyle = '#00ffff';
-        ctx.fillRect(sx + 2, sy + sh * 0.2, sw * 0.08, sh * 0.35);
+        ctx.fillRect(sx + 2, sy + sh * 0.2, sw * 0.08, sh * 0.4);
         ctx.fillStyle = '#ff00aa';
-        ctx.fillRect(sx + sw - sw * 0.08 - 2, sy + sh * 0.5, sw * 0.08, sh * 0.35);
-        // Bouncing Ball
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(sx + sw * 0.4, sy + sh * 0.35, 3, 3);
-
-      } else if (gameType === 3) {
-        // --- GAME 4: CYBER RACER ---
-        ctx.fillStyle = '#11111a';
-        ctx.fillRect(sx, sy, sw, sh);
-        // Asphalt & Grass Shoulders
+        ctx.fillRect(sx + sw - sw * 0.08 - 2, sy + sh * 0.4, sw * 0.08, sh * 0.4);
+      } else if (gameType === 3) { // CYBER RACER
         ctx.fillStyle = '#222222';
-        ctx.fillRect(sx + sw * 0.18, sy, sw * 0.64, sh);
-        // Yellow Dashed Lane Lines
-        ctx.fillStyle = '#ffff00';
-        ctx.fillRect(sx + sw * 0.48, sy + sh * 0.1, 2, sh * 0.2);
-        ctx.fillRect(sx + sw * 0.48, sy + sh * 0.5, 2, sh * 0.2);
-        // Player Red Car
+        ctx.fillRect(sx, sy, sw, sh);
         ctx.fillStyle = '#ff0000';
-        ctx.fillRect(sx + sw * 0.28, sy + sh * 0.65, sw * 0.18, sh * 0.25);
-        // Traffic Blue Car
-        ctx.fillStyle = '#00aaff';
-        ctx.fillRect(sx + sw * 0.55, sy + sh * 0.15, sw * 0.18, sh * 0.25);
-
-      } else {
-        // --- GAME 5: PIXEL JUMP PLATFORMER ---
+        ctx.fillRect(sx + sw * 0.3, sy + sh * 0.5, sw * 0.2, sh * 0.3);
+      } else { // PIXEL JUMP
         ctx.fillStyle = '#050a18';
         ctx.fillRect(sx, sy, sw, sh);
-        // Moon
-        ctx.fillStyle = '#ffffaa';
-        ctx.beginPath();
-        ctx.arc(sx + sw * 0.8, sy + sh * 0.25, 3, 0, Math.PI * 2);
-        ctx.fill();
-        // Platforms
         ctx.fillStyle = '#00ff66';
-        ctx.fillRect(sx, sy + sh * 0.85, sw, sh * 0.15); // Ground
-        ctx.fillRect(sx + sw * 0.25, sy + sh * 0.55, sw * 0.5, sh * 0.12); // Ledge
-        // Hero Sprite
-        ctx.fillStyle = '#ff9900';
-        ctx.fillRect(sx + sw * 0.4, sy + sh * 0.35, sw * 0.12, sh * 0.2);
-        // Gold Coin
-        ctx.fillStyle = '#ffcc00';
-        ctx.beginPath();
-        ctx.arc(sx + sw * 0.65, sy + sh * 0.38, 2.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // CRT Scanline Overlay
-      ctx.fillStyle = 'rgba(0,0,0,0.25)';
-      for (let line = sy; line < sy + sh; line += 3) {
-        ctx.fillRect(sx, line, sw, 1);
+        ctx.fillRect(sx, sy + sh * 0.8, sw, sh * 0.2);
       }
 
       ctx.restore();
     }
 
-    // TOP-DOWN FLOOR RENDERING
     function drawArcadeFloor() {
-      ctx.fillStyle = '#080812';
+      ctx.fillStyle = '#080314';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Fluorescent carpet retro grid pattern
-      ctx.strokeStyle = '#14142a';
+      ctx.strokeStyle = '#1d0a36';
       ctx.lineWidth = 1;
 
       for (let x = 0; x < canvas.width; x += 32) {
@@ -561,16 +719,6 @@
         ctx.lineTo(canvas.width, y);
         ctx.stroke();
       }
-
-      // Neon carpet glowing dots
-      ctx.fillStyle = '#ff00aa22';
-      for (let r = 0; r < GRID_ROWS; r++) {
-        for (let c = 0; c < GRID_COLS; c++) {
-          if (grid[r][c] === 0) {
-            ctx.fillRect(c * cellW + cellW * 0.45, r * cellH + cellH * 0.45, 3, 3);
-          }
-        }
-      }
     }
 
     function drawDoor(door, isEntrance) {
@@ -581,20 +729,19 @@
       const color = isEntrance ? '#00ff66' : '#ff0055';
       const label = isEntrance ? 'ENTRANCE' : 'EXIT';
 
-      ctx.fillStyle = isEntrance ? 'rgba(0, 255, 102, 0.2)' : 'rgba(255, 0, 85, 0.2)';
+      ctx.fillStyle = isEntrance ? 'rgba(0, 255, 102, 0.25)' : 'rgba(255, 0, 85, 0.25)';
       ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
 
       ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 3;
       ctx.strokeRect(x + 4, y + 4, w - 8, h - 8);
 
       ctx.fillStyle = color;
-      ctx.font = 'bold 9px Courier New';
+      ctx.font = 'bold 10px Courier New';
       ctx.textAlign = 'center';
       ctx.fillText(label, x + w / 2, y + h / 2 + 3);
     }
 
-    // TOP-DOWN CABINET RENDERER
     function drawTopDownCabinet(c, r) {
       const bx = c * cellW;
       const by = r * cellH;
@@ -602,59 +749,32 @@
       const h = cellH;
       const gameType = cabinetGames[r][c];
 
-      // Cabinet Outer Housing (Black/Dark Metal Box)
-      ctx.fillStyle = '#12121e';
+      ctx.fillStyle = '#121224';
       ctx.fillRect(bx + 1, by + 1, w - 2, h - 2);
 
-      ctx.strokeStyle = '#333355';
+      ctx.strokeStyle = '#ff00ff';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(bx + 1, by + 1, w - 2, h - 2);
 
-      // Control Panel Area (Bottom portion of cabinet top view)
-      const cpHeight = h * 0.28;
-      const cpY = by + h - cpHeight - 2;
-      ctx.fillStyle = '#222236';
-      ctx.fillRect(bx + 3, cpY, w - 6, cpHeight);
-
-      // Joystick & Buttons (Top-Down view)
-      ctx.fillStyle = '#ff0000'; // Joystick ball top
-      ctx.beginPath();
-      ctx.arc(bx + w * 0.3, cpY + cpHeight * 0.5, 3, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#00ffff'; // Button 1
-      ctx.beginPath();
-      ctx.arc(bx + w * 0.62, cpY + cpHeight * 0.5, 2, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#ffff00'; // Button 2
-      ctx.beginPath();
-      ctx.arc(bx + w * 0.78, cpY + cpHeight * 0.5, 2, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Top Screen Area (Top portion of cabinet top view)
       const screenX = bx + w * 0.12;
       const screenY = by + h * 0.12;
       const screenW = w * 0.76;
       const screenH = h * 0.52;
 
-      // Render 1 of 5 Video Game Scenes on Cabinet Screen
       drawGameScreen(screenX, screenY, screenW, screenH, gameType);
 
-      // Marquee Neon Light strip (Top edge)
       ctx.fillStyle = '#ff00aa';
       ctx.fillRect(bx + 4, by + 2, w - 8, 3);
     }
 
-    // TOP-DOWN STICKMAN PLAYER RENDERER
+    // DRAW STICKMAN PLAYER
     function drawStickman(x, y, facing, walkFrame) {
       ctx.strokeStyle = '#ffffff';
       ctx.fillStyle = '#ffffff';
-      ctx.lineWidth = 2.2;
+      ctx.lineWidth = 2.4;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      // Stickman Proportions
       const headRadius = 6;
       const bodyLength = 16;
       const legLength = 12;
@@ -662,23 +782,19 @@
       const headY = neckY - headRadius;
       const shoulderY = neckY + 4;
 
-      // 1. Head
       ctx.beginPath();
       ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Eye
       ctx.beginPath();
       ctx.arc(x + facing * 2.5, headY - 1, 1, 0, Math.PI * 2);
       ctx.fill();
 
-      // 2. Torso
       ctx.beginPath();
       ctx.moveTo(x, neckY);
       ctx.lineTo(x, y);
       ctx.stroke();
 
-      // 3. Legs (Animated walk swing)
       const legSwing = Math.sin(walkFrame) * 7;
       ctx.beginPath();
       ctx.moveTo(x, y);
@@ -690,7 +806,6 @@
       ctx.lineTo(x + legSwing, y + legLength);
       ctx.stroke();
 
-      // 4. Arms
       const armSwing = Math.sin(walkFrame + Math.PI) * 5;
       ctx.beginPath();
       ctx.moveTo(x, shoulderY);
@@ -703,16 +818,12 @@
       ctx.stroke();
     }
 
-    // MAIN DRAW LOOP
+    // MAIN RENDER LOOP
     function draw() {
-      // 1. Render Top-Down Carpet Floor
       drawArcadeFloor();
-
-      // 2. Render Entrance & Exit Doors
       drawDoor(entranceDoor, true);
       drawDoor(exitDoor, false);
 
-      // 3. Render Top-Down Arcade Cabinets
       for (let r = 0; r < GRID_ROWS; r++) {
         for (let c = 0; c < GRID_COLS; c++) {
           if (grid[r][c] === 1) {
@@ -721,7 +832,80 @@
         }
       }
 
-      // 4. Render Stickman ALWAYS ON TOP (Guarantees Stickman never disappears behind cabinets)
+      // RENDER BOUNCING PING PONG BALLS
+      for (let b of pongBalls) {
+        ctx.fillStyle = '#ffff00';
+        ctx.shadowColor = '#ffff00';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      // RENDER ROCKETS & EXPLOSIONS
+      for (let r of rockets) {
+        ctx.fillStyle = '#ff3300';
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (let ex of explosions) {
+        ctx.fillStyle = 'rgba(255, 102, 0, 0.5)';
+        ctx.beginPath();
+        ctx.arc((ex.centerC + 0.5) * cellW, (ex.centerR + 0.5) * cellH, ex.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // RENDER CEILING CLAWS
+      for (let claw of clawTraps) {
+        if (claw.state !== 'IDLE') {
+          const cx = (claw.targetGridX + 0.5) * cellW;
+          const cy = claw.clawY;
+
+          ctx.strokeStyle = '#aaaaaa';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(cx, 0);
+          ctx.lineTo(cx, cy);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#ff0055';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(cx - 8, cy + 8, 8, Math.PI * 0.5, Math.PI * 1.5);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(cx + 8, cy + 8, 8, -Math.PI * 0.5, Math.PI * 0.5);
+          ctx.stroke();
+        }
+      }
+
+      // RENDER NEON GHOSTS
+      for (let g of ghosts) {
+        ctx.fillStyle = g.color;
+        ctx.shadowColor = g.color;
+        ctx.shadowBlur = 10;
+
+        ctx.beginPath();
+        ctx.arc(g.x, g.y - 3, 9, Math.PI, 0, false);
+        ctx.lineTo(g.x + 9, g.y + 7);
+        ctx.lineTo(g.x + 3, g.y + 3);
+        ctx.lineTo(g.x, g.y + 7);
+        ctx.lineTo(g.x - 3, g.y + 3);
+        ctx.lineTo(g.x - 9, g.y + 7);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(g.x - 5, g.y - 5, 3, 4);
+        ctx.fillRect(g.x + 2, g.y - 5, 3, 4);
+
+        ctx.shadowBlur = 0;
+      }
+
+      // DRAW STICKMAN ALWAYS ON TOP
       drawStickman(player.x, player.y, player.facing, player.walkFrame);
     }
 
@@ -732,6 +916,7 @@
     }
 
     window.onload = function() {
+      shuffleEnemyOrder(); // Randomize enemy unlock order on load
       resizeCanvas();
       animate();
     };
