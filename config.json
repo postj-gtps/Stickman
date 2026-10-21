@@ -1,10 +1,10 @@
 {
   "googleFormUrl": "",
   "sections": {
-    "adams-scully": true,
-    "bisignaro": true,
+    "adams-scully": false,
+    "bisignaro": false,
     "kasunich": true,
-    "seddon": true,
+    "seddon": false,
     "baseline-engine": true
   }
 }
