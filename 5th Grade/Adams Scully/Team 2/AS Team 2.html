@@ -10,11 +10,11 @@
       user-select: none;
       margin: 0;
       padding: 0;
-      font-family: 'Courier New', Courier, monospace, sans-serif;
+      font-family: 'Fredoka', 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif;
     }
 
     body {
-      background-color: #0d0d11;
+      background-color: #0c0f1d;
       color: #ffffff;
       display: flex;
       flex-direction: column;
@@ -22,7 +22,7 @@
       justify-content: flex-start;
       height: 100vh;
       overflow: hidden;
-      padding: 16px;
+      padding: 12px;
     }
 
     /* Top Header Bar */
@@ -32,40 +32,53 @@
       align-items: center;
       width: 100%;
       max-width: 1100px;
-      margin-bottom: 12px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #ffffff;
+      margin-bottom: 8px;
+      padding: 8px 18px;
+      background: #181c30;
+      border: 3px solid #ffcc00;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
 
-    h1 {
-      font-size: 18px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      font-weight: bold;
+    .score-board {
+      display: flex;
+      gap: 20px;
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 1px;
     }
+
+    .score-red { color: #ff3333; text-shadow: 0 0 8px rgba(255,51,51,0.6); }
+    .score-blue { color: #3399ff; text-shadow: 0 0 8px rgba(51,153,255,0.6); }
 
     .status-display {
-      font-size: 14px;
-      font-weight: bold;
+      font-size: 15px;
+      font-weight: 800;
       color: #ffdd57;
+      text-align: center;
     }
 
     .btn-reset {
-      background: transparent;
-      color: #ffffff;
-      border: 1px solid #ffffff;
-      padding: 6px 16px;
+      background: #ffcc00;
+      color: #000;
+      border: none;
+      padding: 8px 18px;
       font-size: 14px;
-      font-weight: bold;
+      font-weight: 900;
+      border-radius: 8px;
       cursor: pointer;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      transition: all 0.15s ease-in-out;
+      box-shadow: 0 4px 0 #cca300;
+      transition: transform 0.1s, background 0.15s;
     }
 
     .btn-reset:hover {
-      background: #ffffff;
-      color: #000000;
+      background: #ffee55;
+    }
+
+    .btn-reset:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #cca300;
     }
 
     /* Main Canvas Container */
@@ -80,18 +93,147 @@
     }
 
     canvas {
-      background-color: #111111;
-      border: 1px solid #ffffff;
+      background-color: #111;
+      border: 4px solid #ffffff;
+      border-radius: 12px;
       display: block;
       width: 100%;
       height: 100%;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.7);
     }
 
     .instructions {
-      margin-top: 8px;
-      font-size: 11px;
-      color: #aaaaaa;
+      margin-top: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #cccccc;
       text-align: center;
+    }
+
+    /* Setup Modal Overlay */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 12, 22, 0.88);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      border-radius: 12px;
+    }
+
+    .modal-card {
+      background: #1d223a;
+      border: 4px solid #ffcc00;
+      border-radius: 16px;
+      padding: 22px;
+      width: 90%;
+      max-width: 620px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+    }
+
+    .modal-card h2 {
+      font-size: 24px;
+      color: #ffcc00;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .setup-section {
+      margin-bottom: 14px;
+      text-align: left;
+      background: #141728;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid #333a5c;
+    }
+
+    .setup-section h3 {
+      font-size: 14px;
+      color: #3399ff;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .char-select-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .char-option {
+      background: #252a45;
+      border: 2px solid #444c77;
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .char-option:hover {
+      border-color: #ffcc00;
+      background: #31375c;
+    }
+
+    .char-option.selected {
+      border-color: #ff3333;
+      background: #4a1c24;
+      box-shadow: 0 0 12px rgba(255,51,51,0.6);
+    }
+
+    .char-option h4 {
+      font-size: 14px;
+      color: #ffffff;
+    }
+
+    .char-option p {
+      font-size: 11px;
+      color: #bbb;
+      margin-top: 4px;
+    }
+
+    .role-select-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 13px;
+    }
+
+    select, input[type="number"] {
+      background: #252a45;
+      color: #fff;
+      border: 2px solid #ffcc00;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .btn-start {
+      background: #2ecc71;
+      color: #fff;
+      border: none;
+      padding: 12px 32px;
+      font-size: 18px;
+      font-weight: 900;
+      border-radius: 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      box-shadow: 0 5px 0 #27ae60;
+      margin-top: 8px;
+      width: 100%;
+      transition: background 0.15s;
+    }
+
+    .btn-start:hover {
+      background: #34d07b;
     }
   </style>
 </head>
@@ -99,43 +241,124 @@
 
   <!-- Header Section -->
   <div id="header">
-    <h1>Stickman Engine: Stadium CTF</h1>
-    <div id="status" class="status-display">Objective: Retrieve the Red Flag!</div>
-    <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+    <div class="score-board">
+      <span class="score-red">RED: <span id="score-red-text">0</span></span>
+      <span style="color:#666;">|</span>
+      <span class="score-blue">BLUE: <span id="score-blue-text">0</span></span>
+    </div>
+    <div id="status" class="status-display">Configure match settings to start!</div>
+    <button class="btn-reset" onclick="openSetupModal()">Setup / Reset</button>
   </div>
 
   <!-- Canvas Container -->
   <div id="canvas-wrapper">
-    <canvas id="simCanvas"></canvas>
+    <canvas id="simCanvas" tabindex="0"></canvas>
+
+    <!-- Setup Modal -->
+    <div id="modal-setup" class="modal-overlay">
+      <div class="modal-card">
+        <h2>Capture The Flag Setup</h2>
+
+        <!-- Character Selection -->
+        <div class="setup-section">
+          <h3>1. Choose Your Stickman</h3>
+          <div class="char-select-grid">
+            <div class="char-option" id="opt-big" onclick="selectPlayerChar('BIG')">
+              <h4>BIG</h4>
+              <p>Slow (0.9x)</p>
+              <p><strong>Power: BOUNCE</strong></p>
+            </div>
+            <div class="char-option selected" id="opt-med" onclick="selectPlayerChar('MED')">
+              <h4>MEDIUM</h4>
+              <p>Normal (1.0x)</p>
+              <p><strong>Power: SNEAK</strong></p>
+            </div>
+            <div class="char-option" id="opt-small" onclick="selectPlayerChar('SMALL')">
+              <h4>SMALL</h4>
+              <p>Fast (1.1x)</p>
+              <p><strong>Power: TRIP</strong></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Role Assignment -->
+        <div class="setup-section">
+          <h3>2. Assign Teammate Roles</h3>
+          <div class="role-select-row">
+            <span id="label-team-1">Teammate 1:</span>
+            <select id="role-team-1"></select>
+          </div>
+          <div class="role-select-row" style="margin-top: 8px;">
+            <span id="label-team-2">Teammate 2:</span>
+            <select id="role-team-2"></select>
+          </div>
+        </div>
+
+        <!-- Winning Score -->
+        <div class="setup-section">
+          <div class="role-select-row">
+            <label for="target-score" style="font-weight: bold; color:#ffcc00;">Target Winning Score:</label>
+            <input type="number" id="target-score" value="3" min="1" max="10" style="width: 70px;">
+          </div>
+        </div>
+
+        <button class="btn-start" onclick="startGameFromModal()">START MATCH!</button>
+      </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="modal-gameover" class="modal-overlay" style="display: none;">
+      <div class="modal-card">
+        <h2 id="winner-title">VICTORY!</h2>
+        <p id="winner-desc" style="font-size: 16px; margin: 16px 0; color:#fff;"></p>
+        <button class="btn-start" onclick="openSetupModal()">PLAY AGAIN</button>
+      </div>
+    </div>
   </div>
 
   <div class="instructions">
-    [WASD] Move Stickman | Exclusive WASD Movement Controls
+    [WASD] Move Stickman | [SPACEBAR] Activate SNEAK Power (Medium Stickman)
   </div>
 
   <script>
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
+
+    const scoreRedEl = document.getElementById('score-red-text');
+    const scoreBlueEl = document.getElementById('score-blue-text');
     const statusEl = document.getElementById('status');
+
+    const modalSetup = document.getElementById('modal-setup');
+    const modalGameOver = document.getElementById('modal-gameover');
 
     // KEYBOARD INPUT STATE
     const keys = {};
 
-    // STICKMAN PLAYER STATE
-    const player = {
-      x: 0,
-      y: 0,
-      speed: 4.5,
-      facing: 1, // 1 = Right, -1 = Left
-      walkFrame: 0,
-      hasFlag: false
+    // CHARACTER TYPES & BASE ATTRIBUTES
+    const BASE_SPEED = 4.2;
+    const CHAR_SPECS = {
+      BIG: { name: 'Big Stickman', scale: 1.5, speedMult: 0.9, power: 'BOUNCE' },
+      MED: { name: 'Medium Stickman', scale: 1.0, speedMult: 1.0, power: 'SNEAK' },
+      SMALL: { name: 'Small Stickman', scale: 0.5, speedMult: 1.1, power: 'TRIP' }
     };
 
-    // FLAG STATES
-    const blueFlag = { x: 0, y: 0 };
-    const redFlag = { x: 0, y: 0, homeX: 0, homeY: 0, isCarried: false, captured: false };
+    const ALL_ROLES = ['Defense', 'Offense', 'Pursuit'];
 
-    // STADIUM CROWD PATTERN CACHE
+    // GAME STATE VARIABLES
+    let selectedPlayerType = 'MED';
+    let targetScore = 3;
+    let scoreRed = 0;
+    let scoreBlue = 0;
+    let isGameRunning = false;
+    let animFrameCount = 0;
+
+    let redTeam = [];
+    let blueTeam = [];
+
+    let redFlag = { x: 0, y: 0, homeX: 0, homeY: 0, carrier: null, isDropped: false };
+    let blueFlag = { x: 0, y: 0, homeX: 0, homeY: 0, carrier: null, isDropped: false };
+
+    // CROWD PATTERN BACKGROUND CACHE
     let crowdCanvas = null;
 
     function generateCrowdPattern(width, height) {
@@ -156,161 +379,552 @@
       return pCanvas;
     }
 
+    function createStickman(team, type, role, isPC) {
+      const spec = CHAR_SPECS[type];
+      return {
+        team: team,
+        type: type,
+        role: role,
+        isPC: isPC,
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        speed: BASE_SPEED * spec.speedMult,
+        scale: spec.scale,
+        facing: team === 'red' ? 1 : -1,
+        walkFrame: 0,
+        hasFlag: false,
+        proneTimer: 0,
+        bounceVx: 0,
+        bounceVy: 0,
+        bounceTimer: 0,
+        sneakActiveTimer: 0,
+        sneakCooldownTimer: 0
+      };
+    }
+
+    function initDefaultTeams() {
+      if (redTeam.length === 0) {
+        redTeam = [
+          createStickman('red', 'MED', 'PLAYER', true),
+          createStickman('red', 'BIG', 'Defense', false),
+          createStickman('red', 'SMALL', 'Offense', false)
+        ];
+      }
+      if (blueTeam.length === 0) {
+        blueTeam = [
+          createStickman('blue', 'BIG', 'Defense', false),
+          createStickman('blue', 'MED', 'Offense', false),
+          createStickman('blue', 'SMALL', 'Pursuit', false)
+        ];
+      }
+    }
+
     function resizeCanvas() {
       const wrapper = document.getElementById('canvas-wrapper');
       canvas.width = wrapper.clientWidth;
       canvas.height = wrapper.clientHeight;
-
       crowdCanvas = generateCrowdPattern(canvas.width, canvas.height);
 
-      if (player.x === 0 && player.y === 0) {
-        resetSimulation();
-      }
+      initDefaultTeams();
+      updateBaseLocations();
+      resetRoundPositions();
     }
 
     window.addEventListener('resize', resizeCanvas);
 
-    // CONTROLS HANDLERS - STRICTLY WASD MOVEMENT ONLY
+    // MULTI-REGISTER CONTROLS HANDLERS - EXCLUSIVE WASD & SPACEBAR
     window.addEventListener('keydown', (e) => {
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+      const kCode = e.code;
+      const kKey = e.key;
+
+      keys[kCode] = true;
+      keys[kKey] = true;
+      keys[kKey.toLowerCase()] = true;
+      keys[kKey.toUpperCase()] = true;
+
+      if (['w', 'a', 's', 'd', 'W', 'A', 'S', 'D', ' '].includes(kKey) || 
+          ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(kCode)) {
         e.preventDefault();
-        keys[e.code] = true;
       }
     });
 
     window.addEventListener('keyup', (e) => {
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
-        keys[e.code] = false;
-      }
+      const kCode = e.code;
+      const kKey = e.key;
+
+      keys[kCode] = false;
+      keys[kKey] = false;
+      keys[kKey.toLowerCase()] = false;
+      keys[kKey.toUpperCase()] = false;
     });
 
     function getFieldDimensions() {
-      const marginX = Math.max(50, canvas.width * 0.08);
-      const marginY = Math.max(40, canvas.height * 0.08);
+      const marginX = Math.max(45, canvas.width * 0.07);
+      const marginY = Math.max(35, canvas.height * 0.07);
       const fieldX = marginX;
       const fieldY = marginY;
       const fieldW = canvas.width - (marginX * 2);
       const fieldH = canvas.height - (marginY * 2);
-
       return { fieldX, fieldY, fieldW, fieldH };
     }
 
-    function resetSimulation() {
+    function selectPlayerChar(type) {
+      selectedPlayerType = type;
+      document.querySelectorAll('.char-option').forEach(el => el.classList.remove('selected'));
+      document.getElementById('opt-' + type.toLowerCase()).classList.add('selected');
+      updateTeammateRoleDropdowns();
+    }
+
+    function updateTeammateRoleDropdowns() {
+      const unusedTypes = ['BIG', 'MED', 'SMALL'].filter(t => t !== selectedPlayerType);
+      
+      document.getElementById('label-team-1').textContent = CHAR_SPECS[unusedTypes[0]].name + ':';
+      document.getElementById('label-team-2').textContent = CHAR_SPECS[unusedTypes[1]].name + ':';
+
+      const select1 = document.getElementById('role-team-1');
+      const select2 = document.getElementById('role-team-2');
+
+      select1.innerHTML = '';
+      select2.innerHTML = '';
+
+      ALL_ROLES.forEach((role, idx) => {
+        select1.options.add(new Option(role, role, false, idx === 0));
+        select2.options.add(new Option(role, role, false, idx === 1));
+      });
+    }
+
+    function openSetupModal() {
+      isGameRunning = false;
+      modalGameOver.style.display = 'none';
+      modalSetup.style.display = 'flex';
+      selectPlayerChar(selectedPlayerType);
+    }
+
+    function startGameFromModal() {
+      targetScore = parseInt(document.getElementById('target-score').value) || 3;
+
+      const unusedTypes = ['BIG', 'MED', 'SMALL'].filter(t => t !== selectedPlayerType);
+      const role1 = document.getElementById('role-team-1').value;
+      const role2 = document.getElementById('role-team-2').value;
+
+      // Construct Player Team (Red)
+      redTeam = [
+        createStickman('red', selectedPlayerType, 'PLAYER', true),
+        createStickman('red', unusedTypes[0], role1, false),
+        createStickman('red', unusedTypes[1], role2, false)
+      ];
+
+      // Shuffle Roles for Opponent Team (Blue)
+      const blueRoles = [...ALL_ROLES].sort(() => Math.random() - 0.5);
+      blueTeam = [
+        createStickman('blue', 'BIG', blueRoles[0], false),
+        createStickman('blue', 'MED', blueRoles[1], false),
+        createStickman('blue', 'SMALL', blueRoles[2], false)
+      ];
+
+      scoreRed = 0;
+      scoreBlue = 0;
+      scoreRedEl.textContent = '0';
+      scoreBlueEl.textContent = '0';
+
+      modalSetup.style.display = 'none';
+      isGameRunning = true;
+      resetRoundPositions();
+
+      // Ensure browser focus is restored to canvas / window
+      window.focus();
+      document.body.focus();
+      canvas.focus();
+    }
+
+    function updateBaseLocations() {
       const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
 
-      // Left base center for player start
-      player.x = fieldX + fieldW * 0.09;
-      player.y = fieldY + fieldH / 2;
-      player.facing = 1;
-      player.walkFrame = 0;
-      player.hasFlag = false;
-
-      // Flag initial positions
-      blueFlag.x = fieldX + fieldW * 0.07;
-      blueFlag.y = fieldY + fieldH / 2;
-
-      redFlag.homeX = fieldX + fieldW * 0.93;
+      redFlag.homeX = fieldX + fieldW * 0.08;
       redFlag.homeY = fieldY + fieldH / 2;
+
+      blueFlag.homeX = fieldX + fieldW * 0.92;
+      blueFlag.homeY = fieldY + fieldH / 2;
+
+      if (!redFlag.carrier && !redFlag.isDropped) {
+        redFlag.x = redFlag.homeX;
+        redFlag.y = redFlag.homeY;
+      }
+
+      if (!blueFlag.carrier && !blueFlag.isDropped) {
+        blueFlag.x = blueFlag.homeX;
+        blueFlag.y = blueFlag.homeY;
+      }
+    }
+
+    function resetRoundPositions() {
+      const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
+      updateBaseLocations();
+
+      // Reset Flags
       redFlag.x = redFlag.homeX;
       redFlag.y = redFlag.homeY;
-      redFlag.isCarried = false;
-      redFlag.captured = false;
+      redFlag.carrier = null;
+      redFlag.isDropped = false;
 
-      statusEl.textContent = "Objective: Retrieve the Red Flag!";
-      statusEl.style.color = "#ffdd57";
+      blueFlag.x = blueFlag.homeX;
+      blueFlag.y = blueFlag.homeY;
+      blueFlag.carrier = null;
+      blueFlag.isDropped = false;
+
+      // Position Red Team
+      redTeam.forEach((p, i) => {
+        p.x = fieldX + fieldW * 0.1;
+        p.y = fieldY + fieldH * (0.25 + i * 0.25);
+        p.facing = 1;
+        p.hasFlag = false;
+        p.proneTimer = 0;
+        p.bounceTimer = 0;
+        p.sneakActiveTimer = 0;
+        p.sneakCooldownTimer = 0;
+      });
+
+      // Position Blue Team
+      blueTeam.forEach((p, i) => {
+        p.x = fieldX + fieldW * 0.9;
+        p.y = fieldY + fieldH * (0.25 + i * 0.25);
+        p.facing = -1;
+        p.hasFlag = false;
+        p.proneTimer = 0;
+        p.bounceTimer = 0;
+        p.sneakActiveTimer = 0;
+        p.sneakCooldownTimer = 0;
+      });
+
+      statusEl.textContent = `Get the Blue Flag and return to Red End Zone! First to ${targetScore}!`;
+      statusEl.style.color = '#ffdd57';
     }
 
     function updatePhysics() {
+      if (!isGameRunning) return;
+
+      animFrameCount++;
       const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
+      const halfX = fieldX + fieldW / 2;
+      const allPlayers = [...redTeam, ...blueTeam];
 
-      // Movement Direction Calculation (WASD only)
-      let dx = 0;
-      let dy = 0;
+      // UPDATE EACH STICKMAN
+      allPlayers.forEach(p => {
+        // Handle Timers
+        if (p.proneTimer > 0) p.proneTimer--;
+        if (p.bounceTimer > 0) p.bounceTimer--;
+        if (p.sneakActiveTimer > 0) p.sneakActiveTimer--;
+        if (p.sneakCooldownTimer > 0) p.sneakCooldownTimer--;
 
-      if (keys['KeyW'] || keys['Keyw']) dy -= 1;
-      if (keys['KeyS'] || keys['Keys']) dy += 1;
-      if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
-      if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+        let dx = 0;
+        let dy = 0;
 
-      // Normalize diagonal movement vector speed
-      if (dx !== 0 && dy !== 0) {
-        dx *= 0.7071;
-        dy *= 0.7071;
+        // Bouncing motion
+        if (p.bounceTimer > 0) {
+          p.x += p.bounceVx;
+          p.y += p.bounceVy;
+        } else if (p.proneTimer === 0) {
+          // Player Controls
+          if (p.isPC) {
+            const moveUp = keys['KeyW'] || keys['w'] || keys['W'];
+            const moveDown = keys['KeyS'] || keys['s'] || keys['S'];
+            const moveLeft = keys['KeyA'] || keys['a'] || keys['A'];
+            const moveRight = keys['KeyD'] || keys['d'] || keys['D'];
+            const triggerSneak = keys['Space'] || keys[' '];
+
+            if (moveUp) dy -= 1;
+            if (moveDown) dy += 1;
+            if (moveLeft) { dx -= 1; p.facing = -1; }
+            if (moveRight) { dx += 1; p.facing = 1; }
+
+            // Trigger SNEAK power if Medium Stickman
+            if (triggerSneak && p.type === 'MED' && p.sneakCooldownTimer === 0) {
+              p.sneakActiveTimer = 180;
+              p.sneakCooldownTimer = 600;
+              statusEl.textContent = "SNEAK POWER ACTIVATED!";
+              statusEl.style.color = "#2ecc71";
+            }
+
+            if (dx !== 0 && dy !== 0) {
+              dx *= 0.7071;
+              dy *= 0.7071;
+            }
+
+            p.x += dx * p.speed;
+            p.y += dy * p.speed;
+          } else {
+            // AI Behavior Logic
+            const aiMove = computeAIMovement(p, halfX, fieldX, fieldY, fieldW, fieldH);
+            dx = aiMove.dx;
+            dy = aiMove.dy;
+
+            if (dx !== 0) p.facing = dx > 0 ? 1 : -1;
+
+            p.x += dx * p.speed;
+            p.y += dy * p.speed;
+          }
+        }
+
+        // Boundary Clamping
+        const margin = 12 * p.scale;
+        p.x = Math.max(fieldX + margin, Math.min(fieldX + fieldW - margin, p.x));
+        p.y = Math.max(fieldY + margin + 10, Math.min(fieldY + fieldH - margin, p.y));
+
+        // Walking Cycle
+        if ((dx !== 0 || dy !== 0) && p.proneTimer === 0) {
+          p.walkFrame += 0.25;
+        } else {
+          p.walkFrame = 0;
+        }
+      });
+
+      // FLAG CARRIER POSITIONING
+      if (blueFlag.carrier) {
+        blueFlag.x = blueFlag.carrier.x + (blueFlag.carrier.facing * 10);
+        blueFlag.y = blueFlag.carrier.y - 10;
+      }
+      if (redFlag.carrier) {
+        redFlag.x = redFlag.carrier.x + (redFlag.carrier.facing * 10);
+        redFlag.y = redFlag.carrier.y - 10;
       }
 
-      // Update stickman position
-      player.x += dx * player.speed;
-      player.y += dy * player.speed;
+      // FLAG PICKUPS & TAG COLLISIONS
+      checkFlagPickups();
+      checkTagCollisions();
+      checkScoring(fieldX, fieldW);
+    }
 
-      // Keep stickman inside field boundaries
-      const margin = 12;
-      player.x = Math.max(fieldX + margin, Math.min(fieldX + fieldW - margin, player.x));
-      player.y = Math.max(fieldY + margin + 10, Math.min(fieldY + fieldH - margin, player.y));
+    function computeAIMovement(p, halfX, fieldX, fieldY, fieldW, fieldH) {
+      let targetX = p.x;
+      let targetY = p.y;
 
-      // Walk animation cycle updates
-      if (dx !== 0 || dy !== 0) {
-        player.walkFrame += 0.25;
+      const isRed = p.team === 'red';
+      const enemyFlag = isRed ? blueFlag : redFlag;
+      const ownFlag = isRed ? redFlag : blueFlag;
+      const enemyTeam = isRed ? blueTeam : redTeam;
+
+      if (p.role === 'Offense') {
+        if (p.hasFlag) {
+          targetX = isRed ? fieldX + 30 : fieldX + fieldW - 30;
+          targetY = fieldY + fieldH / 2;
+        } else {
+          targetX = enemyFlag.x;
+          // Weave slightly up/down while seeking flag
+          targetY = enemyFlag.y + Math.sin(animFrameCount * 0.05 + (isRed ? 0 : 2)) * 60;
+        }
+      } else if (p.role === 'Defense') {
+        let intruder = null;
+        let minDist = Infinity;
+
+        enemyTeam.forEach(e => {
+          const inOurSide = isRed ? (e.x < halfX) : (e.x > halfX);
+          if (inOurSide || e.hasFlag) {
+            const dist = Math.hypot(e.x - p.x, e.y - p.y);
+            if (dist < minDist) {
+              minDist = dist;
+              intruder = e;
+            }
+          }
+        });
+
+        if (intruder) {
+          targetX = intruder.x;
+          targetY = intruder.y;
+        } else {
+          // Active Defensive Patrol along defensive boundary
+          targetX = isRed ? halfX - 120 : halfX + 120;
+          targetY = (fieldY + fieldH / 2) + Math.sin(animFrameCount * 0.03 + (isRed ? 1 : 3)) * (fieldH * 0.35);
+        }
+
+        // Enforce Halfline Defense Restriction
+        if (isRed) {
+          targetX = Math.min(halfX - 20, targetX);
+        } else {
+          targetX = Math.max(halfX + 20, targetX);
+        }
+      } else if (p.role === 'Pursuit') {
+        if (ownFlag.carrier) {
+          targetX = ownFlag.carrier.x;
+          targetY = ownFlag.carrier.y;
+        } else {
+          // Active Center Patrol
+          targetX = isRed ? halfX - 50 : halfX + 50;
+          targetY = (fieldY + fieldH / 2) + Math.cos(animFrameCount * 0.04) * (fieldH * 0.35);
+        }
+      }
+
+      const angle = Math.atan2(targetY - p.y, targetX - p.x);
+      const dist = Math.hypot(targetX - p.x, targetY - p.y);
+
+      if (dist < 4) return { dx: 0, dy: 0 };
+      return { dx: Math.cos(angle), dy: Math.sin(angle) };
+    }
+
+    function checkFlagPickups() {
+      const allPlayers = [...redTeam, ...blueTeam];
+
+      allPlayers.forEach(p => {
+        if (p.proneTimer > 0) return;
+
+        // BLUE FLAG PICKUP
+        if (!blueFlag.carrier) {
+          const dist = Math.hypot(p.x - blueFlag.x, p.y - blueFlag.y);
+          if (dist < 22 * p.scale) {
+            if (p.team === 'red') {
+              blueFlag.carrier = p;
+              blueFlag.isDropped = false;
+              p.hasFlag = true;
+              statusEl.textContent = `${p.type} STOLE THE BLUE FLAG!`;
+              statusEl.style.color = '#ffcc00';
+            } else if (blueFlag.isDropped) {
+              blueFlag.x = blueFlag.homeX;
+              blueFlag.y = blueFlag.homeY;
+              blueFlag.isDropped = false;
+              statusEl.textContent = `BLUE RETURNED THEIR FLAG!`;
+              statusEl.style.color = '#3399ff';
+            }
+          }
+        }
+
+        // RED FLAG PICKUP
+        if (!redFlag.carrier) {
+          const dist = Math.hypot(p.x - redFlag.x, p.y - redFlag.y);
+          if (dist < 22 * p.scale) {
+            if (p.team === 'blue') {
+              redFlag.carrier = p;
+              redFlag.isDropped = false;
+              p.hasFlag = true;
+              statusEl.textContent = `BLUE STOLE THE RED FLAG!`;
+              statusEl.style.color = '#ff3333';
+            } else if (redFlag.isDropped) {
+              redFlag.x = redFlag.homeX;
+              redFlag.y = redFlag.homeY;
+              redFlag.isDropped = false;
+              statusEl.textContent = `RED RETURNED THEIR FLAG!`;
+              statusEl.style.color = '#ffcc00';
+            }
+          }
+        }
+      });
+    }
+
+    function checkTagCollisions() {
+      redTeam.forEach(redP => {
+        blueTeam.forEach(blueP => {
+          if (redP.sneakActiveTimer > 0 || blueP.sneakActiveTimer > 0) return;
+          if (redP.proneTimer > 0 || blueP.proneTimer > 0) return;
+
+          const dist = Math.hypot(redP.x - blueP.x, redP.y - blueP.y);
+          const hitDist = 20 * Math.max(redP.scale, blueP.scale);
+
+          if (dist < hitDist) {
+            const redCanTag = redP.role !== 'Offense';
+            const blueCanTag = blueP.role !== 'Offense';
+
+            if (redCanTag) applyTagPenalty(redP, blueP);
+            if (blueCanTag) applyTagPenalty(blueP, redP);
+          }
+        });
+      });
+    }
+
+    function applyTagPenalty(tagger, victim) {
+      if (victim.hasFlag) {
+        victim.hasFlag = false;
+        if (blueFlag.carrier === victim) {
+          blueFlag.carrier = null;
+          blueFlag.isDropped = true;
+        }
+        if (redFlag.carrier === victim) {
+          redFlag.carrier = null;
+          redFlag.isDropped = true;
+        }
+        statusEl.textContent = `${victim.team.toUpperCase()} DROPPED THE FLAG!`;
+        statusEl.style.color = '#ff3333';
+      }
+
+      if (tagger.type === 'BIG') {
+        const angle = Math.atan2(victim.y - tagger.y, victim.x - tagger.x);
+        victim.bounceVx = Math.cos(angle) * 14;
+        victim.bounceVy = Math.sin(angle) * 14;
+        victim.bounceTimer = 25;
+      } else if (tagger.type === 'SMALL') {
+        victim.proneTimer = 180;
       } else {
-        player.walkFrame = 0;
+        const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
+        victim.x = victim.team === 'red' ? fieldX + fieldW * 0.08 : fieldX + fieldW * 0.92;
+        victim.y = fieldY + fieldH / 2;
+      }
+    }
+
+    function checkScoring(fieldX, fieldW) {
+      const leftEndZone = fieldX + fieldW * 0.18;
+      const rightEndZone = fieldX + fieldW * 0.82;
+
+      if (blueFlag.carrier && blueFlag.carrier.team === 'red' && blueFlag.carrier.x <= leftEndZone) {
+        scoreRed++;
+        scoreRedEl.textContent = scoreRed;
+        if (scoreRed >= targetScore) {
+          triggerGameOver('RED TEAM WINS!', 'Congratulations! Red Team captured enough flags to win!');
+        } else {
+          statusEl.textContent = 'RED SCORED A POINT!';
+          statusEl.style.color = '#2ecc71';
+          resetRoundPositions();
+        }
       }
 
-      // Red Flag Pickup logic
-      const distToRedFlag = Math.hypot(player.x - redFlag.x, player.y - redFlag.y);
-      if (!redFlag.isCarried && !redFlag.captured && distToRedFlag < 28) {
-        redFlag.isCarried = true;
-        player.hasFlag = true;
-        statusEl.textContent = "Flag Picked Up! Return to Left Base!";
-        statusEl.style.color = "#ff9900";
-      }
-
-      // Flag carry positioning
-      if (redFlag.isCarried) {
-        redFlag.x = player.x + (player.facing * 12);
-        redFlag.y = player.y - 12;
-
-        // Check if player returned to home base zone (left base line)
-        const leftBaseLineWidth = fieldX + fieldW * 0.18;
-        if (player.x <= leftBaseLineWidth) {
-          redFlag.isCarried = false;
-          redFlag.captured = true;
-          player.hasFlag = false;
-          statusEl.textContent = "Touchdown! Red Flag Captured!";
-          statusEl.style.color = "#2ecc71";
+      if (redFlag.carrier && redFlag.carrier.team === 'blue' && redFlag.carrier.x >= rightEndZone) {
+        scoreBlue++;
+        scoreBlueEl.textContent = scoreBlue;
+        if (scoreBlue >= targetScore) {
+          triggerGameOver('BLUE TEAM WINS!', 'Blue Team captured enough flags to win the match!');
+        } else {
+          statusEl.textContent = 'BLUE SCORED A POINT!';
+          statusEl.style.color = '#3399ff';
+          resetRoundPositions();
         }
       }
     }
 
+    function triggerGameOver(title, desc) {
+      isGameRunning = false;
+      document.getElementById('winner-title').textContent = title;
+      document.getElementById('winner-desc').textContent = desc;
+      modalGameOver.style.display = 'flex';
+    }
+
+    // DRAWING RENDER FUNCTIONS
     function drawStadiumAndField() {
       const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
 
-      // 1. Draw Packed Stadium Crowd Background
       if (crowdCanvas) {
         ctx.drawImage(crowdCanvas, 0, 0);
       }
 
-      // Dark overlay for aisle lines / crowd depth
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 2. Draw Rectangular Pitch / Field
-      ctx.fillStyle = '#27a745';
+      // Grass Pitch
+      ctx.fillStyle = '#27ae60';
       ctx.fillRect(fieldX, fieldY, fieldW, fieldH);
 
-      // Grass mowing stripes
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-      const stripeWidth = fieldW / 10;
+      // Grass Stripes
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+      const stripeW = fieldW / 10;
       for (let i = 0; i < 10; i += 2) {
-        ctx.fillRect(fieldX + i * stripeWidth, fieldY, stripeWidth, fieldH);
+        ctx.fillRect(fieldX + i * stripeW, fieldY, stripeW, fieldH);
       }
 
-      // Outer Field Border
+      // Outer Boundary
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 4;
       ctx.strokeRect(fieldX, fieldY, fieldW, fieldH);
 
-      // 3. Half-Field Marker (Center Line)
+      // Center Line
       const halfX = fieldX + fieldW / 2;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(halfX, fieldY);
       ctx.lineTo(halfX, fieldY + fieldH);
@@ -321,30 +935,24 @@
       ctx.arc(halfX, fieldY + fieldH / 2, Math.min(fieldW, fieldH) * 0.16, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Center Spot
-      ctx.beginPath();
-      ctx.arc(halfX, fieldY + fieldH / 2, 4, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-
-      // 4. Base Zones (Lines at either end of field)
+      // End Zones
       const leftBaseX = fieldX + fieldW * 0.18;
       const rightBaseX = fieldX + fieldW * 0.82;
 
-      // Left Base Zone Tint & Boundary Line
-      ctx.fillStyle = 'rgba(52, 152, 219, 0.18)';
+      // Red Base (Left)
+      ctx.fillStyle = 'rgba(231, 76, 60, 0.28)';
       ctx.fillRect(fieldX, fieldY, fieldW * 0.18, fieldH);
-      ctx.strokeStyle = '#3498db';
+      ctx.strokeStyle = '#ff3333';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(leftBaseX, fieldY);
       ctx.lineTo(leftBaseX, fieldY + fieldH);
       ctx.stroke();
 
-      // Right Base Zone Tint & Boundary Line
-      ctx.fillStyle = 'rgba(231, 76, 60, 0.18)';
+      // Blue Base (Right)
+      ctx.fillStyle = 'rgba(52, 152, 219, 0.28)';
       ctx.fillRect(rightBaseX, fieldY, fieldW * 0.18, fieldH);
-      ctx.strokeStyle = '#e74c3c';
+      ctx.strokeStyle = '#3399ff';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(rightBaseX, fieldY);
@@ -352,10 +960,20 @@
       ctx.stroke();
     }
 
-    function drawFlag(x, y, color) {
+    function drawFlag(flagObj, color, label) {
       ctx.save();
 
-      // Flag Pole
+      const x = flagObj.x;
+      const y = flagObj.y;
+
+      if (flagObj.isDropped) {
+        ctx.beginPath();
+        ctx.arc(x, y, 18, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.4)';
+        ctx.fill();
+      }
+
+      // Flagpole
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -367,58 +985,81 @@
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.moveTo(x, y - 32);
-      ctx.lineTo(x + 20, y - 22);
+      ctx.lineTo(x + 22, y - 22);
       ctx.lineTo(x, y - 12);
       ctx.closePath();
       ctx.fill();
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // Stand Base
+      // Flag Stand
       ctx.beginPath();
       ctx.ellipse(x, y, 8, 4, 0, 0, Math.PI * 2);
-      ctx.fillStyle = '#222222';
+      ctx.fillStyle = '#222';
       ctx.fill();
       ctx.stroke();
 
       ctx.restore();
     }
 
-    function drawStickman(x, y, facing, walkFrame) {
-      ctx.strokeStyle = '#ffffff';
-      ctx.fillStyle = '#ffffff';
-      ctx.lineWidth = 2.2;
+    function drawStickman(p) {
+      ctx.save();
+
+      const x = p.x;
+      const y = p.y;
+      const scale = p.scale;
+      const facing = p.facing;
+      const isRed = p.team === 'red';
+
+      if (p.sneakActiveTimer > 0) {
+        ctx.globalAlpha = 0.35;
+      }
+
+      const teamColor = isRed ? '#ff3333' : '#3399ff';
+      ctx.strokeStyle = teamColor;
+      ctx.fillStyle = teamColor;
+      ctx.lineWidth = 2.8 * scale;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      // Stickman Proportions
-      const headRadius = 6;
-      const bodyLength = 18;
-      const legLength = 14;
+      if (p.proneTimer > 0) {
+        ctx.beginPath();
+        ctx.ellipse(x, y + 4, 16 * scale, 6 * scale, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillStyle = '#ffdd57';
+        ctx.textAlign = 'center';
+        ctx.fillText('TRIPPED', x, y - 12);
+        ctx.restore();
+        return;
+      }
+
+      const headRadius = 6 * scale;
+      const bodyLength = 18 * scale;
+      const legLength = 14 * scale;
       const neckY = y - bodyLength;
       const headY = neckY - headRadius;
-      const shoulderY = neckY + 4;
+      const shoulderY = neckY + 4 * scale;
 
-      // 1. Head
+      // Head
       ctx.beginPath();
       ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Eye Indicator
+      // Eye
       ctx.beginPath();
-      ctx.arc(x + facing * 2.5, headY - 0.5, 1, 0, Math.PI * 2);
+      ctx.arc(x + facing * 2.5 * scale, headY - 0.5, 1 * scale, 0, Math.PI * 2);
       ctx.fill();
 
-      // 2. Torso
+      // Torso
       ctx.beginPath();
       ctx.moveTo(x, neckY);
       ctx.lineTo(x, y);
       ctx.stroke();
 
-      // 3. Legs
-      const legSwing = Math.sin(walkFrame) * 7;
-
+      // Legs
+      const legSwing = Math.sin(p.walkFrame) * 6 * scale;
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x - legSwing, y + legLength);
@@ -429,32 +1070,64 @@
       ctx.lineTo(x + legSwing, y + legLength);
       ctx.stroke();
 
-      // 4. Back Arm
-      const armSwing = Math.sin(walkFrame + Math.PI) * 5;
+      // Arms
+      const armSwing = Math.sin(p.walkFrame + Math.PI) * 5 * scale;
       ctx.beginPath();
       ctx.moveTo(x, shoulderY);
-      ctx.lineTo(x - facing * 5 - armSwing, shoulderY + 7);
+      ctx.lineTo(x - facing * 5 * scale - armSwing, shoulderY + 7 * scale);
       ctx.stroke();
 
-      // 5. Front Arm
       ctx.beginPath();
       ctx.moveTo(x, shoulderY);
-      ctx.lineTo(x + facing * 5 + armSwing, shoulderY + 7);
+      ctx.lineTo(x + facing * 5 * scale + armSwing, shoulderY + 7 * scale);
       ctx.stroke();
+
+      // Role Badge Label
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      const roleTag = p.isPC ? 'YOU' : p.role.substring(0, 3).toUpperCase();
+      ctx.fillText(`${p.type[0]}-${roleTag}`, x, headY - 8);
+
+      ctx.restore();
+    }
+
+    function drawHUD() {
+      const pc = redTeam.find(p => p.isPC);
+      if (pc && pc.type === 'MED') {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('SNEAK COOLDOWN:', 20, canvas.height - 15);
+
+        const barW = 100;
+        const barH = 10;
+        const barX = 150;
+        const barY = canvas.height - 24;
+
+        ctx.fillStyle = '#222';
+        ctx.fillRect(barX, barY, barW, barH);
+
+        const pct = 1 - (pc.sneakCooldownTimer / 600);
+        ctx.fillStyle = pct >= 1 ? '#2ecc71' : '#ff9900';
+        ctx.fillRect(barX, barY, barW * pct, barH);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barW, barH);
+      }
     }
 
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw Field & Stadium
       drawStadiumAndField();
+      drawFlag(redFlag, '#ff3333', 'RED');
+      drawFlag(blueFlag, '#3399ff', 'BLUE');
 
-      // Draw Base Flags
-      drawFlag(blueFlag.x, blueFlag.y, '#3498db');
-      drawFlag(redFlag.x, redFlag.y, '#e74c3c');
+      redTeam.forEach(p => drawStickman(p));
+      blueTeam.forEach(p => drawStickman(p));
 
-      // Draw Player
-      drawStickman(player.x, player.y, player.facing, player.walkFrame);
+      drawHUD();
     }
 
     function animate() {
@@ -465,6 +1138,7 @@
 
     window.onload = function() {
       resizeCanvas();
+      openSetupModal();
       animate();
     };
   </script>
