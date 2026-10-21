@@ -334,7 +334,7 @@
     // KEYBOARD INPUT STATE
     const keys = {};
 
-    // HALVED MOVEMENT SPEED
+    // HALVED MOVEMENT SPEED (Baseline = 2.1)
     const BASE_SPEED = 2.1;
 
     const CHAR_SPECS = {
@@ -400,6 +400,7 @@
         walkFrame: 0,
         hasFlag: false,
         proneTimer: 0,
+        tripImmunityTimer: 0, // 2-second post-trip immunity timer
         bounceVx: 0,
         bounceVy: 0,
         bounceTimer: 0,
@@ -438,7 +439,7 @@
 
     window.addEventListener('resize', resizeCanvas);
 
-    // MULTI-REGISTER CONTROLS HANDLERS - EXCLUSIVE WASD & SPACEBAR
+    // MULTI-REGISTER CONTROLS HANDLERS - EXCLUSIVE WASD & SPACEBAR ONLY
     window.addEventListener('keydown', (e) => {
       const kCode = e.code;
       const kKey = e.key;
@@ -584,6 +585,7 @@
         p.facing = 1;
         p.hasFlag = false;
         p.proneTimer = 0;
+        p.tripImmunityTimer = 0;
         p.bounceTimer = 0;
         p.sneakActiveTimer = 0;
         p.sneakCooldownTimer = 0;
@@ -596,6 +598,7 @@
         p.facing = -1;
         p.hasFlag = false;
         p.proneTimer = 0;
+        p.tripImmunityTimer = 0;
         p.bounceTimer = 0;
         p.sneakActiveTimer = 0;
         p.sneakCooldownTimer = 0;
@@ -615,7 +618,16 @@
 
       // UPDATE EACH STICKMAN
       allPlayers.forEach(p => {
-        if (p.proneTimer > 0) p.proneTimer--;
+        // Prone recovery & 2-Second Trip Immunity logic
+        if (p.proneTimer > 0) {
+          p.proneTimer--;
+          if (p.proneTimer === 0) {
+            p.tripImmunityTimer = 120; // 2 seconds (120 frames at 60 FPS) post-trip immunity
+          }
+        } else if (p.tripImmunityTimer > 0) {
+          p.tripImmunityTimer--;
+        }
+
         if (p.bounceTimer > 0) p.bounceTimer--;
         if (p.sneakActiveTimer > 0) p.sneakActiveTimer--;
         if (p.sneakCooldownTimer > 0) p.sneakCooldownTimer--;
@@ -737,12 +749,10 @@
           targetX = Math.max(halfX + 20, targetX);
         }
       } else if (p.role === 'Pursuit') {
-        // Pursuit characters chase flag carriers AND retrieve dropped flags
         if (ownFlag.carrier) {
           targetX = ownFlag.carrier.x;
           targetY = ownFlag.carrier.y;
         } else if (ownFlag.isDropped) {
-          // Retrieve downed flag
           targetX = ownFlag.x;
           targetY = ownFlag.y;
         } else {
@@ -847,7 +857,10 @@
         victim.bounceVy = Math.sin(angle) * 14;
         victim.bounceTimer = 25;
       } else if (tagger.type === 'SMALL') {
-        victim.proneTimer = 180;
+        // Only trip if victim is not currently prone and not in immunity window
+        if (victim.proneTimer === 0 && victim.tripImmunityTimer === 0) {
+          victim.proneTimer = 180; // 3 seconds prone
+        }
       } else {
         const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
         victim.x = victim.team === 'red' ? fieldX + fieldW * 0.08 : fieldX + fieldW * 0.92;
@@ -1016,7 +1029,18 @@
       const pantsColor = '#111111';
       const skinColor = p.skinColor;
 
-      // Handle Prone / Tripped rendering
+      // Render 2-second Trip Immunity Shield Aura
+      if (p.tripImmunityTimer > 0) {
+        ctx.beginPath();
+        ctx.arc(x, y - 10 * scale, 18 * scale, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 221, 87, 0.25)';
+        ctx.fill();
+        ctx.strokeStyle = '#ffdd57';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      // Handle Prone / Tripped rendering state
       if (p.proneTimer > 0) {
         ctx.strokeStyle = pantsColor;
         ctx.lineWidth = 3 * scale;
@@ -1055,7 +1079,7 @@
       ctx.lineTo(x + legSwing, y + legLength);
       ctx.stroke();
 
-      // 2. Team Colored Shirt (Torso)
+      // 2. Team-Colored Shirt (Torso)
       ctx.strokeStyle = teamShirtColor;
       ctx.lineWidth = 5.5 * scale;
       ctx.beginPath();
@@ -1095,12 +1119,13 @@
       ctx.arc(x + facing * 2.5 * scale, headY - 0.5, 1 * scale, 0, Math.PI * 2);
       ctx.fill();
 
-      // 5. Role Badge Label
+      // 5. Role & Immunity Badge Label
       ctx.font = 'bold 10px sans-serif';
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'center';
       const roleTag = p.isPC ? 'YOU' : p.role.substring(0, 3).toUpperCase();
-      ctx.fillText(`${p.type[0]}-${roleTag}`, x, headY - 9);
+      const labelText = p.tripImmunityTimer > 0 ? `${p.type[0]}-IMMUNE` : `${p.type[0]}-${roleTag}`;
+      ctx.fillText(labelText, x, headY - 9);
 
       ctx.restore();
     }
