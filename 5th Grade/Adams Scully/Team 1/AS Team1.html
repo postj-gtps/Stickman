@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Stickman Engine - Aztec Jungle Hazards</title>
+ <title>Stickman Engine - Aztec Temple Quest</title>
  <style>
  * {
  box-sizing: border-box;
@@ -34,7 +34,7 @@
  max-width: 1100px;
  margin-bottom: 12px;
  padding-bottom: 8px;
- border-bottom: 1px solid #2e7d32;
+ border-bottom: 2px solid #ffd700;
  }
 
  h1 {
@@ -43,19 +43,20 @@
  text-transform: uppercase;
  font-weight: bold;
  color: #ffd700;
- text-shadow: 1px 1px 2px #000;
+ text-shadow: 2px 2px 4px #000000;
  }
 
  .btn-reset {
- background: transparent;
+ background: #1b4332;
  color: #ffd700;
- border: 1px solid #ffd700;
+ border: 2px solid #ffd700;
  padding: 6px 16px;
- font-size: 14px;
+ font-size: 13px;
  font-weight: bold;
  cursor: pointer;
  text-transform: uppercase;
  letter-spacing: 1px;
+ border-radius: 4px;
  transition: all 0.15s ease-in-out;
  }
 
@@ -77,12 +78,12 @@
 
  canvas {
  background-color: #122b14;
- border: 2px solid #ffd700;
- border-radius: 4px;
+ border: 3px solid #ffd700;
+ border-radius: 6px;
  display: block;
  width: 100%;
  height: 100%;
- box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+ box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
  }
 
  .instructions {
@@ -91,6 +92,7 @@
  color: #a3e635;
  text-align: center;
  font-weight: bold;
+ text-shadow: 1px 1px 2px #000;
  }
  </style>
 </head>
@@ -98,8 +100,8 @@
 
  <!-- Header Section -->
  <div id="header">
- <h1>Stickman Engine: Jungle Hazards</h1>
- <button class="btn-reset" onclick="resetSimulation()">Reset Game</button>
+ <h1 id="gameTitle">Stickman Engine: Level 1 - Jungle Approach</h1>
+ <button class="btn-reset" onclick="resetGame()">Reset Game</button>
  </div>
 
  <!-- Canvas Container -->
@@ -107,18 +109,19 @@
  <canvas id="simCanvas"></canvas>
  </div>
 
- <div class="instructions">
- Movement: [W][A][S][D] Only (Arrow Keys Disabled) | Escape Anaconda: Spam [W]&amp;[S] | Escape Vine: Spam [A]&amp;[D]
+ <div class="instructions" id="instructionBar">
+ Move: [W][A][S][D] Only (Arrow Keys Disabled) | Escape Squeeze: Spam [W]&amp;[S] | Escape Vine: Spam [A]&amp;[D]
  </div>
 
  <script>
  const canvas = document.getElementById('simCanvas');
  const ctx = canvas.getContext('2d');
 
- // KEYBOARD INPUT STATE
+ // GAME STATE & PROGRESSION
+ let currentLevel = 1;
  const keys = {};
 
- // STICKMAN PLAYER STATE
+ // PLAYER STATE
  const player = {
  x: 0,
  y: 0,
@@ -126,16 +129,13 @@
  facing: 1, // 1 = Right, -1 = Left
  walkFrame: 0,
  coinsCollected: 0,
- armor: {
- helmet: false,
- chestplate: false,
- leggings: false,
- shield: false
- },
+ armor: { helmet: false, chestplate: false, leggings: false, shield: false },
  trappedBy: null, // null, 'anaconda', 'vine'
  trapProgress: 0,
  trapTarget: 8,
- trappedEnemy: null
+ trappedEnemy: null,
+ invincibleTimer: 0, // 5 seconds (300 frames @ 60fps)
+ goldenBananas: 0
  };
 
  // GAME OBJECTS & HAZARDS
@@ -148,55 +148,73 @@
  let anacondas = [];
  let angryRocks = [];
  let rockSpawnTimer = 0;
+ let portal = null;
+ let bananaTrees = [];
+ let minions = [];
+ let bananaProjectiles = [];
+ let levers = [];
+ let bossDoorOpen = false;
 
  function resizeCanvas() {
  const wrapper = document.getElementById('canvas-wrapper');
  canvas.width = wrapper.clientWidth;
  canvas.height = wrapper.clientHeight;
- 
- resetSimulation();
+ resetGame();
  }
 
  window.addEventListener('resize', resizeCanvas);
 
- // KEYBOARD INPUT & TRAP ESCAPE HANDLER
+ // KEYBOARD CONTROLS HANDLER (EXCLUDES ARROW KEYS STRICTLY)
  window.addEventListener('keydown', (e) => {
  const key = e.key.toLowerCase();
- 
- // Explicitly block arrow keys
+
+ // Block Arrow Keys
  if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
  e.preventDefault();
  return;
  }
 
+ // Action: Throw Golden Banana in Level 2
+ if (e.code === 'Space' || key === ' ') {
+ e.preventDefault();
+ if (currentLevel === 2 && player.goldenBananas > 0) {
+ player.goldenBananas--;
+ bananaProjectiles.push({
+ x: player.x,
+ y: player.y - 10,
+ vx: player.facing * 8,
+ vy: -1.5,
+ rotation: 0
+ });
+ }
+ return;
+ }
+
+ // WASD Movement & Escape Mechanics
  if (['w', 'a', 's', 'd'].includes(key)) {
  e.preventDefault();
 
- // Handle Anaconda Squeeze Escape Mechanics (Spam W and S)
+ // Escape Anaconda Squeeze: Spam W and S
  if (player.trappedBy === 'anaconda') {
  if (!e.repeat && (key === 'w' || key === 's')) {
  player.trapProgress++;
  if (player.trapProgress >= player.trapTarget) {
  player.trappedBy = null;
- if (player.trappedEnemy) {
- player.trappedEnemy.cooldown = 180; // Repel snake for 3s
- player.trappedEnemy = null;
- }
+ player.invincibleTimer = 300; // 5 Seconds Invincibility!
+ if (player.trappedEnemy) player.trappedEnemy.cooldown = 180;
  }
  }
  return;
  }
 
- // Handle Vine Tangle Escape Mechanics (Spam A and D)
+ // Escape Vine Tangle: Spam A and D
  if (player.trappedBy === 'vine') {
  if (!e.repeat && (key === 'a' || key === 'd')) {
  player.trapProgress++;
  if (player.trapProgress >= player.trapTarget) {
  player.trappedBy = null;
- if (player.trappedEnemy) {
- player.trappedEnemy.cooldown = 240; // Retract vine for 4s
- player.trappedEnemy = null;
- }
+ player.invincibleTimer = 300; // 5 Seconds Invincibility!
+ if (player.trappedEnemy) player.trappedEnemy.vineCooldown = 240;
  }
  }
  return;
@@ -213,26 +231,42 @@
  }
  });
 
- function initEnvironment() {
+ function initLevel(level) {
  const w = canvas.width;
  const h = canvas.height;
- const groundTop = h * 0.35;
+ const groundTop = h * 0.38;
 
- // Generate Trees with Vine Traps
+ player.x = w / 2;
+ player.y = h * 0.65;
+ player.facing = 1;
+ player.walkFrame = 0;
+ player.trappedBy = null;
+ player.trappedEnemy = null;
+ player.invincibleTimer = 0;
+
+ portal = null;
+ bananaProjectiles = [];
+
+ if (level === 1) {
+ document.getElementById('gameTitle').innerText = "Stickman Engine: Level 1 - Jungle Approach";
+ document.getElementById('instructionBar').innerText = "Move: [W][A][S][D] Only (Arrow Keys Disabled) | Escape Squeeze: Spam [W]&[S] | Escape Vine: Spam [A]&[D]";
+ 
+ player.coinsCollected = 0;
+ player.armor = { helmet: false, chestplate: false, leggings: false, shield: false };
+
+ // Trees with Vine Traps
  trees = [];
- const treeCount = 6;
- for (let i = 0; i < treeCount; i++) {
+ for (let i = 0; i < 6; i++) {
  trees.push({
- x: (w / (treeCount + 1)) * (i + 1) + (Math.random() * 30 - 15),
+ x: (w / 7) * (i + 1) + (Math.random() * 30 - 15),
  y: groundTop + Math.random() * (h - groundTop - 80),
  scale: 0.8 + Math.random() * 0.4,
- hasVine: i % 2 === 0, // Alternating trees feature trap vines
+ hasVine: i % 2 === 0,
  vineLength: 45,
  vineCooldown: 0
  });
  }
 
- // Generate Flowers
  flowers = [];
  const colors = ['#ff4d6d', '#ff007f', '#00f5d4', '#e0aaff', '#ff6b35'];
  for (let i = 0; i < 20; i++) {
@@ -244,33 +278,17 @@
  });
  }
 
- // Generate Monkeys
- monkeys = [];
- trees.slice(0, 3).forEach(tree => {
- monkeys.push({
- x: tree.x + 10,
- y: tree.y - 40 * tree.scale
- });
- });
-
- // Generate Birds
+ monkeys = trees.slice(0, 3).map(t => ({ x: t.x + 10, y: t.y - 40 * t.scale }));
  birds = [
  { x: w * 0.2, y: h * 0.18, color: '#ff0055', wing: 0 },
  { x: w * 0.75, y: h * 0.22, color: '#00bbf9', wing: 1 }
  ];
 
- // Generate Gold Coins
  coins = [];
- const coinCount = 10;
- for (let i = 0; i < coinCount; i++) {
- coins.push({
- x: 50 + Math.random() * (w - 100),
- y: groundTop + 40 + Math.random() * (h - groundTop - 80),
- collected: false
- });
+ for (let i = 0; i < 10; i++) {
+ coins.push({ x: 50 + Math.random() * (w - 100), y: groundTop + 40 + Math.random() * (h - groundTop - 80), collected: false });
  }
 
- // Generate Gold Armor
  armorItems = [
  { type: 'helmet', name: 'Golden Helmet', x: w * 0.2, y: groundTop + 60, collected: false },
  { type: 'chestplate', name: 'Golden Chestplate', x: w * 0.8, y: groundTop + 80, collected: false },
@@ -278,61 +296,88 @@
  { type: 'shield', name: 'Golden Shield', x: w * 0.65, y: h - 100, collected: false }
  ];
 
- // Generate Anacondas
  anacondas = [
  { x: w * 0.25, y: groundTop + 100, speed: 1.2, cooldown: 0, anim: 0 },
  { x: w * 0.75, y: h - 90, speed: 1.4, cooldown: 0, anim: 1.5 }
  ];
-
- // Reset Angry Rolling Rocks
  angryRocks = [];
  rockSpawnTimer = 0;
+ } 
+ else if (level === 2) {
+ document.getElementById('gameTitle').innerText = "Stickman Engine: Level 2 - Temple Courtyard";
+ document.getElementById('instructionBar').innerText = "Move: [W][A][S][D] | Collect Bananas from Trees | Press [SPACEBAR] to Throw Bananas at Minions!";
+
+ player.goldenBananas = 5;
+
+ // Banana Trees
+ bananaTrees = [
+ { x: w * 0.15, y: groundTop + 50, bananas: 3 },
+ { x: w * 0.85, y: groundTop + 50, bananas: 3 },
+ { x: w * 0.5, y: h - 70, bananas: 3 }
+ ];
+
+ // Anaconda King Minions
+ minions = [];
+ for (let i = 0; i < 5; i++) {
+ minions.push({
+ x: 80 + i * (w - 160) / 4,
+ y: groundTop + 60 + (i % 2) * 80,
+ speed: 1.5 + Math.random() * 0.5,
+ vx: (Math.random() < 0.5 ? 1 : -1) * 2,
+ health: 1,
+ alive: true,
+ anim: i
+ });
+ }
+
+ anacondas = [];
+ angryRocks = [];
+ trees = [];
+ }
+ else if (level === 3) {
+ document.getElementById('gameTitle').innerText = "Stickman Engine: Level 3 - Inner Temple Sanctum";
+ document.getElementById('instructionBar').innerText = "Move: [W][A][S][D] | Walk to all 4 Gold Levers to unlock the Boss Chamber Door!";
+
+ bossDoorOpen = false;
+ levers = [
+ { id: 1, x: w * 0.15, y: h * 0.45, active: false },
+ { id: 2, x: w * 0.85, y: h * 0.45, active: false },
+ { id: 3, x: w * 0.20, y: h * 0.82, active: false },
+ { id: 4, x: w * 0.80, y: h * 0.82, active: false }
+ ];
+ minions = [];
+ }
+ }
+
+ function resetGame() {
+ currentLevel = 1;
+ initLevel(1);
  }
 
  function spawnAngryRock() {
  const w = canvas.width;
  const h = canvas.height;
  const groundTop = h * 0.38;
- 
  const fromLeft = Math.random() < 0.5;
- const startX = fromLeft ? -30 : w + 30;
- const startY = groundTop + Math.random() * (h - groundTop - 40);
- const speed = (3 + Math.random() * 2) * (fromLeft ? 1 : -1);
-
  angryRocks.push({
- x: startX,
- y: startY,
- vx: speed,
+ x: fromLeft ? -30 : w + 30,
+ y: groundTop + Math.random() * (h - groundTop - 40),
+ vx: (3 + Math.random() * 2) * (fromLeft ? 1 : -1),
  radius: 18,
  angle: 0
  });
  }
 
- function resetSimulation() {
- player.x = canvas.width / 2;
- player.y = canvas.height * 0.65;
- player.facing = 1;
- player.walkFrame = 0;
- player.coinsCollected = 0;
- player.armor = { helmet: false, chestplate: false, leggings: false, shield: false };
- player.trappedBy = null;
- player.trapProgress = 0;
- player.trappedEnemy = null;
-
- keys['w'] = false;
- keys['a'] = false;
- keys['s'] = false;
- keys['d'] = false;
-
- initEnvironment();
+ function updatePhysics() {
+ // Invincibility Timer Tick
+ if (player.invincibleTimer > 0) {
+ player.invincibleTimer--;
  }
 
- function updatePhysics() {
- // Disable standard movement if trapped by enemy
+ // Movement Handling
  if (!player.trappedBy) {
  let dx = 0;
  let dy = 0;
-
  if (keys['w']) dy -= 1;
  if (keys['s']) dy += 1;
  if (keys['a']) { dx -= 1; player.facing = -1; }
@@ -352,14 +397,12 @@
  player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
  player.y = Math.max(minY, Math.min(maxY, player.y));
 
- if (dx !== 0 || dy !== 0) {
- player.walkFrame += 0.25;
- } else {
- player.walkFrame = 0;
- }
+ if (dx !== 0 || dy !== 0) player.walkFrame += 0.25;
+ else player.walkFrame = 0;
  }
 
- // Item Pickups Check
+ // --- LEVEL 1 PHYSICS ---
+ if (currentLevel === 1) {
  const pickupRadius = 22;
 
  coins.forEach(coin => {
@@ -376,73 +419,69 @@
  }
  });
 
- // --- HAZARD 1: ANACONDA AI & SQUEEZE TRAP ---
- anacondas.forEach(snake => {
- snake.anim += 0.08;
- if (snake.cooldown > 0) {
- snake.cooldown--;
- return;
+ // Check Portal Spawn Condition (All Gold & Armor Collected)
+ const allCoins = player.coinsCollected === coins.length;
+ const allArmor = Object.values(player.armor).every(Boolean);
+
+ if (allCoins && allArmor && !portal) {
+ portal = { x: canvas.width / 2, y: canvas.height * 0.55, radius: 28, anim: 0 };
  }
 
+ // Enter Portal -> Level 2
+ if (portal) {
+ portal.anim += 0.08;
+ if (Math.hypot(player.x - portal.x, player.y - portal.y) < portal.radius) {
+ currentLevel = 2;
+ initLevel(2);
+ return;
+ }
+ }
+
+ // Anaconda Hazards (Disabled while invincible)
+ if (player.invincibleTimer === 0) {
+ anacondas.forEach(snake => {
+ snake.anim += 0.08;
+ if (snake.cooldown > 0) { snake.cooldown--; return; }
+
  if (player.trappedBy === 'anaconda' && player.trappedEnemy === snake) {
- // Keep snake anchored around player while squeezing
  snake.x = player.x;
  snake.y = player.y;
  return;
  }
 
- // Slither towards player
  const dist = Math.hypot(player.x - snake.x, player.y - snake.y);
  if (dist > 10) {
  snake.x += ((player.x - snake.x) / dist) * snake.speed;
  snake.y += ((player.y - snake.y) / dist) * snake.speed;
  }
 
- // Trigger Anaconda Squeeze Trap
  if (!player.trappedBy && dist < 18) {
  player.trappedBy = 'anaconda';
  player.trapProgress = 0;
  player.trappedEnemy = snake;
  }
  });
-
- // --- HAZARD 2: ANGRY ROLLING ROCKS ---
- rockSpawnTimer++;
- if (rockSpawnTimer > 180) { // Spawn rock every ~3 seconds
- spawnAngryRock();
- rockSpawnTimer = 0;
  }
 
+ // Angry Rocks
+ rockSpawnTimer++;
+ if (rockSpawnTimer > 180) { spawnAngryRock(); rockSpawnTimer = 0; }
  for (let i = angryRocks.length - 1; i >= 0; i--) {
  const rock = angryRocks[i];
  rock.x += rock.vx;
  rock.angle += rock.vx * 0.08;
-
- // Check rock collision with player
- const dist = Math.hypot(player.x - rock.x, player.y - rock.y);
- if (dist < rock.radius + 10) {
- // Rock hit: knock back player sideways
+ if (Math.hypot(player.x - rock.x, player.y - rock.y) < rock.radius + 10) {
  player.x += rock.vx * 2;
  }
-
- // Remove rocks off screen
- if (rock.x < -50 || rock.x > canvas.width + 50) {
- angryRocks.splice(i, 1);
- }
+ if (rock.x < -50 || rock.x > canvas.width + 50) angryRocks.splice(i, 1);
  }
 
- // --- HAZARD 3: VINE TRAPS FROM TREES ---
+ // Vine Traps (Disabled while invincible)
+ if (player.invincibleTimer === 0) {
  trees.forEach(tree => {
  if (tree.hasVine) {
- if (tree.vineCooldown > 0) {
- tree.vineCooldown--;
- return;
- }
-
- const vineTipX = tree.x;
- const vineTipY = tree.y + tree.vineLength;
-
- if (!player.trappedBy && Math.hypot(player.x - vineTipX, player.y - vineTipY) < 22) {
+ if (tree.vineCooldown > 0) { tree.vineCooldown--; return; }
+ if (!player.trappedBy && Math.hypot(player.x - tree.x, player.y - (tree.y + tree.vineLength)) < 22) {
  player.trappedBy = 'vine';
  player.trapProgress = 0;
  player.trappedEnemy = tree;
@@ -450,269 +489,328 @@
  }
  });
  }
+ }
 
- function drawAztecPyramid() {
+ // --- LEVEL 2 PHYSICS ---
+ else if (currentLevel === 2) {
+ // Pick Bananas from Trees
+ bananaTrees.forEach(bt => {
+ if (bt.bananas > 0 && Math.hypot(player.x - bt.x, player.y - bt.y) < 35) {
+ bt.bananas--;
+ player.goldenBananas += 2;
+ }
+ });
+
+ // Update thrown banana projectiles
+ for (let i = bananaProjectiles.length - 1; i >= 0; i--) {
+ const b = bananaProjectiles[i];
+ b.x += b.vx;
+ b.y += b.vy;
+ b.rotation += 0.2;
+
+ // Collision with Minions
+ minions.forEach(m => {
+ if (m.alive && Math.hypot(b.x - m.x, b.y - m.y) < 25) {
+ m.alive = false;
+ bananaProjectiles.splice(i, 1);
+ }
+ });
+
+ if (b.x < 0 || b.x > canvas.width) bananaProjectiles.splice(i, 1);
+ }
+
+ // Update Minions AI
+ minions.forEach(m => {
+ if (m.alive) {
+ m.x += m.vx;
+ m.anim += 0.1;
+ if (m.x < 50 || m.x > canvas.width - 50) m.vx *= -1;
+ }
+ });
+
+ // Check Level 2 Victory (All Minions Defeated)
+ const allDefeated = minions.every(m => !m.alive);
+ if (allDefeated && !portal) {
+ portal = { x: canvas.width / 2, y: canvas.height * 0.5, radius: 28, anim: 0 };
+ }
+
+ if (portal) {
+ portal.anim += 0.08;
+ if (Math.hypot(player.x - portal.x, player.y - portal.y) < portal.radius) {
+ currentLevel = 3;
+ initLevel(3);
+ return;
+ }
+ }
+ }
+
+ // --- LEVEL 3 PHYSICS ---
+ else if (currentLevel === 3) {
+ // Flip Levers when touched
+ levers.forEach(l => {
+ if (!l.active && Math.hypot(player.x - l.x, player.y - l.y) < 28) {
+ l.active = true;
+ }
+ });
+
+ // Unlock Boss Chamber Door when all 4 levers flipped
+ if (levers.every(l => l.active)) {
+ bossDoorOpen = true;
+ }
+ }
+ }
+
+ // GRAPHICS & RENDERING FUNCTIONS
+ function drawBackground() {
  const w = canvas.width;
  const h = canvas.height;
- const pyramidBaseWidth = Math.min(320, w * 0.4);
- const centerX = w * 0.5;
- const baseY = h * 0.38;
+ const groundTop = h * 0.38;
 
- const skyGrad = ctx.createLinearGradient(0, 0, 0, baseY);
+ if (currentLevel === 1) {
+ // Far distance Aztec Pyramid
+ const skyGrad = ctx.createLinearGradient(0, 0, 0, groundTop);
  skyGrad.addColorStop(0, '#1a3c40');
  skyGrad.addColorStop(1, '#2d5a27');
  ctx.fillStyle = skyGrad;
- ctx.fillRect(0, 0, w, baseY);
+ ctx.fillRect(0, 0, w, groundTop);
 
+ // Pyramid Steps
  const steps = 6;
  const stepHeight = 14;
+ const pyramidBaseWidth = Math.min(320, w * 0.4);
  let currentWidth = pyramidBaseWidth;
 
  for (let i = 0; i < steps; i++) {
- const stepY = baseY - (i + 1) * stepHeight;
- const stepX = centerX - currentWidth / 2;
-
+ const stepY = groundTop - (i + 1) * stepHeight;
+ const stepX = (w * 0.5) - currentWidth / 2;
  const goldGrad = ctx.createLinearGradient(stepX, stepY, stepX + currentWidth, stepY + stepHeight);
  goldGrad.addColorStop(0, '#b8860b');
  goldGrad.addColorStop(0.5, '#ffd700');
  goldGrad.addColorStop(1, '#996515');
-
  ctx.fillStyle = goldGrad;
  ctx.fillRect(stepX, stepY, currentWidth, stepHeight);
  ctx.strokeStyle = '#5c4033';
- ctx.lineWidth = 1;
  ctx.strokeRect(stepX, stepY, currentWidth, stepHeight);
-
  currentWidth -= pyramidBaseWidth / (steps + 2);
  }
 
- const topW = currentWidth * 0.7;
- const topH = 16;
- const topX = centerX - topW / 2;
- const topY = baseY - steps * stepHeight - topH;
-
- ctx.fillStyle = '#ffd700';
- ctx.fillRect(topX, topY, topW, topH);
- ctx.strokeRect(topX, topY, topW, topH);
-
- ctx.fillStyle = '#221200';
- ctx.fillRect(centerX - 5, topY + 4, 10, topH - 4);
- }
-
- function drawJungleBackground() {
- const w = canvas.width;
- const h = canvas.height;
- const groundTop = h * 0.35;
-
+ // Jungle Ground
  const groundGrad = ctx.createLinearGradient(0, groundTop, 0, h);
  groundGrad.addColorStop(0, '#1e4620');
  groundGrad.addColorStop(1, '#0d280f');
  ctx.fillStyle = groundGrad;
  ctx.fillRect(0, groundTop, w, h - groundTop);
 
- flowers.forEach(flower => {
- ctx.fillStyle = flower.color;
- ctx.beginPath();
- ctx.arc(flower.x, flower.y, flower.radius, 0, Math.PI * 2);
- ctx.fill();
+ // Flowers, Trees, Animals
+ flowers.forEach(f => {
+ ctx.fillStyle = f.color;
+ ctx.beginPath(); ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2); ctx.fill();
  ctx.fillStyle = '#ffffff';
- ctx.beginPath();
- ctx.arc(flower.x, flower.y, flower.radius * 0.4, 0, Math.PI * 2);
- ctx.fill();
+ ctx.beginPath(); ctx.arc(f.x, f.y, f.radius * 0.4, 0, Math.PI * 2); ctx.fill();
  });
 
- trees.forEach(tree => {
- const trunkW = 14 * tree.scale;
- const trunkH = 60 * tree.scale;
-
+ trees.forEach(t => {
  ctx.fillStyle = '#4a2c11';
- ctx.fillRect(tree.x - trunkW / 2, tree.y - trunkH, trunkW, trunkH);
-
+ ctx.fillRect(t.x - 7 * t.scale, t.y - 60 * t.scale, 14 * t.scale, 60 * t.scale);
  ctx.fillStyle = '#1b5e20';
  ctx.beginPath();
- ctx.arc(tree.x, tree.y - trunkH - 10, 30 * tree.scale, 0, Math.PI * 2);
- ctx.arc(tree.x - 18 * tree.scale, tree.y - trunkH, 22 * tree.scale, 0, Math.PI * 2);
- ctx.arc(tree.x + 18 * tree.scale, tree.y - trunkH, 22 * tree.scale, 0, Math.PI * 2);
+ ctx.arc(t.x, t.y - 70 * t.scale, 30 * t.scale, 0, Math.PI * 2);
  ctx.fill();
 
- // Draw Hanging Tree Vines
- if (tree.hasVine && tree.vineCooldown === 0) {
+ if (t.hasVine && t.vineCooldown === 0) {
  ctx.strokeStyle = '#2d6a4f';
  ctx.lineWidth = 3;
  ctx.beginPath();
- ctx.moveTo(tree.x, tree.y - trunkH + 10);
- const wave = Math.sin(Date.now() * 0.003 + tree.x) * 6;
- ctx.quadraticCurveTo(tree.x + wave, tree.y, tree.x, tree.y + tree.vineLength);
+ ctx.moveTo(t.x, t.y - 50 * t.scale);
+ ctx.quadraticCurveTo(t.x + Math.sin(Date.now() * 0.003) * 6, t.y, t.x, t.y + t.vineLength);
  ctx.stroke();
+ }
+ });
+ } 
+ else if (currentLevel === 2) {
+ // Level 2: Temple Entrance Courtyard (Closer view of Giant Golden Temple Wall)
+ const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+ skyGrad.addColorStop(0, '#3a1c02');
+ skyGrad.addColorStop(1, '#0d280f');
+ ctx.fillStyle = skyGrad;
+ ctx.fillRect(0, 0, w, h);
 
- // Vine Leaf tip
- ctx.fillStyle = '#52b788';
+ // Massive Temple Steps Backdrop
+ ctx.fillStyle = '#b8860b';
+ ctx.fillRect(w * 0.1, 0, w * 0.8, groundTop);
+ ctx.strokeStyle = '#ffd700';
+ ctx.lineWidth = 4;
+ ctx.strokeRect(w * 0.1, 0, w * 0.8, groundTop);
+
+ // Banana Trees
+ bananaTrees.forEach(bt => {
+ ctx.fillStyle = '#5c4033';
+ ctx.fillRect(bt.x - 10, bt.y - 40, 20, 40);
+ ctx.fillStyle = '#2b9348';
  ctx.beginPath();
- ctx.arc(tree.x, tree.y + tree.vineLength, 5, 0, Math.PI * 2);
+ ctx.arc(bt.x, bt.y - 50, 35, 0, Math.PI * 2);
+ ctx.fill();
+
+ // Hanging Golden Bananas
+ for (let i = 0; i < bt.bananas; i++) {
+ ctx.fillStyle = '#ffd700';
+ ctx.beginPath();
+ ctx.arc(bt.x - 12 + i * 12, bt.y - 35, 6, 0, Math.PI);
  ctx.fill();
  }
  });
+ } 
+ else if (currentLevel === 3) {
+ // Level 3: Inside Temple Room with Boss Door
+ ctx.fillStyle = '#1a0f00';
+ ctx.fillRect(0, 0, w, h);
 
- monkeys.forEach(m => {
- ctx.fillStyle = '#795548';
+ // Stone Wall Carvings
+ ctx.strokeStyle = '#3d2600';
+ ctx.lineWidth = 2;
+ for (let x = 0; x < w; x += 60) {
+ for (let y = 0; y < h; y += 60) {
+ ctx.strokeRect(x, y, 60, 60);
+ }
+ }
+
+ // Giant Boss Chamber Door at Top Center
+ const doorW = 140;
+ const doorH = 120;
+ const doorX = w / 2 - doorW / 2;
+ const doorY = h * 0.15;
+
+ ctx.fillStyle = bossDoorOpen ? '#ffd700' : '#4a2c11';
+ ctx.fillRect(doorX, doorY, doorW, doorH);
+ ctx.strokeStyle = '#ffd700';
+ ctx.lineWidth = 4;
+ ctx.strokeRect(doorX, doorY, doorW, doorH);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = 'bold 14px "Courier New", monospace';
+ ctx.textAlign = 'center';
+ ctx.fillText(bossDoorOpen ? "BOSS CHAMBER UNLOCKED!" : "LOCKED BOSS DOOR", w / 2, doorY + doorH / 2);
+ }
+ }
+
+ function drawEntities() {
+ // Draw Portal if active
+ if (portal) {
+ ctx.save();
+ ctx.translate(portal.x, portal.y);
+ ctx.rotate(portal.anim);
+ const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, portal.radius);
+ grad.addColorStop(0, '#ffffff');
+ grad.addColorStop(0.5, '#00f5d4');
+ grad.addColorStop(1, '#ff007f');
+ ctx.fillStyle = grad;
  ctx.beginPath();
- ctx.arc(m.x, m.y, 6, 0, Math.PI * 2);
- ctx.arc(m.x, m.y - 7, 4.5, 0, Math.PI * 2);
+ ctx.arc(0, 0, portal.radius, 0, Math.PI * 2);
  ctx.fill();
+ ctx.restore();
+ }
+
+ // Draw Thrown Golden Bananas (Level 2)
+ bananaProjectiles.forEach(b => {
+ ctx.save();
+ ctx.translate(b.x, b.y);
+ ctx.rotate(b.rotation);
+ ctx.fillStyle = '#ffd700';
+ ctx.beginPath();
+ ctx.arc(0, 0, 8, 0, Math.PI);
+ ctx.fill();
+ ctx.restore();
  });
 
- birds.forEach(b => {
- b.wing += 0.1;
- const wingY = Math.sin(b.wing) * 3;
- ctx.fillStyle = b.color;
+ // Draw Anaconda King Minions (Level 2)
+ minions.forEach(m => {
+ if (m.alive) {
+ ctx.save();
+ ctx.translate(m.x, m.y);
+ ctx.strokeStyle = '#d00000';
+ ctx.lineWidth = 6;
  ctx.beginPath();
- ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
+ ctx.moveTo(-15, 0);
+ ctx.quadraticCurveTo(0, Math.sin(m.anim) * 10, 15, 0);
+ ctx.stroke();
+ // Minion Red Crown
+ ctx.fillStyle = '#ffd700';
+ ctx.beginPath();
+ ctx.arc(12, -4, 5, 0, Math.PI * 2);
  ctx.fill();
+ ctx.restore();
+ }
  });
+
+ // Draw 4 Levers (Level 3)
+ if (currentLevel === 3) {
+ levers.forEach(l => {
+ ctx.fillStyle = l.active ? '#52b788' : '#e63946';
+ ctx.fillRect(l.x - 12, l.y - 12, 24, 24);
+ ctx.strokeStyle = '#ffd700';
+ ctx.lineWidth = 2;
+ ctx.strokeRect(l.x - 12, l.y - 12, 24, 24);
+
+ // Handle orientation
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 4;
+ ctx.beginPath();
+ ctx.moveTo(l.x, l.y);
+ ctx.lineTo(l.x + (l.active ? 10 : -10), l.y - 15);
+ ctx.stroke();
+ });
+ }
  }
 
  function drawHazards() {
- // 1. Anacondas
+ if (currentLevel !== 1) return;
+
+ // Anacondas
  anacondas.forEach(snake => {
  const isTrapping = player.trappedBy === 'anaconda' && player.trappedEnemy === snake;
  ctx.save();
  ctx.translate(snake.x, snake.y);
-
  ctx.strokeStyle = '#2d6a4f';
- ctx.fillStyle = '#40916c';
  ctx.lineWidth = 6;
- ctx.lineCap = 'round';
-
+ ctx.beginPath();
  if (isTrapping) {
- // Wrapped around stickman
- ctx.beginPath();
  ctx.arc(0, -10, 14, 0, Math.PI * 2);
- ctx.stroke();
- ctx.beginPath();
- ctx.arc(0, -5, 10, 0, Math.PI * 2);
- ctx.stroke();
  } else {
- // Slither wave shape
- ctx.beginPath();
  ctx.moveTo(-20, 0);
  ctx.quadraticCurveTo(-10, Math.sin(snake.anim) * 8, 0, 0);
  ctx.quadraticCurveTo(10, Math.sin(snake.anim + 1.5) * 8, 20, 0);
- ctx.stroke();
  }
-
- // Snake Head & Glowing Yellow Eyes
- ctx.fillStyle = '#1b4332';
- ctx.beginPath();
- ctx.arc(isTrapping ? 10 : 20, -2, 5, 0, Math.PI * 2);
- ctx.fill();
-
- ctx.fillStyle = '#ffb703';
- ctx.beginPath();
- ctx.arc(isTrapping ? 12 : 22, -3, 1.5, 0, Math.PI * 2);
- ctx.fill();
-
+ ctx.stroke();
  ctx.restore();
  });
 
- // 2. Angry Rolling Rocks
+ // Angry Rocks
  angryRocks.forEach(rock => {
  ctx.save();
  ctx.translate(rock.x, rock.y);
  ctx.rotate(rock.angle);
-
- // Bony Rock Texture
  ctx.fillStyle = '#6c757d';
- ctx.strokeStyle = '#343a40';
- ctx.lineWidth = 2;
- ctx.beginPath();
- ctx.arc(0, 0, rock.radius, 0, Math.PI * 2);
- ctx.fill();
- ctx.stroke();
-
- // Angry Face Expression
- ctx.fillStyle = '#ff0000'; // Angry Red Eyes
- ctx.beginPath();
- ctx.arc(-6, -4, 3, 0, Math.PI * 2);
- ctx.arc(6, -4, 3, 0, Math.PI * 2);
- ctx.fill();
-
- // Slanted Angry Eyebrows
- ctx.strokeStyle = '#000000';
- ctx.lineWidth = 2;
- ctx.beginPath();
- ctx.moveTo(-10, -9);
- ctx.lineTo(-3, -6);
- ctx.moveTo(10, -9);
- ctx.lineTo(3, -6);
- ctx.stroke();
-
- // Open Angry Mouth
- ctx.fillStyle = '#000000';
- ctx.beginPath();
- ctx.arc(0, 5, 5, 0, Math.PI);
- ctx.fill();
-
+ ctx.beginPath(); ctx.arc(0, 0, rock.radius, 0, Math.PI * 2); ctx.fill();
+ ctx.fillStyle = '#ff0000';
+ ctx.beginPath(); ctx.arc(-5, -3, 3, 0, Math.PI * 2); ctx.arc(5, -3, 3, 0, Math.PI * 2); ctx.fill();
  ctx.restore();
  });
  }
 
  function drawCollectibles() {
+ if (currentLevel !== 1) return;
+
  coins.forEach(coin => {
  if (!coin.collected) {
  ctx.fillStyle = '#ffd700';
- ctx.strokeStyle = '#b8860b';
- ctx.lineWidth = 1.5;
- ctx.beginPath();
- ctx.arc(coin.x, coin.y, 6, 0, Math.PI * 2);
- ctx.fill();
- ctx.stroke();
-
- ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 8px sans-serif';
- ctx.fillText('$', coin.x - 2.5, coin.y + 3);
+ ctx.beginPath(); ctx.arc(coin.x, coin.y, 6, 0, Math.PI * 2); ctx.fill();
  }
  });
 
  armorItems.forEach(item => {
  if (!item.collected) {
- ctx.save();
- ctx.translate(item.x, item.y);
- ctx.fillStyle = 'rgba(255, 215, 0, 0.25)';
- ctx.beginPath();
- ctx.arc(0, 0, 14, 0, Math.PI * 2);
- ctx.fill();
-
  ctx.fillStyle = '#ffd700';
- ctx.strokeStyle = '#ffffff';
- ctx.lineWidth = 1;
-
- if (item.type === 'helmet') {
- ctx.beginPath();
- ctx.arc(0, 2, 7, Math.PI, 0);
- ctx.closePath();
- ctx.fill();
- ctx.stroke();
- } else if (item.type === 'chestplate') {
- ctx.fillRect(-6, -6, 12, 12);
- ctx.strokeRect(-6, -6, 12, 12);
- } else if (item.type === 'leggings') {
- ctx.fillRect(-5, -6, 4, 12);
- ctx.fillRect(1, -6, 4, 12);
- ctx.strokeRect(-5, -6, 4, 12);
- ctx.strokeRect(1, -6, 4, 12);
- } else if (item.type === 'shield') {
- ctx.beginPath();
- ctx.moveTo(-6, -7);
- ctx.lineTo(6, -7);
- ctx.lineTo(6, 2);
- ctx.lineTo(0, 8);
- ctx.lineTo(-6, 2);
- ctx.closePath();
- ctx.fill();
- ctx.stroke();
- }
-
- ctx.restore();
+ ctx.fillRect(item.x - 6, item.y - 6, 12, 12);
  }
  });
  }
@@ -722,7 +820,6 @@
  ctx.fillStyle = '#ffffff';
  ctx.lineWidth = 1.8;
  ctx.lineCap = 'round';
- ctx.lineJoin = 'round';
 
  const headRadius = 5;
  const bodyLength = 15;
@@ -733,163 +830,106 @@
  const legSwing = Math.sin(walkFrame) * 6;
  const armSwing = Math.sin(walkFrame + Math.PI) * 4;
 
- // 1. Head
+ // Invincibility Rainbow Aura Effect
+ if (player.invincibleTimer > 0) {
+ ctx.save();
+ ctx.strokeStyle = `hsl(${(Date.now() / 5) % 360}, 100%, 50%)`;
+ ctx.lineWidth = 3;
  ctx.beginPath();
- ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+ ctx.arc(x, y - 10, 24, 0, Math.PI * 2);
  ctx.stroke();
+ ctx.restore();
+ }
 
- ctx.beginPath();
- ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
- ctx.fill();
+ // Head
+ ctx.beginPath(); ctx.arc(x, headY, headRadius, 0, Math.PI * 2); ctx.stroke();
 
+ // Armor Overlay
  if (player.armor.helmet) {
  ctx.fillStyle = '#ffd700';
- ctx.strokeStyle = '#b8860b';
- ctx.beginPath();
- ctx.arc(x, headY, headRadius + 1.5, Math.PI * 0.8, Math.PI * 2.2);
- ctx.closePath();
- ctx.fill();
- ctx.stroke();
+ ctx.beginPath(); ctx.arc(x, headY, headRadius + 1.5, Math.PI * 0.8, Math.PI * 2.2); ctx.fill();
  }
 
- // 2. Torso
- ctx.beginPath();
- ctx.moveTo(x, neckY);
- ctx.lineTo(x, y);
- ctx.stroke();
-
+ // Torso
+ ctx.beginPath(); ctx.moveTo(x, neckY); ctx.lineTo(x, y); ctx.stroke();
  if (player.armor.chestplate) {
- ctx.fillStyle = '#ffd700';
- ctx.strokeStyle = '#b8860b';
- ctx.fillRect(x - 4, neckY + 2, 8, bodyLength - 3);
- ctx.strokeRect(x - 4, neckY + 2, 8, bodyLength - 3);
+ ctx.fillStyle = '#ffd700'; ctx.fillRect(x - 4, neckY + 2, 8, bodyLength - 3);
  }
 
- // 3. Legs
+ // Legs
  ctx.strokeStyle = player.armor.leggings ? '#ffd700' : '#ffffff';
- ctx.lineWidth = player.armor.leggings ? 3 : 1.8;
+ ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - legSwing, y + legLength); ctx.stroke();
+ ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + legSwing, y + legLength); ctx.stroke();
 
- ctx.beginPath();
- ctx.moveTo(x, y);
- ctx.lineTo(x - legSwing, y + legLength);
- ctx.stroke();
-
- ctx.beginPath();
- ctx.moveTo(x, y);
- ctx.lineTo(x + legSwing, y + legLength);
- ctx.stroke();
-
- ctx.lineWidth = 1.8;
+ // Arms
  ctx.strokeStyle = '#ffffff';
-
- // 4. Arms
- const frontArmEndX = x + facing * 4 + armSwing;
- const frontArmEndY = shoulderY + 6;
-
- ctx.beginPath();
- ctx.moveTo(x, shoulderY);
- ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
- ctx.stroke();
-
- ctx.beginPath();
- ctx.moveTo(x, shoulderY);
- ctx.lineTo(frontArmEndX, frontArmEndY);
- ctx.stroke();
+ ctx.beginPath(); ctx.moveTo(x, shoulderY); ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6); ctx.stroke();
+ ctx.beginPath(); ctx.moveTo(x, shoulderY); ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6); ctx.stroke();
 
  if (player.armor.shield) {
  ctx.fillStyle = '#ffd700';
- ctx.strokeStyle = '#b8860b';
- ctx.beginPath();
- ctx.arc(frontArmEndX + facing * 3, frontArmEndY, 6, 0, Math.PI * 2);
- ctx.fill();
- ctx.stroke();
- }
-
- // OVERLAY TRAP VISUALS (Vine Tangle)
- if (player.trappedBy === 'vine') {
- ctx.strokeStyle = '#2d6a4f';
- ctx.lineWidth = 3;
- ctx.beginPath();
- ctx.arc(x, y - 10, 12, 0, Math.PI * 2);
- ctx.arc(x, y - 5, 16, 0, Math.PI * 2);
- ctx.stroke();
+ ctx.beginPath(); ctx.arc(x + facing * 8, shoulderY + 6, 6, 0, Math.PI * 2); ctx.fill();
  }
  }
 
- function drawTrapVignetteAndHUD() {
+ function drawHUD() {
  const w = canvas.width;
  const h = canvas.height;
 
- // Anaconda Red Squeeze Vignette Overlay
- if (player.trappedBy === 'anaconda') {
- const pulse = (Math.sin(Date.now() * 0.01) + 1) * 0.15 + 0.25;
- ctx.fillStyle = `rgba(220, 20, 60, ${pulse})`;
- 
- // Screen edge red border marks
- ctx.fillRect(0, 0, w, 16);
- ctx.fillRect(0, h - 16, w, 16);
- ctx.fillRect(0, 0, 16, h);
- ctx.fillRect(w - 16, 0, 16, h);
-
- // Emergency Escape Text Prompt
- ctx.fillStyle = '#ff4d4d';
- ctx.font = 'bold 20px "Courier New", monospace';
- ctx.textAlign = 'center';
- ctx.fillText('ANACONDA SQUEEZE! SPAM [W] AND [S] TO ESCAPE!', w / 2, h * 0.22);
- 
- // Escape Progress Bar
- const barW = 200;
- const progress = player.trapProgress / player.trapTarget;
- ctx.strokeStyle = '#ffffff';
- ctx.strokeRect(w / 2 - barW / 2, h * 0.25, barW, 12);
- ctx.fillStyle = '#ff0055';
- ctx.fillRect(w / 2 - barW / 2, h * 0.25, barW * progress, 12);
- }
-
- // Vine Trap Text Prompt
- if (player.trappedBy === 'vine') {
- ctx.fillStyle = '#52b788';
- ctx.font = 'bold 20px "Courier New", monospace';
- ctx.textAlign = 'center';
- ctx.fillText('TANGLED IN VINES! SPAM [A] AND [D] TO CUT FREE!', w / 2, h * 0.22);
-
- const barW = 200;
- const progress = player.trapProgress / player.trapTarget;
- ctx.strokeStyle = '#ffffff';
- ctx.strokeRect(w / 2 - barW / 2, h * 0.25, barW, 12);
- ctx.fillStyle = '#74c69d';
- ctx.fillRect(w / 2 - barW / 2, h * 0.25, barW * progress, 12);
- }
-
- // Standard HUD
  ctx.fillStyle = '#ffffff';
  ctx.font = '12px "Courier New", monospace';
  ctx.textAlign = 'left';
 
+ // Invincibility HUD Indicator
+ if (player.invincibleTimer > 0) {
+ const secondsLeft = (player.invincibleTimer / 60).toFixed(1);
+ ctx.fillStyle = '#00f5d4';
+ ctx.font = 'bold 14px "Courier New", monospace';
+ ctx.fillText(`INVINCIBLE SHIELD: ${secondsLeft}s`, 15, 80);
+ }
+
+ // Level Specific HUD Elements
+ if (currentLevel === 1) {
  ctx.fillStyle = '#ffd700';
  ctx.fillText(`COINS: ${player.coinsCollected} / ${coins.length}`, 15, 25);
-
  const collectedArmorCount = Object.values(player.armor).filter(Boolean).length;
- ctx.fillText(`ARMOR PIECES: ${collectedArmorCount} / 4`, 15, 45);
+ ctx.fillText(`ARMOR: ${collectedArmorCount} / 4`, 15, 45);
+ if (portal) {
+ ctx.fillStyle = '#00f5d4';
+ ctx.fillText("PORTAL OPEN! STEP INTO THE PORTAL!", 15, 62);
+ }
+ } else if (currentLevel === 2) {
+ ctx.fillStyle = '#ffd700';
+ ctx.fillText(`GOLDEN BANANAS: ${player.goldenBananas}`, 15, 25);
+ const remainingMinions = minions.filter(m => m.alive).length;
+ ctx.fillText(`MINIONS REMAINING: ${remainingMinions}`, 15, 45);
+ } else if (currentLevel === 3) {
+ const activeLevers = levers.filter(l => l.active).length;
+ ctx.fillStyle = '#ffd700';
+ ctx.fillText(`LEVERS PULLED: ${activeLevers} / 4`, 15, 25);
+ }
 
- const itemsList = [
- player.armor.helmet ? '[X] Helmet' : '[ ] Helmet',
- player.armor.chestplate ? '[X] Chestplate' : '[ ] Chestplate',
- player.armor.leggings ? '[X] Leggings' : '[ ] Leggings',
- player.armor.shield ? '[X] Shield' : '[ ] Shield'
- ];
- ctx.fillStyle = '#a3e635';
- ctx.font = '10px "Courier New", monospace';
- ctx.fillText(itemsList.join(' '), 15, 62);
+ // Trap Prompts
+ if (player.trappedBy === 'anaconda') {
+ ctx.fillStyle = '#ff4d4d';
+ ctx.font = 'bold 18px "Courier New", monospace';
+ ctx.textAlign = 'center';
+ ctx.fillText('ANACONDA SQUEEZE! SPAM [W] AND [S] TO ESCAPE!', w / 2, h * 0.2);
+ } else if (player.trappedBy === 'vine') {
+ ctx.fillStyle = '#52b788';
+ ctx.font = 'bold 18px "Courier New", monospace';
+ ctx.textAlign = 'center';
+ ctx.fillText('TANGLED IN VINES! SPAM [A] AND [D] TO CUT FREE!', w / 2, h * 0.2);
+ }
  }
 
  function draw() {
- drawAztecPyramid();
- drawJungleBackground();
+ drawBackground();
  drawHazards();
  drawCollectibles();
+ drawEntities();
  drawStickman(player.x, player.y, player.facing, player.walkFrame);
- drawTrapVignetteAndHUD();
+ drawHUD();
  }
 
  function animate() {
