@@ -22,7 +22,7 @@
       justify-content: flex-start;
       height: 100vh;
       overflow: hidden;
-      padding: 12px;
+      padding: 10px;
     }
 
     /* Top Header Bar */
@@ -31,20 +31,20 @@
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      max-width: 1100px;
-      margin-bottom: 10px;
-      padding-bottom: 8px;
+      max-width: 1200px;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
       border-bottom: 3px solid #ff4081;
     }
 
     .title-group {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 2px;
     }
 
     h1 {
-      font-size: 20px;
+      font-size: 19px;
       letter-spacing: 2px;
       text-transform: uppercase;
       font-weight: bold;
@@ -58,7 +58,7 @@
       font-weight: bold;
       display: flex;
       align-items: center;
-      gap: 15px;
+      gap: 12px;
     }
 
     /* Health Bar Styling */
@@ -90,17 +90,47 @@
     #health-bar-fill {
       width: 100%;
       height: 100%;
-      background: linear-[#00e676];
       background-color: #00e676;
       transition: width 0.2s ease-in-out, background-color 0.2s;
+    }
+
+    /* Inventory Bar */
+    #inventory-bar {
+      display: flex;
+      gap: 8px;
+      background: #181824;
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 2px solid #ff4081;
+    }
+
+    .inv-slot {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #252538;
+      border: 2px solid #444466;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #aaaabb;
+      transition: all 0.15s;
+    }
+
+    .inv-slot.active {
+      border-color: #ffeb3b;
+      background: #ff4081;
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(255, 64, 129, 0.6);
     }
 
     .btn-reset {
       background: #ff4081;
       color: #ffffff;
       border: none;
-      padding: 8px 18px;
-      font-size: 13px;
+      padding: 6px 14px;
+      font-size: 12px;
       font-weight: bold;
       cursor: pointer;
       text-transform: uppercase;
@@ -119,7 +149,7 @@
     #canvas-wrapper {
       position: relative;
       width: 100%;
-      max-width: 1100px;
+      max-width: 1200px;
       flex-grow: 1;
       display: flex;
       justify-content: center;
@@ -138,14 +168,14 @@
     }
 
     /* Overlays */
-    #toast-overlay, #gameover-overlay {
+    #toast-overlay, #gameover-overlay, #wipe-prompt {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      padding: 20px 36px;
+      padding: 18px 32px;
       border-radius: 16px;
-      font-size: 20px;
+      font-size: 18px;
       font-weight: bold;
       letter-spacing: 1px;
       display: none;
@@ -161,6 +191,15 @@
       animation: pulse 0.8s infinite alternate;
     }
 
+    #wipe-prompt {
+      background: rgba(255, 235, 59, 0.95);
+      color: #000;
+      border: 3px solid #ff1744;
+      box-shadow: 0 0 25px rgba(255, 235, 59, 0.9);
+      font-size: 20px;
+      animation: pulse 0.4s infinite alternate;
+    }
+
     #gameover-overlay {
       background: rgba(20, 0, 5, 0.95);
       color: #ff1744;
@@ -171,8 +210,8 @@
 
     #gameover-overlay button {
       margin-top: 15px;
-      padding: 10px 20px;
-      font-size: 16px;
+      padding: 8px 18px;
+      font-size: 15px;
       font-weight: bold;
       background: #ff1744;
       color: white;
@@ -183,12 +222,12 @@
 
     @keyframes pulse {
       from { transform: translate(-50%, -50%) scale(1); }
-      to { transform: translate(-50%, -50%) scale(1.08); }
+      to { transform: translate(-50%, -50%) scale(1.06); }
     }
 
     .instructions {
-      margin-top: 8px;
-      font-size: 13px;
+      margin-top: 6px;
+      font-size: 12px;
       color: #ffeb3b;
       font-weight: bold;
       text-align: center;
@@ -203,9 +242,17 @@
       <h1>Stickman Birthday Party</h1>
       <div class="stats">
         <span>LEVEL: <span id="level-display" style="color:#ffeb3b;">1</span></span>
-        <span>ROOMS: <span id="rooms-display" style="color:#00e5ff;">2</span></span>
+        <span>ROOMS: <span id="rooms-display" style="color:#00e5ff;">10</span></span>
         <span>PRESENTS LEFT: <span id="presents-display" style="color:#ff4081;">0</span></span>
       </div>
+    </div>
+
+    <!-- Inventory Bar -->
+    <div id="inventory-bar">
+      <div class="inv-slot active" id="slot-1"><span>[1]</span> Normalizer</div>
+      <div class="inv-slot" id="slot-2"><span>[2]</span> Pizza</div>
+      <div class="inv-slot" id="slot-3"><span>[3]</span> Leaf Blower</div>
+      <div class="inv-slot" id="slot-4"><span>[4]</span> Extinguisher</div>
     </div>
 
     <!-- Health Bar -->
@@ -224,6 +271,7 @@
   <div id="canvas-wrapper">
     <canvas id="simCanvas"></canvas>
     <div id="toast-overlay">🎉 ALL PRESENTS COLLECTED! ADVANCING LEVEL... 🎉</div>
+    <div id="wipe-prompt">⚠️ FROSTING ON SCREEN! ⚠️<br>SPAM [W] AND [S] TO WIPE IT OFF!</div>
     <div id="gameover-overlay">
       💥 GAME OVER! 💥<br>
       <span style="font-size:14px; color:#ffffff;">The evil party treats got you!</span><br>
@@ -232,7 +280,7 @@
   </div>
 
   <div class="instructions">
-    Use [WASD] Keys to Move (Arrow Keys Disabled) | Watch out for Evil Treats & Collect Real Presents!
+    [WASD] Move | [1-4] Select Tool | [SPACE] Use Tool | [E] Eat Normalized Cake | Black Presents are Traps!
   </div>
 
   <script>
@@ -247,6 +295,7 @@
     const healthText = document.getElementById('health-text');
     const toastOverlay = document.getElementById('toast-overlay');
     const gameoverOverlay = document.getElementById('gameover-overlay');
+    const wipePrompt = document.getElementById('wipe-prompt');
 
     // AUDIO SYNTHESIZER (Web Audio API)
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -261,42 +310,54 @@
       const now = audioCtx.currentTime;
 
       if (type === 'pop') {
-        // Loud Balloon Pop
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(400, now);
-        osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+        osc.frequency.setValueAtTime(450, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.15);
         gain.gain.setValueAtTime(1.0, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
         osc.start(now);
         osc.stop(now + 0.15);
       } else if (type === 'hit') {
-        // Enemy Hit / Damage
         osc.type = 'square';
-        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.setValueAtTime(160, now);
         osc.frequency.exponentialRampToValueAtTime(30, now + 0.2);
         gain.gain.setValueAtTime(0.6, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
         osc.start(now);
         osc.stop(now + 0.2);
       } else if (type === 'icing') {
-        // Splat Sound
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(220, now);
-        osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+        osc.frequency.setValueAtTime(240, now);
+        osc.frequency.linearRampToValueAtTime(100, now + 0.25);
         gain.gain.setValueAtTime(0.5, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
         osc.start(now);
         osc.stop(now + 0.25);
       } else if (type === 'present') {
-        // Collect Present
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, now); // C5
-        osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
-        osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.08);
+        osc.frequency.setValueAtTime(783.99, now + 0.16);
         gain.gain.setValueAtTime(0.4, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
         osc.start(now);
         osc.stop(now + 0.3);
+      } else if (type === 'tool') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 0.12);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      } else if (type === 'eat') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.2);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
       }
     }
 
@@ -304,6 +365,7 @@
     let currentLevel = 1;
     let presents = [];
     let enemies = [];
+    let projectiles = [];
     let rooms = [];
     let doors = [];
     let totalPresentsCount = 0;
@@ -312,9 +374,13 @@
     let scaleFactor = 1;
     let isGameOver = false;
 
-    // SCREEN EFFECTS STATE
-    let icingTimer = 0; // Screen icing splatter duration (3s)
+    // SCREEN FROSTING MECHANIC
+    let icingAmount = 0; // 0 to 100
     let icingSplatters = [];
+    let lastWipeKey = null;
+
+    // INVENTORY SYSTEM
+    let selectedSlot = 1; // 1: Normalizer, 2: Pizza, 3: Leaf Blower, 4: Fire Extinguisher
 
     // KEYBOARD INPUT STATE (Strictly WASD)
     const keys = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
@@ -331,7 +397,7 @@
       walkFrame: 0,
       radius: 10,
       invulnerableTimer: 0,
-      burnTimer: 0 // Burn effect duration (3s)
+      burnTimer: 0
     };
 
     // Vibrant Color Themes for Rooms
@@ -342,8 +408,19 @@
       { bg: '#3a2e1b', wall: '#ffb300', name: 'Festive Gold' },
       { bg: '#3a1b2e', wall: '#ff4081', name: 'Birthday Pink' },
       { bg: '#281b3a', wall: '#7c4dff', name: 'Deep Violet' },
-      { bg: '#1b3a3a', wall: '#1de9b6', name: 'Confetti Teal' }
+      { bg: '#1b3a3a', wall: '#1de9b6', name: 'Confetti Teal' },
+      { bg: '#3a281b', wall: '#ff7043', name: 'Party Coral' },
+      { bg: '#1b283a', wall: '#42a5f5', name: 'Sky Blue' },
+      { bg: '#2e3a1b', wall: '#9ccc65', name: 'Lime Party' }
     ];
+
+    // Select Inventory Slot
+    function selectSlot(slot) {
+      selectedSlot = slot;
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`slot-${i}`).classList.toggle('active', i === slot);
+      }
+    }
 
     // STRICT WASD CONTROLS ONLY (Arrow Keys Suppressed)
     window.addEventListener('keydown', (e) => {
@@ -351,9 +428,32 @@
         e.preventDefault();
       }
 
-      if (e.code === 'KeyW' || e.code === 'Keyw') keys['KeyW'] = true;
+      // Slot Switching
+      if (e.code === 'Digit1' || e.code === 'Numpad1') selectSlot(1);
+      if (e.code === 'Digit2' || e.code === 'Numpad2') selectSlot(2);
+      if (e.code === 'Digit3' || e.code === 'Numpad3') selectSlot(3);
+      if (e.code === 'Digit4' || e.code === 'Numpad4') selectSlot(4);
+
+      // Tool Usage & Eating
+      if (e.code === 'Space') useEquippedTool();
+      if (e.code === 'KeyE' || e.code === 'Keye') eatNearestNormalized();
+
+      // Movement
+      if (e.code === 'KeyW' || e.code === 'Keyw') {
+        keys['KeyW'] = true;
+        if (icingAmount > 0 && lastWipeKey !== 'KeyW') {
+          icingAmount -= 18;
+          lastWipeKey = 'KeyW';
+        }
+      }
       if (e.code === 'KeyA' || e.code === 'Keya') keys['KeyA'] = true;
-      if (e.code === 'KeyS' || e.code === 'Keys') keys['KeyS'] = true;
+      if (e.code === 'KeyS' || e.code === 'Keys') {
+        keys['KeyS'] = true;
+        if (icingAmount > 0 && lastWipeKey !== 'KeyS') {
+          icingAmount -= 18;
+          lastWipeKey = 'KeyS';
+        }
+      }
       if (e.code === 'KeyD' || e.code === 'Keyd') keys['KeyD'] = true;
     });
 
@@ -373,21 +473,95 @@
 
     window.addEventListener('resize', resizeCanvas);
 
-    // LEVEL GENERATION
+    // USE EQUIPPED INVENTORY TOOL
+    function useEquippedTool() {
+      if (isGameOver) return;
+      playSound('tool');
+
+      if (selectedSlot === 1) {
+        // Normalizer Beam
+        projectiles.push({
+          type: 'normalizer',
+          x: player.x,
+          y: player.y - 8,
+          vx: player.facing * 9,
+          vy: 0,
+          life: 0.3,
+          roomId: currentRoomIndex
+        });
+      } else if (selectedSlot === 2) {
+        // Pizza Throw
+        projectiles.push({
+          type: 'pizza',
+          x: player.x,
+          y: player.y - 8,
+          vx: player.facing * 7,
+          vy: 0,
+          angle: 0,
+          life: 1.2,
+          roomId: currentRoomIndex
+        });
+      } else if (selectedSlot === 3) {
+        // Leaf Blower Wind Blast
+        projectiles.push({
+          type: 'wind',
+          x: player.x + player.facing * 10,
+          y: player.y - 8,
+          vx: player.facing * 8,
+          vy: 0,
+          size: 18,
+          life: 0.4,
+          roomId: currentRoomIndex
+        });
+      } else if (selectedSlot === 4) {
+        // Fire Extinguisher CO2 Foam
+        for (let i = 0; i < 5; i++) {
+          projectiles.push({
+            type: 'foam',
+            x: player.x + player.facing * 10,
+            y: player.y - 8,
+            vx: player.facing * (6 + Math.random() * 3),
+            vy: (Math.random() - 0.5) * 3,
+            size: 8 + Math.random() * 6,
+            life: 0.4,
+            roomId: currentRoomIndex
+          });
+        }
+      }
+    }
+
+    // EAT NORMALIZED CUPCAKE / CAKE
+    function eatNearestNormalized() {
+      enemies.forEach(e => {
+        if (e.active && e.isNormalized && e.roomId === currentRoomIndex) {
+          const dist = Math.hypot(player.x - e.x, player.y - e.y);
+          if (dist < player.radius + e.size + 15) {
+            e.active = false;
+            player.health = Math.min(player.maxHealth, player.health + 5);
+            updateHealthUI();
+            playSound('eat');
+          }
+        }
+      });
+    }
+
+    // LEVEL GENERATION (FIXED AT EXACTLY 10 ROOMS)
     function buildLevel(lvl) {
-      const numRooms = lvl + 1;
+      const numRooms = 10; // Exactly 10 rooms per specifications
       rooms = [];
       doors = [];
       presents = [];
       enemies = [];
+      projectiles = [];
       isGameOver = false;
+      icingAmount = 0;
       gameoverOverlay.style.display = 'none';
 
       const margin = 20;
       const playableW = canvas.width - margin * 2;
       const playableH = canvas.height - margin * 2;
 
-      // 1. Binary Space Partitioning (BSP) for varied room sizes
+      // BSP Split into exactly 10 rooms
       let regions = [{ x: margin, y: margin, w: playableW, h: playableH }];
 
       while (regions.length < numRooms) {
@@ -405,7 +579,7 @@
         let splitHoriz = parent.w < parent.h;
         if (parent.w === parent.h) splitHoriz = Math.random() < 0.5;
 
-        let ratio = 0.35 + Math.random() * 0.3;
+        let ratio = 0.38 + Math.random() * 0.24;
 
         if (splitHoriz) {
           let splitY = Math.floor(parent.h * ratio);
@@ -418,16 +592,13 @@
         }
       }
 
-      // Estimate scale factor
       let minRoomDim = Infinity;
-      regions.forEach(r => {
-        minRoomDim = Math.min(minRoomDim, r.w, r.h);
-      });
-      scaleFactor = Math.max(0.35, Math.min(1.0, minRoomDim / 150));
+      regions.forEach(r => { minRoomDim = Math.min(minRoomDim, r.w, r.h); });
+      scaleFactor = Math.max(0.35, Math.min(1.0, minRoomDim / 130));
       player.speed = player.baseSpeed * scaleFactor;
       player.radius = 12 * scaleFactor;
 
-      // Create rooms
+      // Populate 10 Rooms
       for (let i = 0; i < regions.length; i++) {
         const r = regions[i];
         const balloons = [];
@@ -450,7 +621,7 @@
         });
       }
 
-      // Shared wall checking & doorway placement
+      // Doorway Connections
       let adjEdges = [];
       for (let i = 0; i < rooms.length; i++) {
         for (let j = i + 1; j < rooms.length; j++) {
@@ -461,7 +632,7 @@
             let sharedX = Math.abs((r1.x + r1.w) - r2.x) < 2 ? r2.x : r1.x;
             let yMin = Math.max(r1.y, r2.y);
             let yMax = Math.min(r1.y + r1.h, r2.y + r2.h);
-            if (yMax - yMin > 30) {
+            if (yMax - yMin > 25) {
               adjEdges.push({
                 r1: i, r2: j, type: 'vertical',
                 x: sharedX, y: (yMin + yMax) / 2,
@@ -474,7 +645,7 @@
             let sharedY = Math.abs((r1.y + r1.h) - r2.y) < 2 ? r2.y : r1.y;
             let xMin = Math.max(r1.x, r2.x);
             let xMax = Math.min(r1.x + r1.w, r2.x + r2.w);
-            if (xMax - xMin > 30) {
+            if (xMax - xMin > 25) {
               adjEdges.push({
                 r1: i, r2: j, type: 'horizontal',
                 y: sharedY, x: (xMin + xMax) / 2,
@@ -500,7 +671,7 @@
         if (root1 !== root2 || Math.random() < 0.15) {
           if (root1 !== root2) parentSet[root1] = root2;
 
-          let doorSize = Math.min(edge.maxSpan - 12, Math.max(30 * scaleFactor, 22));
+          let doorSize = Math.min(edge.maxSpan - 10, Math.max(28 * scaleFactor, 20));
           doors.push({
             x: edge.x,
             y: edge.y,
@@ -512,13 +683,14 @@
         }
       });
 
-      // Spawn Birthday Presents: (level number) + random(0-3)
+      // Spawn Real Presents & Black Trap Presents
       totalPresentsCount = lvl + Math.floor(Math.random() * 4);
       presentsRemaining = totalPresentsCount;
 
+      // Real Presents
       for (let p = 0; p < totalPresentsCount; p++) {
         const targetRoom = rooms[p % rooms.length];
-        const padding = Math.min(25 * scaleFactor, targetRoom.w * 0.2);
+        const padding = Math.min(20 * scaleFactor, targetRoom.w * 0.2);
         const px = targetRoom.x + padding + Math.random() * (targetRoom.w - padding * 2);
         const py = targetRoom.y + padding + Math.random() * (targetRoom.h - padding * 2);
 
@@ -527,19 +699,37 @@
           y: py,
           size: 14 * scaleFactor,
           collected: false,
+          isFake: false,
           roomId: targetRoom.id,
           color: ['#ff4081', '#00e5ff', '#ffc107', '#e040fb', '#ff5722'][p % 5]
         });
       }
 
-      // SPAWN ENEMIES ACROSS ROOMS
-      const enemyTypes = ['cupcake', 'cake', 'balloon', 'fakepresent', 'candle', 'toy'];
+      // Black Fake Presents (Traps)
+      for (let fp = 0; fp < 6; fp++) {
+        const targetRoom = rooms[(fp + 2) % rooms.length];
+        const padding = Math.min(20 * scaleFactor, targetRoom.w * 0.2);
+        const px = targetRoom.x + padding + Math.random() * (targetRoom.w - padding * 2);
+        const py = targetRoom.y + padding + Math.random() * (targetRoom.h - padding * 2);
+
+        presents.push({
+          x: px,
+          y: py,
+          size: 14 * scaleFactor,
+          collected: false,
+          isFake: true,
+          roomId: targetRoom.id,
+          color: '#000000' // Black color indicates fake present
+        });
+      }
+
+      // Spawn Enemies
+      const enemyTypes = ['cupcake', 'cake', 'balloon', 'candle', 'toy'];
       rooms.forEach((r, idx) => {
-        // Spawn 1 to 2 enemies per room (skip heavy spawning in starting room 0)
         const count = idx === 0 ? 1 : 1 + Math.floor(Math.random() * 2);
         for (let e = 0; e < count; e++) {
           const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
-          const padding = 30 * scaleFactor;
+          const padding = 25 * scaleFactor;
           const ex = r.x + padding + Math.random() * (r.w - padding * 2);
           const ey = r.y + padding + Math.random() * (r.h - padding * 2);
 
@@ -551,7 +741,8 @@
             vy: (Math.random() - 0.5) * 1.5,
             size: 16 * scaleFactor,
             roomId: r.id,
-            active: true
+            active: true,
+            isNormalized: false
           });
         }
       });
@@ -565,7 +756,6 @@
       currentRoomIndex = 0;
       updateHealthUI();
 
-      // Update Header Text
       levelDisplay.innerText = currentLevel;
       roomsDisplay.innerText = numRooms;
       presentsDisplay.innerText = presentsRemaining;
@@ -590,11 +780,11 @@
       }
     }
 
-    function applyDamage(amount, type) {
+    function applyDamage(amount) {
       if (player.invulnerableTimer > 0) return;
 
       player.health -= amount;
-      player.invulnerableTimer = 1.0; // 1s invulnerability window
+      player.invulnerableTimer = 1.0;
       updateHealthUI();
 
       if (player.health <= 0) {
@@ -608,11 +798,11 @@
 
     function generateIcingSplatters() {
       icingSplatters = [];
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 14; i++) {
         icingSplatters.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          r: 25 + Math.random() * 40,
+          r: 30 + Math.random() * 45,
           color: ['#ff80ab', '#ffffff', '#f48fb1', '#ea80fc'][Math.floor(Math.random() * 4)]
         });
       }
@@ -629,18 +819,16 @@
       }
     }
 
-    // PHYSICS & COLLISION LOGIC
+    // PHYSICS & UPDATE LOOP
     function updatePhysics(dt) {
       if (isGameOver) return;
 
-      // Update Timers
       if (player.invulnerableTimer > 0) player.invulnerableTimer -= dt;
-      if (icingTimer > 0) icingTimer -= dt;
 
-      // Handle Candle Burn Effect (Burns stickman for 3 seconds)
+      // Handle Candle Burn Effect
       if (player.burnTimer > 0) {
         player.burnTimer -= dt;
-        player.health -= 0.8 * dt; // Continuous burn tick damage
+        player.health -= 0.8 * dt;
         updateHealthUI();
         if (player.health <= 0) {
           isGameOver = true;
@@ -665,7 +853,7 @@
       let nextX = player.x + dx * player.speed;
       let nextY = player.y + dy * player.speed;
 
-      // Wall & Door Passage Collision
+      // Wall Collision & Doorways
       const currentRoom = rooms[currentRoomIndex];
       if (currentRoom) {
         const pR = player.radius;
@@ -711,72 +899,107 @@
         player.walkFrame = 0;
       }
 
+      // Update Projectiles
+      for (let i = projectiles.length - 1; i >= 0; i--) {
+        let proj = projectiles[i];
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+        proj.life -= dt;
+        if (proj.type === 'pizza') proj.angle += 0.3;
+
+        // Projectile Collisions with Enemies
+        enemies.forEach(e => {
+          if (!e.active || e.roomId !== proj.roomId) return;
+          const dist = Math.hypot(proj.x - e.x, proj.y - e.y);
+
+          if (dist < (proj.size || 10) + e.size / 2) {
+            if (proj.type === 'normalizer' && (e.type === 'cupcake' || e.type === 'cake')) {
+              e.isNormalized = true; // Cupcake / cake becomes normal!
+              proj.life = 0;
+            } else if (proj.type === 'pizza' && e.type === 'toy') {
+              e.active = false; // Pizza knocks over / defeats toy
+              proj.life = 0;
+              playSound('hit');
+            } else if (proj.type === 'wind' && e.type === 'balloon') {
+              e.active = false; // Leaf blower blows away balloon safely
+              proj.life = 0;
+              playSound('pop');
+            } else if (proj.type === 'foam' && e.type === 'candle') {
+              e.active = false; // Extinguisher puts out candle
+              proj.life = 0;
+            }
+          }
+        });
+
+        if (proj.life <= 0) projectiles.splice(i, 1);
+      }
+
       // Update Wandering Enemies in Active Room
       enemies.forEach(e => {
         if (!e.active || e.roomId !== currentRoomIndex) return;
 
-        // Move stationary items vs mobile enemies
-        if (e.type !== 'fakepresent') {
+        if (!e.isNormalized) {
           e.x += e.vx;
           e.y += e.vy;
 
-          // Bounce off room boundaries
           const r = rooms[e.roomId];
           if (e.x - e.size / 2 < r.x + 6 || e.x + e.size / 2 > r.x + r.w - 6) e.vx *= -1;
           if (e.y - e.size / 2 < r.y + 6 || e.y + e.size / 2 > r.y + r.h - 6) e.vy *= -1;
         }
 
-        // Enemy Collision with Stickman
+        // Collision with Stickman
         const dist = Math.hypot(player.x - e.x, player.y - e.y);
         if (dist < player.radius + e.size / 2) {
-          // Trigger Specific Enemy Effects
+          if (e.isNormalized) return; // Normalized treats are harmless
+
           if (e.type === 'cupcake' || e.type === 'cake') {
-            // Evil Cupcakes & Birthday Cakes: -2 Health, Icing on screen for 3s
-            applyDamage(2, 'icing');
-            icingTimer = 3.0;
+            applyDamage(2);
+            icingAmount = 100; // Screen icing covers screen
             generateIcingSplatters();
             playSound('icing');
           } else if (e.type === 'balloon') {
-            // Evil Balloons: 0 Health damage, loud pop sound & pops
             playSound('pop');
-            e.active = false; // Pops balloon
-          } else if (e.type === 'fakepresent') {
-            // Fake Presents: -5 Health
-            applyDamage(5, 'fakepresent');
-            e.active = false; // Trap triggered
-            playSound('hit');
+            e.active = false; // Balloon pops when getting close
           } else if (e.type === 'candle') {
-            // Evil Candles: -10 Health, Burns stickman for 3s
-            applyDamage(10, 'candle');
-            player.burnTimer = 3.0;
+            applyDamage(10);
+            player.burnTimer = 3.0; // Burns stickman for 3s
             playSound('hit');
           } else if (e.type === 'toy') {
-            // Evil Toys: -3 Health, Hits stickman
-            applyDamage(3, 'toy');
-            // Knockback effect
-            player.x -= dx * 18;
-            player.y -= dy * 18;
+            applyDamage(2); // Removes 2 health
+            player.x -= dx * 20;
+            player.y -= dy * 20;
             playSound('hit');
           }
         }
       });
 
-      // Real Present Collection
+      // Presents Collection (Real vs Black Fake Presents)
       presents.forEach(p => {
         if (!p.collected && p.roomId === currentRoomIndex) {
           const dist = Math.hypot(player.x - p.x, player.y - p.y);
           if (dist < player.radius + p.size / 2) {
             p.collected = true;
-            presentsRemaining--;
-            presentsDisplay.innerText = presentsRemaining;
-            playSound('present');
 
-            if (presentsRemaining === 0) {
-              triggerLevelComplete();
+            if (p.isFake) {
+              // Fake Black Present: Removes 5 Health
+              applyDamage(5);
+              playSound('hit');
+            } else {
+              // Real Present
+              presentsRemaining--;
+              presentsDisplay.innerText = presentsRemaining;
+              playSound('present');
+
+              if (presentsRemaining === 0) {
+                triggerLevelComplete();
+              }
             }
           }
         }
       });
+
+      // Toggle Wipe Prompt UI
+      wipePrompt.style.display = icingAmount > 0 ? 'block' : 'none';
     }
 
     function triggerLevelComplete() {
@@ -788,7 +1011,44 @@
       }, 1400);
     }
 
-    // ENEMY DRAWING PROCEDURES
+    // DRAW PROJECTILES & TOOLS
+    function drawProjectiles() {
+      projectiles.forEach(p => {
+        if (p.roomId !== currentRoomIndex) return;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+
+        if (p.type === 'normalizer') {
+          ctx.fillStyle = '#00e676';
+          ctx.shadowColor = '#00e676';
+          ctx.shadowBlur = 10;
+          ctx.fillRect(-8, -2, 16, 4);
+        } else if (p.type === 'pizza') {
+          ctx.rotate(p.angle);
+          ctx.fillStyle = '#ffb300';
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.arc(0, 0, 9, -0.4, 0.4);
+          ctx.closePath();
+          ctx.fill();
+        } else if (p.type === 'wind') {
+          ctx.fillStyle = 'rgba(220, 240, 255, 0.5)';
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (p.type === 'foam') {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      });
+    }
+
+    // DRAW ENEMIES
     function drawEnemies() {
       enemies.forEach(e => {
         if (!e.active || e.roomId !== currentRoomIndex) return;
@@ -797,59 +1057,52 @@
         ctx.translate(e.x, e.y);
         const s = e.size;
 
-        if (e.type === 'cupcake') {
-          // Evil Cupcake
+        if (e.isNormalized) {
+          // Normalized Cute Cupcake/Cake
+          ctx.fillStyle = '#00e676';
+          ctx.shadowColor = '#00e676';
+          ctx.shadowBlur = 8;
+          ctx.fillRect(-s / 2, -s / 2, s, s);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '10px sans-serif';
+          ctx.fillText('YUM!', -12, -s / 2 - 2);
+        } else if (e.type === 'cupcake') {
           ctx.fillStyle = '#ff80ab';
           ctx.beginPath();
           ctx.arc(0, -2, s / 2, Math.PI, 0);
           ctx.fill();
           ctx.fillStyle = '#795548';
           ctx.fillRect(-s / 2 + 2, -2, s - 4, s / 2);
-          // Angry eyes
           ctx.fillStyle = '#ff1744';
           ctx.fillRect(-4, -6, 3, 3);
           ctx.fillRect(2, -6, 3, 3);
         } else if (e.type === 'cake') {
-          // Evil Birthday Cake
           ctx.fillStyle = '#e040fb';
           ctx.fillRect(-s / 2, -s / 4, s, s / 2);
           ctx.fillStyle = '#00e5ff';
           ctx.fillRect(-s / 2 + 2, -s / 2, s - 4, s / 4);
-          // Angry Face
           ctx.fillStyle = '#000000';
           ctx.fillRect(-4, -2, 3, 3);
           ctx.fillRect(2, -2, 3, 3);
         } else if (e.type === 'balloon') {
-          // Evil Balloon
           ctx.fillStyle = '#ff1744';
           ctx.beginPath();
           ctx.arc(0, -2, s / 2, 0, Math.PI * 2);
           ctx.fill();
-          // String
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(0, s / 2);
           ctx.lineTo(0, s / 2 + 6);
           ctx.stroke();
-        } else if (e.type === 'fakepresent') {
-          // Fake Present (Looks like normal present)
-          ctx.fillStyle = '#00e676';
-          ctx.fillRect(-s / 2, -s / 2, s, s);
-          ctx.fillStyle = '#ff1744';
-          ctx.fillRect(-s / 2, -1.5, s, 3);
-          ctx.fillRect(-1.5, -s / 2, 3, s);
         } else if (e.type === 'candle') {
-          // Evil Candle
           ctx.fillStyle = '#ffeb3b';
           ctx.fillRect(-3, -s / 2, 6, s);
-          // Flame
           ctx.fillStyle = '#ff5722';
           ctx.beginPath();
           ctx.arc(0, -s / 2 - 4, 4, 0, Math.PI * 2);
           ctx.fill();
         } else if (e.type === 'toy') {
-          // Evil Toy (Bouncy robot)
           ctx.fillStyle = '#00e5ff';
           ctx.fillRect(-s / 2, -s / 2, s, s);
           ctx.fillStyle = '#ffeb3b';
@@ -887,7 +1140,7 @@
         ctx.strokeRect(r.x, r.y, r.w, r.h);
       });
 
-      // Distinct Doorways
+      // Doorways
       doors.forEach(d => {
         const thickness = 10;
         if (d.type === 'vertical') {
@@ -913,7 +1166,7 @@
           ctx.fillRect(r.x - 2, r.y - 2, r.w + 4, r.h + 4);
 
           ctx.fillStyle = '#444455';
-          ctx.font = `${Math.max(10, 12 * scaleFactor)}px Courier New`;
+          ctx.font = `${Math.max(9, 11 * scaleFactor)}px Courier New`;
           ctx.textAlign = 'center';
           ctx.fillText('???', r.x + r.w / 2, r.y + r.h / 2);
         }
@@ -943,14 +1196,17 @@
           ctx.fillStyle = p.color;
           ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
 
-          ctx.fillStyle = '#ffffff';
+          // Black presents have dark charcoal cross ribbons
+          ctx.fillStyle = p.isFake ? '#1a1a1a' : '#ffffff';
           ctx.fillRect(p.x - s / 2, p.y - 1.5, s, 3);
           ctx.fillRect(p.x - 1.5, p.y - s / 2, 3, s);
 
-          ctx.fillStyle = '#ffeb3b';
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, Math.max(1.5, 2.5 * scaleFactor), 0, Math.PI * 2);
-          ctx.fill();
+          if (!p.isFake) {
+            ctx.fillStyle = '#ffeb3b';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, Math.max(1.5, 2.5 * scaleFactor), 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
       });
     }
@@ -958,7 +1214,7 @@
     function drawStickman(x, y, facing, walkFrame) {
       ctx.save();
       if (player.invulnerableTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
-        ctx.globalAlpha = 0.4; // Flash on hit
+        ctx.globalAlpha = 0.4;
       }
 
       ctx.strokeStyle = '#ffffff';
@@ -988,7 +1244,7 @@
       ctx.closePath();
       ctx.fill();
 
-      // Burn Effect Flame Overlay
+      // Flame Overlay
       if (player.burnTimer > 0) {
         ctx.fillStyle = '#ff5722';
         ctx.beginPath();
@@ -1020,25 +1276,44 @@
       ctx.lineTo(x + legSwing, y + legLength);
       ctx.stroke();
 
-      // Arms
+      // Arms & Equipped Tool Visual
       const armSwing = Math.sin(walkFrame + Math.PI) * (4 * scaleFactor);
       ctx.beginPath();
       ctx.moveTo(x, shoulderY);
       ctx.lineTo(x - facing * (4 * scaleFactor) - armSwing, shoulderY + 5 * scaleFactor);
       ctx.stroke();
 
+      // Front Arm holding equipped tool
       ctx.beginPath();
       ctx.moveTo(x, shoulderY);
-      ctx.lineTo(x + facing * (4 * scaleFactor) + armSwing, shoulderY + 5 * scaleFactor);
+      const toolX = x + facing * (8 * scaleFactor);
+      const toolY = shoulderY + 2 * scaleFactor;
+      ctx.lineTo(toolX, toolY);
       ctx.stroke();
+
+      // Draw Tool Icon in Hand
+      if (selectedSlot === 1) { // Normalizer
+        ctx.fillStyle = '#00e676';
+        ctx.fillRect(toolX - 2, toolY - 2, 6, 4);
+      } else if (selectedSlot === 2) { // Pizza
+        ctx.fillStyle = '#ffb300';
+        ctx.fillRect(toolX - 2, toolY - 2, 5, 5);
+      } else if (selectedSlot === 3) { // Leaf Blower
+        ctx.fillStyle = '#42a5f5';
+        ctx.fillRect(toolX - 2, toolY - 3, 7, 4);
+      } else if (selectedSlot === 4) { // Extinguisher
+        ctx.fillStyle = '#ff1744';
+        ctx.fillRect(toolX - 2, toolY - 3, 4, 7);
+      }
 
       ctx.restore();
     }
 
+    // DRAW FROSTING OVERLAY
     function drawScreenIcing() {
-      if (icingTimer > 0) {
+      if (icingAmount > 0) {
         ctx.save();
-        ctx.globalAlpha = Math.min(1.0, icingTimer);
+        ctx.globalAlpha = Math.min(1.0, icingAmount / 100);
         icingSplatters.forEach(s => {
           ctx.fillStyle = s.color;
           ctx.beginPath();
@@ -1056,6 +1331,7 @@
       drawHouse();
       drawPresents();
       drawEnemies();
+      drawProjectiles();
       drawStickman(player.x, player.y, player.facing, player.walkFrame);
       drawFogOfWar();
       drawScreenIcing();
