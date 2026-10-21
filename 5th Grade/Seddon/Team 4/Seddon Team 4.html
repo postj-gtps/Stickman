@@ -3,150 +3,253 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Stickman - Candyland Rescue</title>
+ <title>Stickman: Candyland Rescue - Enemy Update</title>
  <style>
  * {
- box-sizing: border-box;
- user-select: none;
- margin: 0;
- padding: 0;
- font-family: 'Courier New', Courier, monospace, sans-serif;
+   box-sizing: border-box;
+   user-select: none;
+   margin: 0;
+   padding: 0;
+   font-family: 'Courier New', Courier, monospace, sans-serif;
  }
 
  body {
- background-color: #1a092b;
- color: #ffffff;
- display: flex;
- flex-direction: column;
- align-items: center;
- justify-content: flex-start;
- height: 100vh;
- overflow: hidden;
- padding: 12px;
+   background-color: #120620;
+   color: #ffffff;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: flex-start;
+   height: 100vh;
+   overflow: hidden;
+   padding: 10px;
  }
 
- /* Top Header Bar */
+ /* Header & HUD Bar */
  #header {
- display: flex;
- justify-content: space-between;
- align-items: center;
- width: 100%;
- max-width: 1100px;
- margin-bottom: 8px;
- padding-bottom: 6px;
- border-bottom: 2px solid #ff70a6;
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   width: 100%;
+   max-width: 1100px;
+   margin-bottom: 8px;
+   padding: 8px 12px;
+   background: rgba(43, 16, 85, 0.85);
+   border: 2px solid #ff70a6;
+   border-radius: 8px;
+   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
  }
 
  h1 {
- font-size: 18px;
- letter-spacing: 2px;
- text-transform: uppercase;
- font-weight: bold;
- color: #ff9770;
- text-shadow: 1px 1px 2px #000;
+   font-size: 16px;
+   letter-spacing: 1.5px;
+   text-transform: uppercase;
+   font-weight: bold;
+   color: #ff9770;
+   text-shadow: 1px 1px 3px #000;
  }
 
- .stats {
- font-size: 16px;
- font-weight: bold;
- color: #ffd166;
- letter-spacing: 1px;
+ .stats-container {
+   display: flex;
+   gap: 12px;
+   align-items: center;
+ }
+
+ .stat-box {
+   font-size: 13px;
+   font-weight: bold;
+   padding: 4px 8px;
+   border-radius: 4px;
+   border: 1px solid rgba(255, 255, 255, 0.3);
+   background: rgba(0, 0, 0, 0.3);
+   color: #ffd166;
+   white-space: nowrap;
+ }
+
+ .stat-box.danger {
+   color: #ff4d6d;
+   border-color: #ff4d6d;
+   animation: pulse 1s infinite alternate;
+ }
+
+ .stat-box.active {
+   color: #06d6a0;
+   border-color: #06d6a0;
+ }
+
+ @keyframes pulse {
+   0% { transform: scale(1); }
+   100% { transform: scale(1.05); }
  }
 
  .btn-reset {
- background: #ff70a6;
- color: #ffffff;
- border: 1px solid #ffffff;
- padding: 6px 16px;
- font-size: 14px;
- font-weight: bold;
- cursor: pointer;
- text-transform: uppercase;
- letter-spacing: 1px;
- transition: all 0.15s ease-in-out;
- border-radius: 4px;
+   background: #ff70a6;
+   color: #ffffff;
+   border: 1px solid #ffffff;
+   padding: 6px 14px;
+   font-size: 13px;
+   font-weight: bold;
+   cursor: pointer;
+   text-transform: uppercase;
+   letter-spacing: 1px;
+   transition: all 0.15s ease-in-out;
+   border-radius: 4px;
  }
 
  .btn-reset:hover {
- background: #ffffff;
- color: #ff70a6;
+   background: #ffffff;
+   color: #ff70a6;
  }
 
- /* Main Canvas Container */
+ /* Main Canvas Wrapper */
  #canvas-wrapper {
- position: relative;
- width: 100%;
- max-width: 1100px;
- flex-grow: 1;
- display: flex;
- justify-content: center;
- align-items: center;
+   position: relative;
+   width: 100%;
+   max-width: 1100px;
+   flex-grow: 1;
+   display: flex;
+   justify-content: center;
+   align-items: center;
  }
 
  canvas {
- background-color: #2b1055;
- border: 2px solid #ff70a6;
- border-radius: 6px;
- display: block;
- width: 100%;
- height: 100%;
+   background-color: #2b1055;
+   border: 2px solid #ff70a6;
+   border-radius: 8px;
+   display: block;
+   width: 100%;
+   height: 100%;
+   box-shadow: 0 8px 24px rgba(0,0,0,0.6);
  }
 
+ /* Instructions Footer */
  .instructions {
- margin-top: 6px;
- font-size: 12px;
- color: #ffb7b2;
- text-align: center;
- font-weight: bold;
+   margin-top: 6px;
+   font-size: 12px;
+   color: #ffb7b2;
+   text-align: center;
+   font-weight: bold;
+   background: rgba(0, 0, 0, 0.4);
+   padding: 4px 12px;
+   border-radius: 20px;
+ }
+
+ .key-badge {
+   background: #ff70a6;
+   color: #fff;
+   padding: 1px 5px;
+   border-radius: 3px;
+   font-size: 11px;
  }
  </style>
 </head>
 <body>
 
- <!-- Header Section -->
+ <!-- Header / HUD Bar -->
  <div id="header">
- <h1>Stickman: Candyland Rescue</h1>
- <div class="stats">LEVEL: <span id="level-display">1</span></div>
- <button class="btn-reset" onclick="resetGame()">Reset Game</button>
+   <h1>Stickman: Candyland Rescue</h1>
+   <div class="stats-container">
+     <div class="stat-box">LEVEL: <span id="level-display">1</span></div>
+     <div id="dentist-hud" class="stat-box">DENTIST: SLEEPING</div>
+     <div id="boulder-hud" class="stat-box">BOULDER: 3/3 HP</div>
+   </div>
+   <button class="btn-reset" onclick="resetGame()">Reset Game</button>
  </div>
 
  <!-- Canvas Container -->
  <div id="canvas-wrapper">
- <canvas id="simCanvas"></canvas>
+   <canvas id="simCanvas"></canvas>
  </div>
 
+ <!-- Controls Bar -->
  <div class="instructions">
- [WASD] Move Stickman &bull; Choose a branching path, cross the chocolate river bridge, and rescue Timmy!
+   <span class="key-badge">WASD</span> Move Stickman &bull; 
+   <span class="key-badge">SPACEBAR</span> Swing Pickaxe &bull; 
+   Break the Bubblegum Boulder, dodge the Gumdrop Storm, & escape the Angry Dentist!
  </div>
 
  <script>
  const canvas = document.getElementById('simCanvas');
  const ctx = canvas.getContext('2d');
 
- // KEYBOARD INPUT STATE (STRICT WASD ONLY)
+ // KEYBOARD INPUT STATE (STRICT WASD + SPACEBAR)
  const keys = {};
 
- // GAME STATE
+ // GAME STATE & CONSTANTS
+ let gameState = 'PLAYING'; // 'PLAYING', 'GAME_OVER', 'LEVEL_CLEARED'
  let currentLevel = 1;
- let levelMessageTimer = 0;
+ let notificationText = '';
+ let notificationTimer = 0;
  let tileSize = 26;
  let gridCols = 0;
  let gridRows = 0;
 
- // STICKMAN PLAYER STATE (Scaled down to fit intricate path network)
+ // STICKMAN PLAYER STATE
  const player = {
- x: 0,
- y: 0,
- speed: 3.2,
- facing: 1, // 1 = Right, -1 = Left
- walkFrame: 0
+   x: 0,
+   y: 0,
+   speed: 3.2,
+   facing: 1, // 1 = Right, -1 = Left
+   walkFrame: 0,
+   isSwinging: false,
+   swingTimer: 0
  };
+
+ // ANGRY DENTIST STATE
+ const dentist = {
+   x: 0,
+   y: 0,
+   targetX: 0,
+   targetY: 0,
+   targetR: 0,
+   targetC: 0,
+   active: false,
+   leavesStartTriggered: false,
+   timer: 5.0,
+   facing: 1,
+   walkFrame: 0
+ };
+
+ // CANDY WITCH STATE
+ const witch = {
+   x: 0,
+   y: 0,
+   floatAngle: 0,
+   wandSparkleTimer: 0
+ };
+
+ // BUBBLEGUM BOULDER STATE
+ const boulder = {
+   r: 0,
+   c: 0,
+   x: 0,
+   y: 0,
+   hp: 3,
+   maxHp: 3,
+   destroyed: false
+ };
+
+ // COTTON CANDY STORM & RAIN STATE
+ const storm = {
+   active: false,
+   timer: 0,
+   cloudOffset: 0
+ };
+
+ const trapTile = {
+   r: -1,
+   c: -1,
+   triggered: false
+ };
+
+ const fallingGumdrops = [];
+ const particles = [];
 
  // TIMMY THE GNOME STATE
  const timmy = {
- x: 0,
- y: 0,
- waveFrame: 0
+   x: 0,
+   y: 0,
+   waveFrame: 0
  };
 
  // MAP & PATH STATE
@@ -156,524 +259,1074 @@
  let canyonYStart = 0;
  let canyonHeight = 0;
  let canyonRowStart = 0;
+ let startRow = 0;
+ let startCol = 0;
 
  const CANDY_COLORS = [
- '#ff4d6d', '#4cc9f0', '#ffd166', '#06d6a0', 
- '#ff9770', '#70d6ff', '#ff70a6', '#ff9e00', '#b5179e'
+   '#ff4d6d', '#4cc9f0', '#ffd166', '#06d6a0', 
+   '#ff9770', '#70d6ff', '#ff70a6', '#ff9e00', '#b5179e'
  ];
 
  window.addEventListener('resize', resizeCanvas);
 
- // CONTROLS HANDLERS - STRICT WASD MOVEMENT ONLY (ARROW KEYS EXCLUDED)
+ // KEYBOARD INPUT LISTENERS (STRICT WASD + SPACEBAR)
  window.addEventListener('keydown', (e) => {
- if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code) ||
- ['w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(e.key)) {
- e.preventDefault();
- keys[e.key.toLowerCase()] = true;
- }
+   // Spacebar for Pickaxe swing
+   if (e.code === 'Space' || e.key === ' ') {
+     e.preventDefault();
+     if (!keys['space']) {
+       keys['space'] = true;
+       handlePickaxeSwing();
+     }
+     if (gameState === 'GAME_OVER') {
+       resetGame();
+     }
+     return;
+   }
+
+   // Strictly accept WASD only
+   if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code) ||
+       ['w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(e.key)) {
+     e.preventDefault();
+     keys[e.key.toLowerCase()] = true;
+   }
  });
 
  window.addEventListener('keyup', (e) => {
- if (['w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(e.key)) {
- keys[e.key.toLowerCase()] = false;
- }
+   if (e.code === 'Space' || e.key === ' ') {
+     keys['space'] = false;
+   }
+   if (['w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(e.key)) {
+     keys[e.key.toLowerCase()] = false;
+   }
  });
 
  function resizeCanvas() {
- const wrapper = document.getElementById('canvas-wrapper');
- canvas.width = wrapper.clientWidth;
- canvas.height = wrapper.clientHeight;
- generateLevel();
+   const wrapper = document.getElementById('canvas-wrapper');
+   canvas.width = wrapper.clientWidth;
+   canvas.height = wrapper.clientHeight;
+   generateLevel();
  }
 
  function addTileToPath(r, c, color, isBridge = false) {
- const key = `${r},${c}`;
- if (!pathSet.has(key) && r >= 0 && r < gridRows && c >= 0 && c < gridCols) {
- pathSet.add(key);
- pathTiles.push({
- r: r,
- c: c,
- x: c * tileSize,
- y: r * tileSize,
- color: color,
- isBridge: isBridge
- });
+   const key = `${r},${c}`;
+   if (!pathSet.has(key) && r >= 0 && r < gridRows && c >= 0 && c < gridCols) {
+     pathSet.add(key);
+     pathTiles.push({
+       r: r,
+       c: c,
+       x: c * tileSize,
+       y: r * tileSize,
+       color: color,
+       isBridge: isBridge
+     });
+   }
  }
+
+ function triggerNotification(text) {
+   notificationText = text;
+   notificationTimer = 150; // ~2.5 seconds
+ }
+
+ function createParticles(x, y, color, count = 12) {
+   for (let i = 0; i < count; i++) {
+     const angle = Math.random() * Math.PI * 2;
+     const speed = 1 + Math.random() * 4;
+     particles.push({
+       x: x,
+       y: y,
+       vx: Math.cos(angle) * speed,
+       vy: Math.sin(angle) * speed,
+       size: 3 + Math.random() * 4,
+       color: color,
+       life: 1.0,
+       decay: 0.02 + Math.random() * 0.03
+     });
+   }
  }
 
  function generateLevel() {
- // Smaller tile size to allow complex branching network
- tileSize = Math.max(22, Math.floor(canvas.height / 26));
- gridCols = Math.floor(canvas.width / tileSize);
- gridRows = Math.floor(canvas.height / tileSize);
+   gameState = 'PLAYING';
+   tileSize = Math.max(22, Math.floor(canvas.height / 26));
+   gridCols = Math.floor(canvas.width / tileSize);
+   gridRows = Math.floor(canvas.height / tileSize);
 
- pathTiles = [];
- pathSet = new Set();
- sceneryItems = [];
+   pathTiles = [];
+   pathSet = new Set();
+   sceneryItems = [];
+   fallingGumdrops.length = 0;
+   particles.length = 0;
 
- // 1. Randomize Chocolate River / Canyon position (between 30% and 55% from top)
- const minCanyonRow = Math.floor(gridRows * 0.30);
- const maxCanyonRow = Math.floor(gridRows * 0.55);
- canyonRowStart = Math.floor(Math.random() * (maxCanyonRow - minCanyonRow + 1)) + minCanyonRow;
- canyonYStart = canyonRowStart * tileSize;
- canyonHeight = tileSize * 2;
+   // 1. Canyon / River Setup
+   const minCanyonRow = Math.floor(gridRows * 0.32);
+   const maxCanyonRow = Math.floor(gridRows * 0.52);
+   canyonRowStart = Math.floor(Math.random() * (maxCanyonRow - minCanyonRow + 1)) + minCanyonRow;
+   canyonYStart = canyonRowStart * tileSize;
+   canyonHeight = tileSize * 2;
 
- // 2. Randomly locate the Bridge crossing along the Chocolate River
- const bridgeCol = Math.floor(Math.random() * (gridCols - 10)) + 5;
- const bridgeWidth = 2; // 2 tiles wide bridge
+   // 2. Canyon Bridge Crossing
+   const bridgeCol = Math.floor(Math.random() * (gridCols - 10)) + 5;
+   const bridgeWidth = 2;
+   for (let r = canyonRowStart; r <= canyonRowStart + 1; r++) {
+     for (let c = bridgeCol; c < bridgeCol + bridgeWidth; c++) {
+       addTileToPath(r, c, '#8d5524', true);
+     }
+   }
 
- // Draw Bridge Tiles across the 2-row river
- for (let r = canyonRowStart; r <= canyonRowStart + 1; r++) {
- for (let c = bridgeCol; c < bridgeCol + bridgeWidth; c++) {
- addTileToPath(r, c, '#8d5524', true);
- }
- }
+   // 3. Lower Branching Path Network (Start -> Bridge)
+   startRow = gridRows - 2;
+   startCol = Math.floor(gridCols / 2);
 
- // 3. BRANCHING NETWORK FROM START POINT TO BRIDGE
- const startRow = gridRows - 2;
- const startCol = Math.floor(gridCols / 2);
+   for (let r = startRow; r <= startRow + 1; r++) {
+     for (let c = startCol - 1; c <= startCol + 1; c++) {
+       addTileToPath(r, c, CANDY_COLORS[0]);
+     }
+   }
 
- // Create Start Platform
- for (let r = startRow; r <= startRow + 1; r++) {
- for (let c = startCol - 1; c <= startCol + 1; c++) {
- addTileToPath(r, c, CANDY_COLORS[0]);
- }
- }
+   // Set Player Initial Position
+   player.x = startCol * tileSize + tileSize / 2;
+   player.y = startRow * tileSize + tileSize / 2;
+   player.facing = 1;
+   player.walkFrame = 0;
 
- player.x = startCol * tileSize + tileSize / 2;
- player.y = startRow * tileSize + tileSize / 2;
- player.facing = 1;
- player.walkFrame = 0;
+   // Set Dentist Initial State
+   dentist.x = player.x;
+   dentist.y = player.y;
+   dentist.targetX = player.x;
+   dentist.targetY = player.y;
+   dentist.targetR = startRow;
+   dentist.targetC = startCol;
+   dentist.active = false;
+   dentist.leavesStartTriggered = false;
+   dentist.timer = 5.0;
 
- let colorIdx = 1;
+   let colorIdx = 1;
 
- // Helper function to create a snaking path between two grid points
- function buildSnakeBranch(fromR, fromC, toR, toC, waypoints = []) {
- let currR = fromR;
- let currC = fromC;
+   function buildSnakeBranch(fromR, fromC, toR, toC, waypoints = []) {
+     let currR = fromR;
+     let currC = fromC;
 
- const allTargets = [...waypoints, { r: toR, c: toC }];
+     const allTargets = [...waypoints, { r: toR, c: toC }];
 
- allTargets.forEach(target => {
- while (currR > target.r) {
- currR--;
- addTileToPath(currR, currC, CANDY_COLORS[colorIdx % CANDY_COLORS.length]);
- colorIdx++;
+     allTargets.forEach(target => {
+       while (currR > target.r) {
+         currR--;
+         addTileToPath(currR, currC, CANDY_COLORS[colorIdx % CANDY_COLORS.length]);
+         colorIdx++;
 
- // Random horizontal wiggle
- if (Math.random() < 0.35 && currC !== target.c) {
- currC += (currC < target.c) ? 1 : -1;
- addTileToPath(currR, currC, CANDY_COLORS[colorIdx % CANDY_COLORS.length]);
- colorIdx++;
- }
- }
+         if (Math.random() < 0.35 && currC !== target.c) {
+           currC += (currC < target.c) ? 1 : -1;
+           addTileToPath(currR, currC, CANDY_COLORS[colorIdx % CANDY_COLORS.length]);
+           colorIdx++;
+         }
+       }
 
- while (currC !== target.c) {
- currC += (currC < target.c) ? 1 : -1;
- addTileToPath(currR, currC, CANDY_COLORS[colorIdx % CANDY_COLORS.length]);
- colorIdx++;
- }
- });
- }
+       while (currC !== target.c) {
+         currC += (currC < target.c) ? 1 : -1;
+         addTileToPath(currR, currC, CANDY_COLORS[colorIdx % CANDY_COLORS.length]);
+         colorIdx++;
+       }
+     });
+   }
 
- // Define 3 distinct radiating branch routes from Start Point -> Bridge
- const leftWaypointCol = Math.max(3, Math.floor(startCol / 2));
- const rightWaypointCol = Math.min(gridCols - 4, Math.floor(startCol + (gridCols - startCol) / 2));
- const midRow = Math.floor((startRow + canyonRowStart + 2) / 2);
+   const leftWaypointCol = Math.max(3, Math.floor(startCol / 2));
+   const rightWaypointCol = Math.min(gridCols - 4, Math.floor(startCol + (gridCols - startCol) / 2));
+   const midRow = Math.floor((startRow + canyonRowStart + 2) / 2);
 
- // Left radiating branch
- buildSnakeBranch(startRow, startCol - 1, canyonRowStart + 2, bridgeCol, [
- { r: midRow + 2, c: leftWaypointCol },
- { r: canyonRowStart + 4, c: leftWaypointCol }
- ]);
+   buildSnakeBranch(startRow, startCol - 1, canyonRowStart + 2, bridgeCol, [
+     { r: midRow + 2, c: leftWaypointCol },
+     { r: canyonRowStart + 4, c: leftWaypointCol }
+   ]);
 
- // Middle direct branch
- buildSnakeBranch(startRow, startCol, canyonRowStart + 2, bridgeCol + 1, [
- { r: midRow, c: startCol + (Math.random() > 0.5 ? 2 : -2) }
- ]);
+   buildSnakeBranch(startRow, startCol, canyonRowStart + 2, bridgeCol + 1, [
+     { r: midRow, c: startCol + (Math.random() > 0.5 ? 2 : -2) }
+   ]);
 
- // Right radiating branch
- buildSnakeBranch(startRow, startCol + 1, canyonRowStart + 2, bridgeCol + 1, [
- { r: midRow + 2, c: rightWaypointCol },
- { r: canyonRowStart + 4, c: rightWaypointCol }
- ]);
+   buildSnakeBranch(startRow, startCol + 1, canyonRowStart + 2, bridgeCol + 1, [
+     { r: midRow + 2, c: rightWaypointCol },
+     { r: canyonRowStart + 4, c: rightWaypointCol }
+   ]);
 
- // Add a cross-connector between left and middle branch for extra path choices
- const crossRow = midRow + 1;
- for (let c = leftWaypointCol; c <= startCol; c++) {
- addTileToPath(crossRow, c, CANDY_COLORS[colorIdx % CANDY_COLORS.length]);
- }
+   const crossRow = midRow + 1;
+   for (let c = leftWaypointCol; c <= startCol; c++) {
+     addTileToPath(crossRow, c, CANDY_COLORS[colorIdx % CANDY_COLORS.length]);
+   }
 
- // Ensure bridge entrance is clear and connected
- for (let c = bridgeCol - 1; c <= bridgeCol + bridgeWidth; c++) {
- addTileToPath(canyonRowStart + 2, c, CANDY_COLORS[colorIdx % CANDY_COLORS.length]);
- }
+   for (let c = bridgeCol - 1; c <= bridgeCol + bridgeWidth; c++) {
+     addTileToPath(canyonRowStart + 2, c, CANDY_COLORS[colorIdx % CANDY_COLORS.length]);
+   }
 
- // 4. UPPER PATH NETWORK FROM BRIDGE TO TIMMY
- const endRow = 2;
- const timmyCol = Math.floor(Math.random() * (gridCols - 8)) + 4;
+   // 4. Upper Path Network (Bridge -> Timmy)
+   const endRow = 2;
+   const timmyCol = Math.floor(Math.random() * (gridCols - 8)) + 4;
 
- // Upper path branches
- for (let c = bridgeCol - 1; c <= bridgeCol + bridgeWidth; c++) {
- addTileToPath(canyonRowStart - 1, c, CANDY_COLORS[colorIdx % CANDY_COLORS.length]);
- }
+   for (let c = bridgeCol - 1; c <= bridgeCol + bridgeWidth; c++) {
+     addTileToPath(canyonRowStart - 1, c, CANDY_COLORS[colorIdx % CANDY_COLORS.length]);
+   }
 
- buildSnakeBranch(canyonRowStart - 1, bridgeCol, endRow, timmyCol, [
- { r: Math.floor((canyonRowStart + endRow) / 2), c: Math.max(3, bridgeCol - 5) }
- ]);
+   buildSnakeBranch(canyonRowStart - 1, bridgeCol, endRow, timmyCol, [
+     { r: Math.floor((canyonRowStart + endRow) / 2), c: Math.max(3, bridgeCol - 5) }
+   ]);
 
- buildSnakeBranch(canyonRowStart - 1, bridgeCol + 1, endRow, timmyCol, [
- { r: Math.floor((canyonRowStart + endRow) / 2), c: Math.min(gridCols - 4, bridgeCol + 5) }
- ]);
+   buildSnakeBranch(canyonRowStart - 1, bridgeCol + 1, endRow, timmyCol, [
+     { r: Math.floor((canyonRowStart + endRow) / 2), c: Math.min(gridCols - 4, bridgeCol + 5) }
+   ]);
 
- // Set Timmy location
- timmy.x = timmyCol * tileSize + tileSize / 2;
- timmy.y = endRow * tileSize + tileSize / 2;
+   // Set Timmy Location
+   timmy.x = timmyCol * tileSize + tileSize / 2;
+   timmy.y = endRow * tileSize + tileSize / 2;
 
- // Add extra tiles around Timmy
- for (let r = endRow - 1; r <= endRow + 1; r++) {
- for (let c = timmyCol - 1; c <= timmyCol + 1; c++) {
- addTileToPath(r, c, CANDY_COLORS[2]);
- }
- }
+   for (let r = endRow - 1; r <= endRow + 1; r++) {
+     for (let c = timmyCol - 1; c <= timmyCol + 1; c++) {
+       addTileToPath(r, c, CANDY_COLORS[2]);
+     }
+   }
 
- // 5. POPULATE DENSE CANDY SCENERY OUTSIDE THE PATHS
- for (let r = 0; r < gridRows; r++) {
- for (let c = 0; c < gridCols; c++) {
- const key = `${r},${c}`;
- const inCanyon = (r === canyonRowStart || r === canyonRowStart + 1);
+   // 5. SETUP ENEMY OBJECTS (Boulder, Witch, Trap Tile)
+   // Boulder blocks access tile right below Timmy
+   boulder.r = endRow + 1;
+   boulder.c = timmyCol;
+   boulder.x = boulder.c * tileSize + tileSize / 2;
+   boulder.y = boulder.r * tileSize + tileSize / 2;
+   boulder.hp = 3;
+   boulder.maxHp = 3;
+   boulder.destroyed = false;
+   addTileToPath(boulder.r, boulder.c, '#ff70a6');
 
- if (!pathSet.has(key) && !inCanyon) {
- const rand = Math.random();
- let itemType = 'sprinkles';
- if (rand < 0.18) itemType = 'lollipop';
- else if (rand < 0.32) itemType = 'candy_cane';
- else if (rand < 0.48) itemType = 'gumdrop';
- else if (rand < 0.62) itemType = 'wrapped_candy';
- else if (rand < 0.75) itemType = 'ice_cream';
+   // Witch floating near top left or top right
+   witch.x = (timmyCol > gridCols / 2) ? (timmyCol - 3) * tileSize : (timmyCol + 3) * tileSize;
+   witch.y = (endRow - 0.5) * tileSize;
 
- sceneryItems.push({
- x: c * tileSize + tileSize / 2,
- y: r * tileSize + tileSize / 2,
- type: itemType,
- color: CANDY_COLORS[Math.floor(Math.random() * CANDY_COLORS.length)],
- scale: 0.55 + Math.random() * 0.35
- });
- }
- }
- }
+   // Cotton Candy Storm Trap Tile (chosen randomly from middle path tiles above canyon)
+   const candidates = pathTiles.filter(t => t.r < canyonRowStart - 2 && t.r > endRow + 2);
+   if (candidates.length > 0) {
+     const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+     trapTile.r = chosen.r;
+     trapTile.c = chosen.c;
+     trapTile.triggered = false;
+   } else {
+     trapTile.r = canyonRowStart - 2;
+     trapTile.c = bridgeCol;
+     trapTile.triggered = false;
+   }
+
+   storm.active = false;
+   storm.timer = 0;
+
+   // 6. Dense Candy Scenery
+   for (let r = 0; r < gridRows; r++) {
+     for (let c = 0; c < gridCols; c++) {
+       const key = `${r},${c}`;
+       const inCanyon = (r === canyonRowStart || r === canyonRowStart + 1);
+
+       if (!pathSet.has(key) && !inCanyon) {
+         const rand = Math.random();
+         let itemType = 'sprinkles';
+         if (rand < 0.18) itemType = 'lollipop';
+         else if (rand < 0.32) itemType = 'candy_cane';
+         else if (rand < 0.48) itemType = 'gumdrop';
+         else if (rand < 0.62) itemType = 'wrapped_candy';
+         else if (rand < 0.75) itemType = 'ice_cream';
+
+         sceneryItems.push({
+           x: c * tileSize + tileSize / 2,
+           y: r * tileSize + tileSize / 2,
+           type: itemType,
+           color: CANDY_COLORS[Math.floor(Math.random() * CANDY_COLORS.length)],
+           scale: 0.55 + Math.random() * 0.35
+         });
+       }
+     }
+   }
+
+   updateHUD();
  }
 
  function resetGame() {
- currentLevel = 1;
- document.getElementById('level-display').innerText = currentLevel;
- generateLevel();
+   currentLevel = 1;
+   document.getElementById('level-display').innerText = currentLevel;
+   generateLevel();
  }
 
- // Strict path checking: Stickman cannot leave the candy path tiles
+ function updateHUD() {
+   document.getElementById('level-display').innerText = currentLevel;
+   const dentistHud = document.getElementById('dentist-hud');
+   const boulderHud = document.getElementById('boulder-hud');
+
+   if (dentist.active) {
+     dentistHud.innerText = "DENTIST: CHASING!";
+     dentistHud.className = "stat-box danger";
+   } else if (dentist.leavesStartTriggered) {
+     dentistHud.innerText = `DENTIST IN: ${Math.max(0, dentist.timer).toFixed(1)}s`;
+     dentistHud.className = "stat-box danger";
+   } else {
+     dentistHud.innerText = "DENTIST: SLEEPING";
+     dentistHud.className = "stat-box";
+   }
+
+   if (boulder.destroyed) {
+     boulderHud.innerText = "BOULDER: SHATTERED!";
+     boulderHud.className = "stat-box active";
+   } else {
+     boulderHud.innerText = `BOULDER: ${boulder.hp}/${boulder.maxHp} HP`;
+     boulderHud.className = "stat-box";
+   }
+ }
+
+ // Path Constraint Check (Also checks if Bubblegum Boulder is solid)
  function isPointOnPath(x, y) {
- const radius = 5; // Hitbox radius
- const corners = [
- { x: x - radius, y: y - radius },
- { x: x + radius, y: y - radius },
- { x: x - radius, y: y + radius },
- { x: x + radius, y: y + radius }
- ];
+   const radius = 5;
+   const corners = [
+     { x: x - radius, y: y - radius },
+     { x: x + radius, y: y - radius },
+     { x: x - radius, y: y + radius },
+     { x: x + radius, y: y + radius }
+   ];
 
- for (let p of corners) {
- const c = Math.floor(p.x / tileSize);
- const r = Math.floor(p.y / tileSize);
- if (!pathSet.has(`${r},${c}`)) {
- return false;
+   for (let p of corners) {
+     const c = Math.floor(p.x / tileSize);
+     const r = Math.floor(p.y / tileSize);
+
+     if (!pathSet.has(`${r},${c}`)) return false;
+
+     // Solid Bubblegum Boulder blocks player until smashed
+     if (!boulder.destroyed && r === boulder.r && c === boulder.c) {
+       return false;
+     }
+   }
+   return true;
  }
+
+ // BFS Pathfinding Algorithm for Angry Dentist Navigation
+ function getNextPathStep(startR, startC, targetR, targetC) {
+   if (startR === targetR && startC === targetC) return null;
+
+   const queue = [[startR, startC]];
+   const visited = new Set([`${startR},${startC}`]);
+   const parent = {};
+
+   let found = false;
+   while (queue.length > 0) {
+     const [r, c] = queue.shift();
+     if (r === targetR && c === targetC) {
+       found = true;
+       break;
+     }
+
+     const neighbors = [
+       [r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]
+     ];
+
+     for (let [nr, nc] of neighbors) {
+       const key = `${nr},${nc}`;
+       if (pathSet.has(key) && !visited.has(key)) {
+         visited.add(key);
+         parent[key] = `${r},${c}`;
+         queue.push([nr, nc]);
+       }
+     }
+   }
+
+   if (!found) return null;
+
+   let curr = `${targetR},${targetC}`;
+   let prev = null;
+   while (curr !== `${startR},${startC}`) {
+     prev = curr;
+     curr = parent[curr];
+     if (!curr) break;
+   }
+
+   if (prev) {
+     const [pr, pc] = prev.split(',').map(Number);
+     return { r: pr, c: pc };
+   }
+   return null;
  }
- return true;
+
+ function handlePickaxeSwing() {
+   if (gameState !== 'PLAYING') return;
+
+   player.isSwinging = true;
+   player.swingTimer = 14;
+
+   // Check if Stickman is near the Bubblegum Boulder
+   const distToBoulder = Math.hypot(player.x - boulder.x, player.y - boulder.y);
+   if (distToBoulder < tileSize * 1.8 && !boulder.destroyed) {
+     boulder.hp--;
+     createParticles(boulder.x, boulder.y, '#ff70a6', 15);
+
+     if (boulder.hp <= 0) {
+       boulder.destroyed = true;
+       createParticles(boulder.x, boulder.y, '#ff4d6d', 35);
+       triggerNotification("💥 BUBBLEGUM BOULDER SHATTERED!");
+     } else {
+       triggerNotification(`💥 CRACK! Boulder HP: ${boulder.hp}/${boulder.maxHp}`);
+     }
+     updateHUD();
+   }
  }
 
  function updatePhysics() {
- // STRICT WASD MOVEMENT ONLY
- let dx = 0;
- let dy = 0;
+   if (gameState !== 'PLAYING') return;
 
- if (keys['w']) dy -= 1;
- if (keys['s']) dy += 1;
- if (keys['a']) { dx -= 1; player.facing = -1; }
- if (keys['d']) { dx += 1; player.facing = 1; }
+   // 1. WASD Movement Physics
+   let dx = 0;
+   let dy = 0;
 
- if (dx !== 0 && dy !== 0) {
- dx *= 0.7071;
- dy *= 0.7071;
+   if (keys['w']) dy -= 1;
+   if (keys['s']) dy += 1;
+   if (keys['a']) { dx -= 1; player.facing = -1; }
+   if (keys['d']) { dx += 1; player.facing = 1; }
+
+   if (dx !== 0 && dy !== 0) {
+     dx *= 0.7071;
+     dy *= 0.7071;
+   }
+
+   const nextX = player.x + dx * player.speed;
+   const nextY = player.y + dy * player.speed;
+
+   if (isPointOnPath(nextX, nextY)) {
+     player.x = nextX;
+     player.y = nextY;
+   } else if (isPointOnPath(nextX, player.y)) {
+     player.x = nextX;
+   } else if (isPointOnPath(player.x, nextY)) {
+     player.y = nextY;
+   }
+
+   if (dx !== 0 || dy !== 0) {
+     player.walkFrame += 0.25;
+   } else {
+     player.walkFrame = 0;
+   }
+
+   if (player.swingTimer > 0) {
+     player.swingTimer--;
+     if (player.swingTimer === 0) player.isSwinging = false;
+   }
+
+   // 2. Check Dentist Spawn Trigger (5s after leaving start tile)
+   const currentR = Math.floor(player.y / tileSize);
+   const currentC = Math.floor(player.x / tileSize);
+
+   if (!dentist.leavesStartTriggered) {
+     const startX = startCol * tileSize + tileSize / 2;
+     const startY = startRow * tileSize + tileSize / 2;
+     if (Math.hypot(player.x - startX, player.y - startY) > tileSize * 1.2) {
+       dentist.leavesStartTriggered = true;
+       dentist.timer = 5.0;
+       triggerNotification("⚠️ DENTIST AWAKENING IN 5 SECONDS!");
+     }
+   } else if (!dentist.active) {
+     dentist.timer -= 1 / 60;
+     if (dentist.timer <= 0) {
+       dentist.timer = 0;
+       dentist.active = true;
+       triggerNotification("🚨 THE ANGRY DENTIST IS CHASING YOU!");
+     }
+     updateHUD();
+   }
+
+   // 3. Update Angry Dentist Movement & Chasing AI
+   if (dentist.active) {
+     const dentistR = Math.floor(dentist.y / tileSize);
+     const dentistC = Math.floor(dentist.x / tileSize);
+
+     const distToTarget = Math.hypot(dentist.x - dentist.targetX, dentist.y - dentist.targetY);
+     if (distToTarget < 3) {
+       dentist.x = dentist.targetX;
+       dentist.y = dentist.targetY;
+
+       if (dentistR !== currentR || dentistC !== currentC) {
+         const nextStep = getNextPathStep(dentistR, dentistC, currentR, currentC);
+         if (nextStep) {
+           dentist.targetR = nextStep.r;
+           dentist.targetC = nextStep.c;
+           dentist.targetX = nextStep.c * tileSize + tileSize / 2;
+           dentist.targetY = nextStep.r * tileSize + tileSize / 2;
+         }
+       }
+     }
+
+     const dDx = dentist.targetX - dentist.x;
+     const dDy = dentist.targetY - dentist.y;
+     const dLen = Math.hypot(dDx, dDy);
+
+     if (dLen > 0) {
+       const moveSpeed = player.speed * 0.95; // Moves at equal/matching speed
+       dentist.x += (dDx / dLen) * Math.min(dLen, moveSpeed);
+       dentist.y += (dDy / dLen) * Math.min(dLen, moveSpeed);
+       dentist.facing = dDx >= 0 ? 1 : -1;
+       dentist.walkFrame += 0.25;
+     } else {
+       dentist.walkFrame = 0;
+     }
+
+     // Catch check: Dentist touches Stickman -> CAVITIES Game Over!
+     if (Math.hypot(dentist.x - player.x, dentist.y - player.y) < tileSize * 0.75) {
+       gameState = 'GAME_OVER';
+     }
+   }
+
+   // 4. Cotton Candy Storm Trap Check
+   if (!trapTile.triggered && currentR === trapTile.r && currentC === trapTile.c) {
+     trapTile.triggered = true;
+     storm.active = true;
+     storm.timer = 360; // 6 seconds duration
+     triggerNotification("⚡ COTTON CANDY STORM TRIGGERED! DODGE THE GUMDROPS!");
+   }
+
+   // Update Storm Cloud & Gumdrop Rain
+   if (storm.active) {
+     storm.timer--;
+     storm.cloudOffset += 1;
+     if (storm.timer <= 0) storm.active = false;
+
+     // Spawn falling gumdrop rain
+     if (Math.random() < 0.45) {
+       fallingGumdrops.push({
+         x: Math.random() * canvas.width,
+         y: -10,
+         vy: 3 + Math.random() * 3.5,
+         vx: (Math.random() - 0.5) * 1.5,
+         color: CANDY_COLORS[Math.floor(Math.random() * CANDY_COLORS.length)],
+         size: 6 + Math.random() * 4
+       });
+     }
+   }
+
+   // Update Falling Gumdrops & Knockback Collision
+   for (let i = fallingGumdrops.length - 1; i >= 0; i--) {
+     const g = fallingGumdrops[i];
+     g.x += g.vx;
+     g.y += g.vy;
+
+     // Check collision with Stickman -> Knockback to Start
+     if (Math.hypot(player.x - g.x, player.y - g.y) < g.size + 6) {
+       triggerNotification("💥 HIT BY GUMDROP! KNOCKED BACK TO START!");
+       createParticles(player.x, player.y, '#ff4d6d', 20);
+
+       // Knockback player to start tile
+       player.x = startCol * tileSize + tileSize / 2;
+       player.y = startRow * tileSize + tileSize / 2;
+
+       // Reset dentist position so player isn't spawn-trapped
+       dentist.x = player.x;
+       dentist.y = player.y;
+       dentist.targetX = player.x;
+       dentist.targetY = player.y;
+
+       fallingGumdrops.splice(i, 1);
+       continue;
+     }
+
+     if (g.y > canvas.height + 20) {
+       fallingGumdrops.splice(i, 1);
+     }
+   }
+
+   // 5. Particles Update
+   for (let i = particles.length - 1; i >= 0; i--) {
+     const p = particles[i];
+     p.x += p.vx;
+     p.y += p.vy;
+     p.life -= p.decay;
+     if (p.life <= 0) particles.splice(i, 1);
+   }
+
+   // 6. Check Timmy Rescue Win Condition
+   const distToTimmy = Math.hypot(player.x - timmy.x, player.y - timmy.y);
+   if (distToTimmy < tileSize * 0.8 && boulder.destroyed) {
+     currentLevel++;
+     triggerNotification("🎉 TIMMY RESCUED! ADVANCING LEVEL...");
+     generateLevel();
+   }
+
+   timmy.waveFrame += 0.08;
+   witch.floatAngle += 0.05;
  }
 
- const nextX = player.x + dx * player.speed;
- const nextY = player.y + dy * player.speed;
-
- // Check path constraints
- if (isPointOnPath(nextX, nextY)) {
- player.x = nextX;
- player.y = nextY;
- } else if (isPointOnPath(nextX, player.y)) {
- player.x = nextX;
- } else if (isPointOnPath(player.x, nextY)) {
- player.y = nextY;
- }
-
- if (dx !== 0 || dy !== 0) {
- player.walkFrame += 0.25;
- } else {
- player.walkFrame = 0;
- }
-
- // Check for Timmy Rescue
- const distToTimmy = Math.hypot(player.x - timmy.x, player.y - timmy.y);
- if (distToTimmy < tileSize * 0.8) {
- currentLevel++;
- document.getElementById('level-display').innerText = currentLevel;
- levelMessageTimer = 90;
- generateLevel();
- }
-
- timmy.waveFrame += 0.08;
- }
-
+ // DRAWING FUNCTIONS
  function drawBackgroundTerrain() {
- ctx.fillStyle = '#fceade';
- ctx.fillRect(0, 0, canvas.width, canvas.height);
+   ctx.fillStyle = '#fceade';
+   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
- ctx.fillStyle = '#f7cad0';
- ctx.beginPath();
- ctx.arc(canvas.width * 0.2, canvas.height * 0.25, 160, 0, Math.PI * 2);
- ctx.arc(canvas.width * 0.8, canvas.height * 0.75, 190, 0, Math.PI * 2);
- ctx.fill();
+   ctx.fillStyle = '#f7cad0';
+   ctx.beginPath();
+   ctx.arc(canvas.width * 0.2, canvas.height * 0.25, 160, 0, Math.PI * 2);
+   ctx.arc(canvas.width * 0.8, canvas.height * 0.75, 190, 0, Math.PI * 2);
+   ctx.fill();
  }
 
  function drawCanyon() {
- ctx.fillStyle = '#3a1e05';
- ctx.fillRect(0, canyonYStart, canvas.width, canyonHeight);
+   ctx.fillStyle = '#3a1e05';
+   ctx.fillRect(0, canyonYStart, canvas.width, canyonHeight);
 
- ctx.fillStyle = '#5c3108';
- ctx.fillRect(0, canyonYStart, canvas.width, 4);
- ctx.fillRect(0, canyonYStart + canyonHeight - 4, canvas.width, 4);
+   ctx.fillStyle = '#5c3108';
+   ctx.fillRect(0, canyonYStart, canvas.width, 4);
+   ctx.fillRect(0, canyonYStart + canyonHeight - 4, canvas.width, 4);
 
- ctx.fillStyle = '#ffd166';
- for (let i = 0; i < canvas.width; i += 45) {
- const ySparkle = canyonYStart + 8 + ((i * 5) % (canyonHeight - 16));
- ctx.fillRect(i + 10, ySparkle, 2.5, 2.5);
- }
- }
-
- function drawSceneryItem(item) {
- ctx.save();
- ctx.translate(item.x, item.y);
- ctx.scale(item.scale, item.scale);
-
- if (item.type === 'lollipop') {
- ctx.strokeStyle = '#ffffff';
- ctx.lineWidth = 3;
- ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 14); ctx.stroke();
- ctx.fillStyle = item.color;
- ctx.beginPath(); ctx.arc(0, -2, 9, 0, Math.PI * 2); ctx.fill();
- ctx.strokeStyle = '#ffffff';
- ctx.lineWidth = 1.5;
- ctx.beginPath(); ctx.arc(0, -2, 4.5, 0, Math.PI * 1.5); ctx.stroke();
- } else if (item.type === 'candy_cane') {
- ctx.strokeStyle = '#ff4d6d';
- ctx.lineWidth = 4;
- ctx.lineCap = 'round';
- ctx.beginPath();
- ctx.arc(0, -4, 6, Math.PI, 0, false);
- ctx.lineTo(6, 10);
- ctx.stroke();
- ctx.strokeStyle = '#ffffff';
- ctx.lineWidth = 1.5;
- ctx.beginPath();
- ctx.moveTo(0, -10); ctx.lineTo(3, -7);
- ctx.moveTo(6, -1); ctx.lineTo(6, 3);
- ctx.stroke();
- } else if (item.type === 'gumdrop') {
- ctx.fillStyle = item.color;
- ctx.beginPath();
- ctx.arc(0, 1, 8, Math.PI, 0, false);
- ctx.rect(-8, 1, 16, 6);
- ctx.fill();
- ctx.fillStyle = '#ffffff';
- ctx.fillRect(-3, -2, 2, 2);
- } else if (item.type === 'wrapped_candy') {
- ctx.fillStyle = item.color;
- ctx.beginPath();
- ctx.moveTo(-11, -5); ctx.lineTo(-4, 0); ctx.lineTo(-11, 5); ctx.fill();
- ctx.moveTo(11, -5); ctx.lineTo(4, 0); ctx.lineTo(11, 5); ctx.fill();
- ctx.beginPath();
- ctx.ellipse(0, 0, 7, 5, 0, 0, Math.PI * 2);
- ctx.fill();
- } else if (item.type === 'ice_cream') {
- ctx.fillStyle = '#d4a373';
- ctx.beginPath();
- ctx.moveTo(0, 10); ctx.lineTo(-5, 0); ctx.lineTo(5, 0); ctx.closePath();
- ctx.fill();
- ctx.fillStyle = item.color;
- ctx.beginPath(); ctx.arc(0, -3, 7, 0, Math.PI * 2); ctx.fill();
- } else {
- ctx.fillStyle = item.color;
- ctx.fillRect(-5, -3, 4, 2);
- ctx.fillRect(3, 4, 2, 4);
- }
-
- ctx.restore();
+   ctx.fillStyle = '#ffd166';
+   for (let i = 0; i < canvas.width; i += 45) {
+     const ySparkle = canyonYStart + 8 + ((i * 5) % (canyonHeight - 16));
+     ctx.fillRect(i + 10, ySparkle, 2.5, 2.5);
+   }
  }
 
  function drawPath() {
- pathTiles.forEach(tile => {
- if (tile.isBridge) {
- ctx.fillStyle = '#8d5524';
- ctx.fillRect(tile.x + 1, tile.y + 1, tileSize - 2, tileSize - 2);
+   pathTiles.forEach(tile => {
+     if (tile.isBridge) {
+       ctx.fillStyle = '#8d5524';
+       ctx.fillRect(tile.x + 1, tile.y + 1, tileSize - 2, tileSize - 2);
 
- ctx.strokeStyle = '#3d2314';
- ctx.lineWidth = 1.5;
- ctx.strokeRect(tile.x + 1, tile.y + 1, tileSize - 2, tileSize - 2);
- ctx.beginPath();
- ctx.moveTo(tile.x + 1, tile.y + tileSize / 2);
- ctx.lineTo(tile.x + tileSize - 1, tile.y + tileSize / 2);
- ctx.stroke();
- } else {
- ctx.fillStyle = tile.color;
- ctx.fillRect(tile.x + 1, tile.y + 1, tileSize - 2, tileSize - 2);
+       ctx.strokeStyle = '#3d2314';
+       ctx.lineWidth = 1.5;
+       ctx.strokeRect(tile.x + 1, tile.y + 1, tileSize - 2, tileSize - 2);
+       ctx.beginPath();
+       ctx.moveTo(tile.x + 1, tile.y + tileSize / 2);
+       ctx.lineTo(tile.x + tileSize - 1, tile.y + tileSize / 2);
+       ctx.stroke();
+     } else {
+       ctx.fillStyle = tile.color;
+       ctx.fillRect(tile.x + 1, tile.y + 1, tileSize - 2, tileSize - 2);
 
- ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
- ctx.fillRect(tile.x + 2, tile.y + 2, tileSize - 4, 3);
- ctx.fillRect(tile.x + 2, tile.y + 2, 3, tileSize - 4);
+       ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+       ctx.fillRect(tile.x + 2, tile.y + 2, tileSize - 4, 3);
+       ctx.fillRect(tile.x + 2, tile.y + 2, 3, tileSize - 4);
 
- ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
- ctx.fillRect(tile.x + 2, tile.y + tileSize - 5, tileSize - 4, 3);
- ctx.fillRect(tile.x + tileSize - 5, tile.y + 2, 3, tileSize - 4);
+       ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+       ctx.fillRect(tile.x + 2, tile.y + tileSize - 5, tileSize - 4, 3);
+       ctx.fillRect(tile.x + tileSize - 5, tile.y + 2, 3, tileSize - 4);
+     }
+   });
  }
- });
+
+ function drawSceneryItem(item) {
+   ctx.save();
+   ctx.translate(item.x, item.y);
+   ctx.scale(item.scale, item.scale);
+
+   if (item.type === 'lollipop') {
+     ctx.strokeStyle = '#ffffff';
+     ctx.lineWidth = 3;
+     ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 14); ctx.stroke();
+     ctx.fillStyle = item.color;
+     ctx.beginPath(); ctx.arc(0, -2, 9, 0, Math.PI * 2); ctx.fill();
+     ctx.strokeStyle = '#ffffff';
+     ctx.lineWidth = 1.5;
+     ctx.beginPath(); ctx.arc(0, -2, 4.5, 0, Math.PI * 1.5); ctx.stroke();
+   } else if (item.type === 'candy_cane') {
+     ctx.strokeStyle = '#ff4d6d';
+     ctx.lineWidth = 4;
+     ctx.lineCap = 'round';
+     ctx.beginPath();
+     ctx.arc(0, -4, 6, Math.PI, 0, false);
+     ctx.lineTo(6, 10);
+     ctx.stroke();
+     ctx.strokeStyle = '#ffffff';
+     ctx.lineWidth = 1.5;
+     ctx.beginPath();
+     ctx.moveTo(0, -10); ctx.lineTo(3, -7);
+     ctx.moveTo(6, -1); ctx.lineTo(6, 3);
+     ctx.stroke();
+   } else if (item.type === 'gumdrop') {
+     ctx.fillStyle = item.color;
+     ctx.beginPath();
+     ctx.arc(0, 1, 8, Math.PI, 0, false);
+     ctx.rect(-8, 1, 16, 6);
+     ctx.fill();
+     ctx.fillStyle = '#ffffff';
+     ctx.fillRect(-3, -2, 2, 2);
+   } else if (item.type === 'wrapped_candy') {
+     ctx.fillStyle = item.color;
+     ctx.beginPath();
+     ctx.moveTo(-11, -5); ctx.lineTo(-4, 0); ctx.lineTo(-11, 5); ctx.fill();
+     ctx.moveTo(11, -5); ctx.lineTo(4, 0); ctx.lineTo(11, 5); ctx.fill();
+     ctx.beginPath();
+     ctx.ellipse(0, 0, 7, 5, 0, 0, Math.PI * 2);
+     ctx.fill();
+   } else if (item.type === 'ice_cream') {
+     ctx.fillStyle = '#d4a373';
+     ctx.beginPath();
+     ctx.moveTo(0, 10); ctx.lineTo(-5, 0); ctx.lineTo(5, 0); ctx.closePath();
+     ctx.fill();
+     ctx.fillStyle = item.color;
+     ctx.beginPath(); ctx.arc(0, -3, 7, 0, Math.PI * 2); ctx.fill();
+   } else {
+     ctx.fillStyle = item.color;
+     ctx.fillRect(-5, -3, 4, 2);
+     ctx.fillRect(3, 4, 2, 4);
+   }
+
+   ctx.restore();
+ }
+
+ function drawCandyWitch() {
+   const floatY = witch.y + Math.sin(witch.floatAngle) * 4;
+   const x = witch.x;
+
+   ctx.save();
+   // Fluffy Witch Cloud
+   ctx.fillStyle = 'rgba(255, 182, 193, 0.85)';
+   ctx.beginPath();
+   ctx.arc(x - 10, floatY + 12, 10, 0, Math.PI * 2);
+   ctx.arc(x + 10, floatY + 12, 10, 0, Math.PI * 2);
+   ctx.arc(x, floatY + 10, 14, 0, Math.PI * 2);
+   ctx.fill();
+
+   // Witch Body
+   ctx.fillStyle = '#7209b7';
+   ctx.beginPath();
+   ctx.moveTo(x - 8, floatY + 10);
+   ctx.lineTo(x + 8, floatY + 10);
+   ctx.lineTo(x, floatY - 6);
+   ctx.fill();
+
+   // Face
+   ctx.fillStyle = '#ffcdb2';
+   ctx.beginPath(); ctx.arc(x, floatY - 8, 5, 0, Math.PI * 2); ctx.fill();
+
+   // Pointy Hat
+   ctx.fillStyle = '#3a0ca3';
+   ctx.beginPath();
+   ctx.moveTo(x - 9, floatY - 10);
+   ctx.lineTo(x + 9, floatY - 10);
+   ctx.lineTo(x, floatY - 24);
+   ctx.closePath();
+   ctx.fill();
+
+   // Magic Wand & Beam towards Boulder
+   ctx.strokeStyle = '#ffd166';
+   ctx.lineWidth = 2;
+   ctx.beginPath(); ctx.moveTo(x + 4, floatY - 4); ctx.lineTo(x + 12, floatY - 2); ctx.stroke();
+
+   if (!boulder.destroyed) {
+     ctx.strokeStyle = 'rgba(255, 112, 166, 0.4)';
+     ctx.lineWidth = 2;
+     ctx.setLineDash([4, 4]);
+     ctx.beginPath(); ctx.moveTo(x + 12, floatY - 2); ctx.lineTo(boulder.x, boulder.y); ctx.stroke();
+     ctx.setLineDash([]);
+   }
+
+   // Label
+   ctx.fillStyle = '#ff70a6';
+   ctx.font = 'bold 9px Courier New';
+   ctx.textAlign = 'center';
+   ctx.fillText('CANDY WITCH', x, floatY - 27);
+   ctx.restore();
+ }
+
+ function drawBubblegumBoulder() {
+   if (boulder.destroyed) return;
+
+   const x = boulder.x;
+   const y = boulder.y;
+   const radius = tileSize * 0.65;
+
+   ctx.save();
+   // Pink Bubblegum Glow
+   ctx.shadowColor = '#ff4d6d';
+   ctx.shadowBlur = 8;
+
+   ctx.fillStyle = '#ff70a6';
+   ctx.beginPath();
+   ctx.arc(x, y, radius, 0, Math.PI * 2);
+   ctx.fill();
+
+   // Highlight shine
+   ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+   ctx.beginPath();
+   ctx.arc(x - radius * 0.3, y - radius * 0.3, radius * 0.35, 0, Math.PI * 2);
+   ctx.fill();
+
+   // Damage Cracks
+   if (boulder.hp < boulder.maxHp) {
+     ctx.strokeStyle = '#5c0029';
+     ctx.lineWidth = 1.8;
+     ctx.beginPath();
+     ctx.moveTo(x - 4, y - 5); ctx.lineTo(x + 2, y); ctx.lineTo(x - 2, y + 6);
+     if (boulder.hp === 1) {
+       ctx.moveTo(x + 5, y - 4); ctx.lineTo(x - 1, y + 2); ctx.lineTo(x + 4, y + 5);
+     }
+     ctx.stroke();
+   }
+
+   // Floating HP Tag
+   ctx.shadowBlur = 0;
+   ctx.fillStyle = 'rgba(0,0,0,0.7)';
+   ctx.fillRect(x - 20, y - radius - 14, 40, 10);
+   ctx.fillStyle = '#ffd166';
+   ctx.font = 'bold 8px Courier New';
+   ctx.textAlign = 'center';
+   ctx.fillText(`${boulder.hp}/${boulder.maxHp} HP`, x, y - radius - 6);
+
+   ctx.restore();
+ }
+
+ function drawCottonCandyStorm() {
+   if (!storm.active && fallingGumdrops.length === 0) return;
+
+   // Clouds
+   ctx.save();
+   ctx.fillStyle = 'rgba(255, 112, 166, 0.7)';
+   for (let i = 0; i < canvas.width + 100; i += 70) {
+     const cloudX = (i + storm.cloudOffset) % (canvas.width + 140) - 70;
+     ctx.beginPath();
+     ctx.arc(cloudX, 15, 30, 0, Math.PI * 2);
+     ctx.arc(cloudX + 25, 25, 25, 0, Math.PI * 2);
+     ctx.arc(cloudX - 25, 25, 25, 0, Math.PI * 2);
+     ctx.fill();
+   }
+
+   // Falling Gumdrops
+   fallingGumdrops.forEach(g => {
+     ctx.fillStyle = g.color;
+     ctx.beginPath();
+     ctx.arc(g.x, g.y, g.size, 0, Math.PI * 2);
+     ctx.fill();
+     ctx.fillStyle = '#ffffff';
+     ctx.fillRect(g.x - 2, g.y - 3, 2, 2);
+   });
+   ctx.restore();
  }
 
  function drawTimmy() {
- const x = timmy.x;
- const y = timmy.y;
- const wave = Math.sin(timmy.waveFrame) * 3;
+   const x = timmy.x;
+   const y = timmy.y;
+   const wave = Math.sin(timmy.waveFrame) * 3;
 
- // Body
- ctx.fillStyle = '#06d6a0';
- ctx.beginPath();
- ctx.moveTo(x - 8, y + 9);
- ctx.lineTo(x + 8, y + 9);
- ctx.lineTo(x + 5, y - 1);
- ctx.lineTo(x - 5, y - 1);
- ctx.closePath();
- ctx.fill();
+   ctx.fillStyle = '#06d6a0';
+   ctx.beginPath();
+   ctx.moveTo(x - 8, y + 9); ctx.lineTo(x + 8, y + 9);
+   ctx.lineTo(x + 5, y - 1); ctx.lineTo(x - 5, y - 1);
+   ctx.closePath(); ctx.fill();
 
- // Head & Nose
- ctx.fillStyle = '#ffcdb2';
- ctx.beginPath(); ctx.arc(x, y - 3, 5, 0, Math.PI * 2); ctx.fill();
- ctx.fillStyle = '#ffb7b2';
- ctx.beginPath(); ctx.arc(x, y - 2, 2, 0, Math.PI * 2); ctx.fill();
+   ctx.fillStyle = '#ffcdb2';
+   ctx.beginPath(); ctx.arc(x, y - 3, 5, 0, Math.PI * 2); ctx.fill();
+   ctx.fillStyle = '#ffb7b2';
+   ctx.beginPath(); ctx.arc(x, y - 2, 2, 0, Math.PI * 2); ctx.fill();
 
- // Beard
- ctx.fillStyle = '#ffffff';
- ctx.beginPath(); ctx.arc(x, y + 2, 5.5, 0, Math.PI); ctx.fill();
+   ctx.fillStyle = '#ffffff';
+   ctx.beginPath(); ctx.arc(x, y + 2, 5.5, 0, Math.PI); ctx.fill();
 
- // Hat
- ctx.fillStyle = '#ff4d6d';
- ctx.beginPath();
- ctx.moveTo(x - 7, y - 6);
- ctx.lineTo(x + 7, y - 6);
- ctx.lineTo(x, y - 18);
- ctx.closePath();
- ctx.fill();
+   ctx.fillStyle = '#ff4d6d';
+   ctx.beginPath();
+   ctx.moveTo(x - 7, y - 6); ctx.lineTo(x + 7, y - 6); ctx.lineTo(x, y - 18);
+   ctx.closePath(); ctx.fill();
 
- // Waving Hand
- ctx.strokeStyle = '#ffcdb2';
- ctx.lineWidth = 2;
- ctx.beginPath();
- ctx.moveTo(x + 5, y + 2);
- ctx.lineTo(x + 10, y - 2 + wave);
- ctx.stroke();
+   ctx.strokeStyle = '#ffcdb2';
+   ctx.lineWidth = 2;
+   ctx.beginPath();
+   ctx.moveTo(x + 5, y + 2); ctx.lineTo(x + 10, y - 2 + wave);
+   ctx.stroke();
 
- // Name Tag
- ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
- ctx.fillRect(x - 26, y - 29, 52, 12);
- ctx.fillStyle = '#ffd166';
- ctx.font = 'bold 9px Courier New';
- ctx.textAlign = 'center';
- ctx.fillText('♥ TIMMY ♥', x, y - 20);
+   ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+   ctx.fillRect(x - 26, y - 29, 52, 12);
+   ctx.fillStyle = '#ffd166';
+   ctx.font = 'bold 9px Courier New';
+   ctx.textAlign = 'center';
+   ctx.fillText('♥ TIMMY ♥', x, y - 20);
  }
 
- // Scaled Down Stickman for narrow paths
- function drawStickman(x, y, facing, walkFrame) {
- ctx.strokeStyle = '#000000';
- ctx.fillStyle = '#000000';
- ctx.lineWidth = 1.8;
- ctx.lineCap = 'round';
- ctx.lineJoin = 'round';
+ function drawStickman(x, y, facing, walkFrame, isSwinging) {
+   ctx.save();
+   ctx.strokeStyle = '#000000';
+   ctx.fillStyle = '#000000';
+   ctx.lineWidth = 1.8;
+   ctx.lineCap = 'round';
+   ctx.lineJoin = 'round';
 
- const headRadius = 3.5;
- const bodyLength = 10;
- const legLength = 8;
- const neckY = y - bodyLength;
- const headY = neckY - headRadius;
- const shoulderY = neckY + 3;
+   const headRadius = 3.5;
+   const bodyLength = 10;
+   const legLength = 8;
+   const neckY = y - bodyLength;
+   const headY = neckY - headRadius;
+   const shoulderY = neckY + 3;
 
- // Head
- ctx.beginPath(); ctx.arc(x, headY, headRadius, 0, Math.PI * 2); ctx.stroke();
- ctx.beginPath(); ctx.arc(x + facing * 1.5, headY - 0.5, 0.6, 0, Math.PI * 2); ctx.fill();
+   // Head
+   ctx.beginPath(); ctx.arc(x, headY, headRadius, 0, Math.PI * 2); ctx.stroke();
+   ctx.beginPath(); ctx.arc(x + facing * 1.5, headY - 0.5, 0.6, 0, Math.PI * 2); ctx.fill();
 
- // Torso
- ctx.beginPath(); ctx.moveTo(x, neckY); ctx.lineTo(x, y); ctx.stroke();
+   // Torso
+   ctx.beginPath(); ctx.moveTo(x, neckY); ctx.lineTo(x, y); ctx.stroke();
 
- // Legs
- const legSwing = Math.sin(walkFrame) * 4.5;
- ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - legSwing, y + legLength); ctx.stroke();
- ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + legSwing, y + legLength); ctx.stroke();
+   // Legs
+   const legSwing = Math.sin(walkFrame) * 4.5;
+   ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - legSwing, y + legLength); ctx.stroke();
+   ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + legSwing, y + legLength); ctx.stroke();
 
- // Arms
- const armSwing = Math.sin(walkFrame + Math.PI) * 3;
- ctx.beginPath(); ctx.moveTo(x, shoulderY); ctx.lineTo(x - facing * 3 - armSwing, shoulderY + 4); ctx.stroke();
- ctx.beginPath(); ctx.moveTo(x, shoulderY); ctx.lineTo(x + facing * 3 + armSwing, shoulderY + 4); ctx.stroke();
+   // Arms & Pickaxe
+   const armSwing = Math.sin(walkFrame + Math.PI) * 3;
+   ctx.beginPath(); ctx.moveTo(x, shoulderY); ctx.lineTo(x - facing * 3 - armSwing, shoulderY + 4); ctx.stroke();
+
+   if (isSwinging) {
+     // Swing Animation
+     const swingAngle = (facing === 1) ? -Math.PI / 4 : Math.PI + Math.PI / 4;
+     ctx.save();
+     ctx.translate(x + facing * 3, shoulderY + 2);
+     ctx.rotate(facing * (Math.PI / 3));
+
+     // Pickaxe Handle
+     ctx.strokeStyle = '#8d5524';
+     ctx.lineWidth = 2.5;
+     ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(12, -8); ctx.stroke();
+
+     // Pickaxe Metallic Head
+     ctx.strokeStyle = '#adb5bd';
+     ctx.lineWidth = 3;
+     ctx.beginPath(); ctx.arc(12, -8, 6, Math.PI, Math.PI * 1.8); ctx.stroke();
+     ctx.restore();
+
+     ctx.beginPath(); ctx.moveTo(x, shoulderY); ctx.lineTo(x + facing * 6, shoulderY - 2); ctx.stroke();
+   } else {
+     ctx.beginPath(); ctx.moveTo(x, shoulderY); ctx.lineTo(x + facing * 3 + armSwing, shoulderY + 4); ctx.stroke();
+   }
+
+   ctx.restore();
  }
 
- function drawLevelBanner() {
- if (levelMessageTimer > 0) {
- levelMessageTimer--;
- ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
- ctx.fillRect(canvas.width / 2 - 170, canvas.height / 2 - 35, 340, 70);
+ function drawAngryDentist() {
+   if (!dentist.active && !dentist.leavesStartTriggered) return;
 
- ctx.strokeStyle = '#ffd166';
- ctx.lineWidth = 2;
- ctx.strokeRect(canvas.width / 2 - 170, canvas.height / 2 - 35, 340, 70);
+   const x = dentist.x;
+   const y = dentist.y;
+   const facing = dentist.facing;
+   const walkFrame = dentist.walkFrame;
 
- ctx.fillStyle = '#ffd166';
- ctx.font = 'bold 18px Courier New';
- ctx.textAlign = 'center';
- ctx.fillText('TIMMY RESCUED!', canvas.width / 2, canvas.height / 2 - 6);
+   ctx.save();
+   ctx.strokeStyle = '#000000';
+   ctx.lineWidth = 1.8;
+   ctx.lineCap = 'round';
 
- ctx.fillStyle = '#ffffff';
- ctx.font = '12px Courier New';
- ctx.fillText(`ADVANCING TO LEVEL ${currentLevel}...`, canvas.width / 2, canvas.height / 2 + 16);
+   const neckY = y - 10;
+   const headY = neckY - 4;
+   const shoulderY = neckY + 3;
+
+   // Dentist White Lab Coat
+   ctx.fillStyle = '#ffffff';
+   ctx.beginPath();
+   ctx.moveTo(x - 5, neckY); ctx.lineTo(x + 5, neckY);
+   ctx.lineTo(x + 6, y); ctx.lineTo(x - 6, y);
+   ctx.closePath(); ctx.fill(); ctx.stroke();
+
+   // Head
+   ctx.fillStyle = '#ffcdb2';
+   ctx.beginPath(); ctx.arc(x, headY, 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+   // Head Mirror (Dentist Headband)
+   ctx.fillStyle = '#e9ecef';
+   ctx.strokeStyle = '#495057';
+   ctx.lineWidth = 1;
+   ctx.beginPath(); ctx.arc(x + facing * 3, headY - 2, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+   // Legs
+   const legSwing = Math.sin(walkFrame) * 4.5;
+   ctx.strokeStyle = '#000000';
+   ctx.lineWidth = 1.8;
+   ctx.beginPath(); ctx.moveTo(x - 2, y); ctx.lineTo(x - 2 - legSwing, y + 8); ctx.stroke();
+   ctx.beginPath(); ctx.moveTo(x + 2, y); ctx.lineTo(x + 2 + legSwing, y + 8); ctx.stroke();
+
+   // Holding Dental Drill Tool
+   ctx.strokeStyle = '#343a40';
+   ctx.lineWidth = 2;
+   ctx.beginPath();
+   ctx.moveTo(x, shoulderY);
+   ctx.lineTo(x + facing * 8, shoulderY + 2);
+   ctx.stroke();
+
+   // Alert Label above Dentist
+   if (dentist.active) {
+     ctx.fillStyle = '#ff4d6d';
+     ctx.font = 'bold 8px Courier New';
+     ctx.textAlign = 'center';
+     ctx.fillText('🦷 DENTIST!', x, y - 18);
+   }
+
+   ctx.restore();
  }
+
+ function drawParticles() {
+   particles.forEach(p => {
+     ctx.fillStyle = p.color;
+     ctx.globalAlpha = p.life;
+     ctx.beginPath();
+     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+     ctx.fill();
+     ctx.globalAlpha = 1.0;
+   });
+ }
+
+ function drawNotifications() {
+   if (notificationTimer > 0) {
+     notificationTimer--;
+     ctx.save();
+     ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
+     ctx.fillRect(canvas.width / 2 - 200, 16, 400, 32);
+
+     ctx.strokeStyle = '#ffd166';
+     ctx.lineWidth = 1.5;
+     ctx.strokeRect(canvas.width / 2 - 200, 16, 400, 32);
+
+     ctx.fillStyle = '#ffd166';
+     ctx.font = 'bold 12px Courier New';
+     ctx.textAlign = 'center';
+     ctx.fillText(notificationText, canvas.width / 2, 36);
+     ctx.restore();
+   }
+ }
+
+ function drawGameOverOverlay() {
+   if (gameState === 'GAME_OVER') {
+     ctx.save();
+     ctx.fillStyle = 'rgba(20, 5, 30, 0.88)';
+     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+     const cx = canvas.width / 2;
+     const cy = canvas.height / 2;
+
+     ctx.fillStyle = '#ff4d6d';
+     ctx.font = 'bold 28px Courier New';
+     ctx.textAlign = 'center';
+     ctx.fillText('🦷 CAVITIES FOUND! 🦷', cx, cy - 30);
+
+     ctx.fillStyle = '#ffffff';
+     ctx.font = '14px Courier New';
+     ctx.fillText('The Angry Dentist caught Stickman!', cx, cy + 5);
+
+     ctx.fillStyle = '#ffd166';
+     ctx.font = 'bold 13px Courier New';
+     ctx.fillText('[ PRESS SPACEBAR OR RESET TO TRY AGAIN ]', cx, cy + 45);
+     ctx.restore();
+   }
  }
 
  function draw() {
- drawBackgroundTerrain();
- drawCanyon();
- sceneryItems.forEach(drawSceneryItem);
- drawPath();
- drawTimmy();
- drawStickman(player.x, player.y, player.facing, player.walkFrame);
- drawLevelBanner();
+   drawBackgroundTerrain();
+   drawCanyon();
+   sceneryItems.forEach(drawSceneryItem);
+   drawPath();
+   drawTimmy();
+   drawCandyWitch();
+   drawBubblegumBoulder();
+   drawCottonCandyStorm();
+   drawAngryDentist();
+   drawStickman(player.x, player.y, player.facing, player.walkFrame, player.isSwinging);
+   drawParticles();
+   drawNotifications();
+   drawGameOverOverlay();
  }
 
  function animate() {
- updatePhysics();
- draw();
- requestAnimationFrame(animate);
+   updatePhysics();
+   draw();
+   requestAnimationFrame(animate);
  }
 
  window.onload = function() {
- resizeCanvas();
- animate();
+   resizeCanvas();
+   animate();
  };
  </script>
 </body>
