@@ -35,7 +35,7 @@
       max-width: 1280px;
       margin-bottom: 10px;
       padding-bottom: 8px;
-      border-bottom: 1px solid #ffffff;
+      border-bottom: 2px solid #00f0ff;
     }
 
     .title-group {
@@ -45,14 +45,16 @@
     }
 
     h1 {
-      font-size: 18px;
+      font-size: 20px;
       letter-spacing: 2px;
       text-transform: uppercase;
       font-weight: bold;
+      color: #76ff03;
+      text-shadow: 0 0 10px #76ff03;
     }
 
     .hud-info {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: bold;
       letter-spacing: 1px;
       display: flex;
@@ -60,21 +62,24 @@
     }
 
     .btn-reset {
-      background: transparent;
-      color: #ffffff;
-      border: 1px solid #ffffff;
-      padding: 6px 16px;
+      background: #76ff03;
+      color: #000000;
+      border: 2px solid #ffffff;
+      padding: 8px 18px;
       font-size: 14px;
       font-weight: bold;
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 1px;
+      border-radius: 6px;
+      box-shadow: 0 0 12px #76ff03;
       transition: all 0.15s ease-in-out;
     }
 
     .btn-reset:hover {
       background: #ffffff;
       color: #000000;
+      box-shadow: 0 0 20px #ffffff;
     }
 
     /* Canvas Wrapper */
@@ -90,7 +95,9 @@
 
     canvas {
       background-color: #000000;
-      border: 1px solid #ffffff;
+      border: 2px solid #00f0ff;
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
       display: block;
       width: 100%;
       height: 100%;
@@ -98,10 +105,12 @@
 
     .instructions {
       margin-top: 8px;
-      font-size: 11px;
-      color: #aaaaaa;
+      font-size: 12px;
+      font-weight: bold;
+      color: #00f0ff;
       text-align: center;
       letter-spacing: 1px;
+      text-shadow: 0 0 6px #00f0ff;
     }
   </style>
 </head>
@@ -112,8 +121,9 @@
     <div class="title-group">
       <h1>Stickman: Space Crash Physics</h1>
       <div class="hud-info">
-        <span id="level-display">PLANET: 1</span>
-        <span id="parts-display">PARTS: 0/5</span>
+        <span id="level-display" style="color: #ff00ea;">PLANET: 1</span>
+        <span id="parts-display" style="color: #ffd600;">BANKED: 0/5 | CARRIED: 0</span>
+        <span id="status-warning" style="color: #ff1744; display: none;">⚠️ ABSORBED! 3.0s</span>
       </div>
     </div>
     <button class="btn-reset" onclick="resetGame()">Reset Game</button>
@@ -125,20 +135,20 @@
   </div>
 
   <div class="instructions" id="status-text">
-    [WASD JETPACK THRUST] WASD sets thrust direction! Newton's 3rd Law: Thrusting UP (W) pushes you DOWN (S)!
+    [WASD JETPACK THRUST] Fly to rocket parts and drop them off at the rocket to bank them!
   </div>
 
   <script>
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
 
-    // ALIEN PLANET COLOR PALETTES
+    // BOLD & COLORFUL ALIEN PLANET PALETTES
     const PALETTES = [
-      { name: "CYAN EXOPLANET", bg: '#060d1a', asteroid: '#1e3048', border: '#00f0ff', part: '#00f0ff', accent: '#00a8ff' },
-      { name: "MAGENTA NEBULA", bg: '#1a061c', asteroid: '#3b1442', border: '#ff00ea', part: '#ff4081', accent: '#aa00ff' },
-      { name: "TOXIC XENON", bg: '#041c12', asteroid: '#0f3d27', border: '#00ff66', part: '#76ff03', accent: '#00e676' },
-      { name: "MARTIAN BASALT", bg: '#1c0903', asteroid: '#4a1c0d', border: '#ff6600', part: '#ffd600', accent: '#ff3d00' },
-      { name: "GOLDEN PULSAR", bg: '#171402', asteroid: '#40380c', border: '#ffee00', part: '#ffea00', accent: '#ffab00' }
+      { name: "NEON EXOPLANET", bg: '#08051a', asteroid: '#221045', border: '#ff00ea', part: '#ffd600', accent: '#00f0ff' },
+      { name: "CYAN NEBULA", bg: '#041824', asteroid: '#0d384d', border: '#00f0ff', part: '#76ff03', accent: '#ff00ea' },
+      { name: "TOXIC XENON", bg: '#041c0e', asteroid: '#124223', border: '#76ff03', part: '#ff007f', accent: '#ffd600' },
+      { name: "MARTIAN MAGMA", bg: '#240804', asteroid: '#54170d', border: '#ff3d00', part: '#ffd600', accent: '#ff00ea' },
+      { name: "GOLDEN PULSAR", bg: '#1c1703', asteroid: '#42370c', border: '#ffd600', part: '#00f0ff', accent: '#76ff03' }
     ];
 
     // GAME STATE
@@ -149,19 +159,23 @@
     // KEYBOARD INPUT STATE (STRICT WASD MOVEMENT ONLY)
     const keys = {};
 
-    // STICKMAN ASTRONAUT PLAYER STATE (NEWTONIAN ZERO-G INERTIA)
+    // STICKMAN ASTRONAUT PLAYER STATE
     const player = {
       x: 0,
       y: 0,
       vx: 0,
       vy: 0,
-      thrustPower: 0.22, // Jetpack acceleration force per frame
-      friction: 0.998, // Negligible space drag for true zero-G inertia
+      thrustPower: 0.25,
+      friction: 0.998,
       mass: 12,
-      facing: 1, // 1 = Right, -1 = Left
+      facing: 1,
       walkFrame: 0,
       radius: 14,
-      restitution: 0.88
+      restitution: 0.88,
+      absorbed: false,
+      absorbedAmoeba: null,
+      absorbedTimer: 0, // Countdown in frames (180 frames = 3 seconds at 60fps)
+      invulnerableTimer: 0 // Grace period after ejection
     };
 
     // SPACESHIP OBJECT
@@ -170,13 +184,14 @@
       y: 0,
       width: 56,
       height: 78,
-      state: 'DAMAGED', // 'DAMAGED', 'REPAIRED'
+      state: 'DAMAGED',
       vy: 0
     };
 
     // GAME ARRAYS
     let parts = [];
     let asteroids = [];
+    let amoebas = [];
     let stars = [];
     let particles = [];
 
@@ -188,17 +203,17 @@
       stars = [];
       const cw = canvas.width || 800;
       const ch = canvas.height || 600;
-      for (let i = 0; i < 85; i++) {
+      for (let i = 0; i < 90; i++) {
         stars.push({
           x: Math.random() * cw,
           y: Math.random() * ch,
-          size: Math.random() * 2 + 0.8,
-          alpha: Math.random() * 0.8 + 0.2
+          size: Math.random() * 2.5 + 0.8,
+          alpha: Math.random() * 0.8 + 0.2,
+          color: ['#ffffff', '#00f0ff', '#ff00ea', '#76ff03'][Math.floor(Math.random() * 4)]
         });
       }
     }
 
-    // GENERATE JAGGED ASTEROID GEOMETRY
     function createAsteroidShape(radius) {
       const points = [];
       const numPoints = 8 + Math.floor(Math.random() * 5);
@@ -220,12 +235,6 @@
 
       generateStars();
 
-      // Spaceship position
-      ship.x = cw - 130;
-      ship.y = ch - 130;
-      ship.state = 'DAMAGED';
-      ship.vy = 0;
-
       // Stickman initial spawn
       player.x = 110;
       player.y = 120;
@@ -233,10 +242,34 @@
       player.vy = 0;
       player.facing = 1;
       player.walkFrame = 0;
+      player.absorbed = false;
+      player.absorbedAmoeba = null;
+      player.absorbedTimer = 0;
+      player.invulnerableTimer = 0;
 
-      // SUPER-DENSE DRIFTING ASTEROIDS (URANIUM DENSITY)
+      // 1. RANDOM ROCKET SPAWN LOCATION (Ensuring safe distance from initial player spawn)
+      let shipX, shipY, shipOverlap;
+      let shipAttempts = 0;
+      do {
+        shipOverlap = false;
+        shipAttempts++;
+        shipX = Math.random() * (cw - ship.width - 180) + 90;
+        shipY = Math.random() * (ch - ship.height - 180) + 90;
+
+        // Keep distance from stickman initial spawn (110, 120)
+        if (Math.hypot(shipX + ship.width / 2 - player.x, shipY + ship.height / 2 - player.y) < 180) {
+          shipOverlap = true;
+        }
+      } while (shipOverlap && shipAttempts < 150);
+
+      ship.x = shipX;
+      ship.y = shipY;
+      ship.state = 'DAMAGED';
+      ship.vy = 0;
+
+      // DRIFTING DENSE ASTEROIDS
       asteroids = [];
-      const asteroidCount = 8 + Math.min(levelNum * 2, 10);
+      const asteroidCount = 7 + Math.min(levelNum * 2, 9);
 
       for (let i = 0; i < asteroidCount; i++) {
         let ast;
@@ -246,8 +279,7 @@
         do {
           overlap = false;
           attempts++;
-          const radius = Math.random() * 18 + 20;
-
+          const radius = Math.random() * 18 + 22;
           const uraniumDensity = 8000;
           const mass = Math.PI * radius * radius * uraniumDensity;
 
@@ -280,7 +312,43 @@
         asteroids.push(ast);
       }
 
-      // GENERATE SPARE PARTS (TINY MASS = 1)
+      // AMOEBA-LIKE ALIEN SLIME ENEMIES (Count = N - 1)
+      amoebas = [];
+      const amoebaCount = Math.max(0, levelNum - 1);
+      const slimeColors = ['#76ff03', '#ff007f', '#00f0ff', '#e040fb'];
+
+      for (let i = 0; i < amoebaCount; i++) {
+        let amb;
+        let overlap = false;
+        let attempts = 0;
+
+        do {
+          overlap = false;
+          attempts++;
+          const radius = Math.random() * 8 + 28;
+          const ax = Math.random() * Math.max(100, cw - 200) + 100;
+          const ay = Math.random() * Math.max(100, ch - 200) + 100;
+
+          amb = {
+            x: ax,
+            y: ay,
+            vx: (Math.random() - 0.5) * 2.2,
+            vy: (Math.random() - 0.5) * 2.2,
+            radius: radius,
+            mass: 250,
+            color: slimeColors[i % slimeColors.length],
+            phase: Math.random() * Math.PI * 2,
+            wobbleSpeed: Math.random() * 0.04 + 0.03
+          };
+
+          if (Math.hypot(amb.x - player.x, amb.y - player.y) < amb.radius + 100) overlap = true;
+          if (Math.hypot(amb.x - (ship.x + ship.width/2), amb.y - (ship.y + ship.height/2)) < amb.radius + 100) overlap = true;
+        } while (overlap && attempts < 100);
+
+        amoebas.push(amb);
+      }
+
+      // SPARE ROCKET PARTS (Status: 'FLOATING', 'CARRIED', 'BANKED')
       parts = [];
       const partCount = 5;
       for (let i = 0; i < partCount; i++) {
@@ -304,10 +372,11 @@
             angle: Math.random() * Math.PI * 2,
             rotSpeed: (Math.random() - 0.5) * 0.05,
             restitution: 0.92,
-            collected: false
+            status: 'FLOATING' // 'FLOATING', 'CARRIED', 'BANKED'
           };
 
           if (Math.hypot(px - player.x, py - player.y) < 80) valid = false;
+          if (Math.hypot(px - (ship.x + ship.width/2), py - (ship.y + ship.height/2)) < 90) valid = false;
         } while (!valid && attempts < 100);
 
         parts.push(pt);
@@ -324,17 +393,34 @@
 
     function updateHUD() {
       document.getElementById('level-display').innerText = `PLANET: ${currentLevel} (${palette.name})`;
-      const collected = parts.filter(p => p.collected).length;
-      document.getElementById('parts-display').innerText = `PARTS: ${collected}/${parts.length}`;
+      const banked = parts.filter(p => p.status === 'BANKED').length;
+      const carried = parts.filter(p => p.status === 'CARRIED').length;
+      document.getElementById('parts-display').innerText = `BANKED: ${banked}/${parts.length} | CARRIED: ${carried}`;
 
+      const warnEl = document.getElementById('status-warning');
       const statusEl = document.getElementById('status-text');
-      if (gameState === 'PLAYING') {
-        if (collected < parts.length) {
-          statusEl.innerText = "[WASD JETPACK THRUST] WASD sets thrust direction! Newton's 3rd Law: Thrusting UP (W) pushes you DOWN (S)!";
-          statusEl.style.color = '#aaaaaa';
-        } else {
-          statusEl.innerText = "SHIP REPAIRED! Fly your astronaut back to the ship to launch!";
-          statusEl.style.color = palette.part;
+
+      if (player.absorbed) {
+        warnEl.style.display = 'inline';
+        const secLeft = (player.absorbedTimer / 60).toFixed(1);
+        warnEl.innerText = `⚠️ ABSORBED BY SLIME! SPITTING IN ${secLeft}s`;
+        statusEl.innerText = "TRAPPED IN ALIEN SLIME! Unbanked carried parts scattered! Prepare to slow down!";
+        statusEl.style.color = '#ff00ea';
+      } else {
+        warnEl.style.display = 'none';
+        if (gameState === 'PLAYING') {
+          if (banked < parts.length) {
+            if (carried > 0) {
+              statusEl.innerText = `YOU ARE CARRYING ${carried} PART(S)! Fly to the rocket to drop them off and BANK them!`;
+              statusEl.style.color = '#ffd600';
+            } else {
+              statusEl.innerText = "[WASD JETPACK THRUST] Collect floating parts and fly to the rocket to bank them safe from slimes!";
+              statusEl.style.color = '#00f0ff';
+            }
+          } else {
+            statusEl.innerText = "ALL PARTS BANKED & ROCKET REPAIRED! Fly to the rocket to launch to the next planet!";
+            statusEl.style.color = palette.part;
+          }
         }
       }
     }
@@ -370,14 +456,13 @@
           vx: (Math.random() - 0.5) * spreadVx,
           vy: (Math.random() - 0.5) * spreadVy,
           life: 1.0,
-          decay: Math.random() * 0.04 + 0.03,
+          decay: Math.random() * 0.04 + 0.02,
           color: color,
-          size: Math.random() * 4 + 2
+          size: Math.random() * 5 + 2
         });
       }
     }
 
-    // JETPACK THRUST PLUME PARTICLES
     function createJetpackFlame(x, y, dirX, dirY) {
       const colors = ['#ff9d00', '#ff3d00', '#00f0ff', '#ffffff'];
       const color = colors[Math.floor(Math.random() * colors.length)];
@@ -393,7 +478,7 @@
       });
     }
 
-    // ELASTIC NEWTONIAN COLLISION RESOLVER WITH ZERO-DIVISION PROTECTION
+    // ELASTIC NEWTONIAN COLLISION RESOLVER
     function resolveElasticCollision(obj1, obj2) {
       const dx = obj2.x - obj1.x;
       const dy = obj2.y - obj1.y;
@@ -452,7 +537,6 @@
           initLevel(currentLevel);
           gameState = 'CRASHING';
           ship.y = -100;
-          ship.x = 100;
           ship.vy = 9;
         }
         return;
@@ -468,8 +552,6 @@
           gameState = 'PLAYING';
           player.x = ship.x + ship.width + 25;
           player.y = ship.y + ship.height - 10;
-          ship.x = canvas.width - 130;
-          ship.y = canvas.height - 130;
           ship.state = 'DAMAGED';
         }
         return;
@@ -477,71 +559,132 @@
 
       if (gameState !== 'PLAYING') return;
 
-      // 1. JETPACK THRUST ACCELERATION (NEWTON'S 3RD LAW: ACTION = REACTION)
-      // WASD keys set the direction of THRUST (exhaust vector).
-      // Newton's Third Law: Acceleration is equal and OPPOSITE to thrust direction!
-      let ax = 0;
-      let ay = 0;
-      let thrustDirX = 0;
-      let thrustDirY = 0;
-
-      // W = Thrust UP -> Exhaust fires UPWARD -> Reaction accelerates player DOWNWARD
-      if (keys['KeyW'] || keys['Keyw']) { ay += player.thrustPower; thrustDirY -= 1; }
-      // S = Thrust DOWN -> Exhaust fires DOWNWARD -> Reaction accelerates player UPWARD
-      if (keys['KeyS'] || keys['Keys']) { ay -= player.thrustPower; thrustDirY += 1; }
-      // A = Thrust LEFT -> Exhaust fires LEFTWARD -> Reaction accelerates player RIGHTWARD
-      if (keys['KeyA'] || keys['Keya']) { ax += player.thrustPower; thrustDirX -= 1; player.facing = 1; }
-      // D = Thrust RIGHT -> Exhaust fires RIGHTWARD -> Reaction accelerates player LEFTWARD
-      if (keys['KeyD'] || keys['Keyd']) { ax -= player.thrustPower; thrustDirX += 1; player.facing = -1; }
-
-      // Apply Jetpack Acceleration directly to Velocity
-      player.vx += ax;
-      player.vy += ay;
-
-      // Cosmic background damping
-      player.vx *= player.friction;
-      player.vy *= player.friction;
-
-      player.x += player.vx;
-      player.y += player.vy;
-
-      // Spawn Jetpack Exhaust Plumes in the direction of thrust
-      if (thrustDirX !== 0 || thrustDirY !== 0) {
-        const jetX = player.x - player.facing * 9;
-        const jetY = player.y - 12;
-        const norm = Math.hypot(thrustDirX, thrustDirY) || 1;
-        createJetpackFlame(jetX, jetY, thrustDirX / norm, thrustDirY / norm);
+      if (player.invulnerableTimer > 0) {
+        player.invulnerableTimer--;
       }
 
-      // Leg animation based on velocity
-      if (Math.hypot(player.vx, player.vy) > 0.4) {
-        player.walkFrame += 0.2;
+      // --- AMOEBA ABSORPTION STATE COUNTDOWN & EJECTION ---
+      if (player.absorbed && player.absorbedAmoeba) {
+        const amb = player.absorbedAmoeba;
+        player.x = amb.x;
+        player.y = amb.y;
+        player.vx = 0;
+        player.vy = 0;
+
+        player.absorbedTimer--;
+        updateHUD();
+
+        if (Math.random() < 0.4) {
+          createParticles(amb.x + (Math.random() - 0.5) * amb.radius, amb.y + (Math.random() - 0.5) * amb.radius, amb.color, 1, 2, 2);
+        }
+
+        // 3 SECONDS EXPIRED: EJECT AT 1/2 VELOCITY (11)
+        if (player.absorbedTimer <= 0) {
+          player.absorbed = false;
+
+          const ejectAngle = Math.random() * Math.PI * 2;
+          const ejectSpeed = 11;
+
+          // Position Stickman OUTSIDE the amoeba boundary upon ejection
+          player.x = amb.x + Math.cos(ejectAngle) * (amb.radius + player.radius + 12);
+          player.y = amb.y + Math.sin(ejectAngle) * (amb.radius + player.radius + 12);
+
+          player.vx = Math.cos(ejectAngle) * ejectSpeed;
+          player.vy = Math.sin(ejectAngle) * ejectSpeed;
+
+          // Equal and opposite recoil on the amoeba
+          const amoebaRecoilSpeed = ejectSpeed * (player.mass / amb.mass) * 2.5;
+          amb.vx = -Math.cos(ejectAngle) * amoebaRecoilSpeed;
+          amb.vy = -Math.sin(ejectAngle) * amoebaRecoilSpeed;
+
+          // Grant 60 frames (1 second) invulnerability
+          player.invulnerableTimer = 60;
+          player.absorbedAmoeba = null;
+
+          createParticles(amb.x, amb.y, amb.color, 35, 12, 12);
+          createParticles(amb.x, amb.y, '#ffffff', 15, 8, 8);
+          updateHUD();
+        }
       } else {
-        player.walkFrame = 0;
+        // --- 1. JETPACK THRUST ACCELERATION ---
+        let ax = 0;
+        let ay = 0;
+        let thrustDirX = 0;
+        let thrustDirY = 0;
+
+        if (keys['KeyW'] || keys['Keyw']) { ay += player.thrustPower; thrustDirY -= 1; }
+        if (keys['KeyS'] || keys['Keys']) { ay -= player.thrustPower; thrustDirY += 1; }
+        if (keys['KeyA'] || keys['Keya']) { ax += player.thrustPower; thrustDirX -= 1; player.facing = 1; }
+        if (keys['KeyD'] || keys['Keyd']) { ax -= player.thrustPower; thrustDirX += 1; player.facing = -1; }
+
+        player.vx += ax;
+        player.vy += ay;
+
+        player.vx *= player.friction;
+        player.vy *= player.friction;
+
+        player.x += player.vx;
+        player.y += player.vy;
+
+        if (thrustDirX !== 0 || thrustDirY !== 0) {
+          const jetX = player.x - player.facing * 9;
+          const jetY = player.y - 12;
+          const norm = Math.hypot(thrustDirX, thrustDirY) || 1;
+          createJetpackFlame(jetX, jetY, thrustDirX / norm, thrustDirY / norm);
+        }
+
+        if (Math.hypot(player.vx, player.vy) > 0.4) {
+          player.walkFrame += 0.2;
+        } else {
+          player.walkFrame = 0;
+        }
+
+        // --- STICKMAN SCREEN BOUNDARY BOUNCE PHYSICS ---
+        if (player.x - player.radius < 0) {
+          player.x = player.radius;
+          player.vx = -player.vx * player.restitution;
+          createParticles(player.x, player.y, '#ffffff', 4);
+        } else if (player.x + player.radius > canvas.width) {
+          player.x = canvas.width - player.radius;
+          player.vx = -player.vx * player.restitution;
+          createParticles(player.x, player.y, '#ffffff', 4);
+        }
+
+        if (player.y - player.radius < 0) {
+          player.y = player.radius;
+          player.vy = -player.vy * player.restitution;
+          createParticles(player.x, player.y, '#ffffff', 4);
+        } else if (player.y + player.radius > canvas.height) {
+          player.y = canvas.height - player.radius;
+          player.vy = -player.vy * player.restitution;
+          createParticles(player.x, player.y, '#ffffff', 4);
+        }
       }
 
-      // 2. STICKMAN SCREEN BOUNDARY ELASTIC BOUNCE PHYSICS
-      if (player.x - player.radius < 0) {
-        player.x = player.radius;
-        player.vx = -player.vx * player.restitution;
-        createParticles(player.x, player.y, '#ffffff', 4);
-      } else if (player.x + player.radius > canvas.width) {
-        player.x = canvas.width - player.radius;
-        player.vx = -player.vx * player.restitution;
-        createParticles(player.x, player.y, '#ffffff', 4);
-      }
+      // --- 2. AMOEBA SLIME MOVEMENT & ANIMATION ---
+      amoebas.forEach(amb => {
+        amb.x += amb.vx;
+        amb.y += amb.vy;
+        amb.phase += amb.wobbleSpeed;
 
-      if (player.y - player.radius < 0) {
-        player.y = player.radius;
-        player.vy = -player.vy * player.restitution;
-        createParticles(player.x, player.y, '#ffffff', 4);
-      } else if (player.y + player.radius > canvas.height) {
-        player.y = canvas.height - player.radius;
-        player.vy = -player.vy * player.restitution;
-        createParticles(player.x, player.y, '#ffffff', 4);
-      }
+        if (amb.x - amb.radius < 0) {
+          amb.x = amb.radius;
+          amb.vx = -amb.vx;
+        } else if (amb.x + amb.radius > canvas.width) {
+          amb.x = canvas.width - amb.radius;
+          amb.vx = -amb.vx;
+        }
 
-      // 3. DRIFTING ASTEROIDS & WALL BOUNCES
+        if (amb.y - amb.radius < 0) {
+          amb.y = amb.radius;
+          amb.vy = -amb.vy;
+        } else if (amb.y + amb.radius > canvas.height) {
+          amb.y = canvas.height - amb.radius;
+          amb.vy = -amb.vy;
+        }
+      });
+
+      // --- 3. DRIFTING ASTEROIDS & WALL BOUNCES ---
       asteroids.forEach(ast => {
         ast.x += ast.vx;
         ast.y += ast.vy;
@@ -564,9 +707,10 @@
         }
       });
 
-      // 4. DRIFTING SPARE PARTS MOVEMENT & WALL BOUNCES
+      // --- 4. ROCKET PARTS MOVEMENT & CARRIED TRAILING ---
+      let carriedCount = 0;
       parts.forEach(part => {
-        if (!part.collected) {
+        if (part.status === 'FLOATING') {
           const maxPartSpeed = 10;
           const currentSpeed = Math.hypot(part.vx, part.vy);
           if (currentSpeed > maxPartSpeed) {
@@ -588,74 +732,153 @@
 
           if (part.y - part.radius < 0) {
             part.y = part.radius;
-            part.vy = -part.vy * part.restitution;
+            part.vx = -part.vx * part.restitution;
           } else if (part.y + part.radius > canvas.height) {
             part.y = canvas.height - part.radius;
-            part.vy = -part.vy * part.restitution;
+            part.vx = -part.vx * part.restitution;
           }
+        } else if (part.status === 'CARRIED' && !player.absorbed) {
+          // Smoothly trail behind Stickman in a chain
+          carriedCount++;
+          const followDistance = 16 + carriedCount * 14;
+          const targetX = player.x - player.facing * followDistance;
+          const targetY = player.y - 4;
+          part.x += (targetX - part.x) * 0.25;
+          part.y += (targetY - part.y) * 0.25;
+          part.angle += 0.08;
         }
       });
 
-      // 5. ASTEROID VS ASTEROID COLLISION
+      // --- 5. ENTITY ELASTIC COLLISIONS ---
       for (let i = 0; i < asteroids.length; i++) {
         for (let j = i + 1; j < asteroids.length; j++) {
           resolveElasticCollision(asteroids[i], asteroids[j]);
         }
       }
 
-      // 6. ASTEROID VS SPARE PART COLLISION
+      amoebas.forEach(amb => {
+        asteroids.forEach(ast => {
+          resolveElasticCollision(amb, ast);
+        });
+      });
+
+      for (let i = 0; i < amoebas.length; i++) {
+        for (let j = i + 1; j < amoebas.length; j++) {
+          resolveElasticCollision(amoebas[i], amoebas[j]);
+        }
+      }
+
       asteroids.forEach(ast => {
         parts.forEach(part => {
-          if (!part.collected) {
+          if (part.status === 'FLOATING') {
             resolveElasticCollision(ast, part);
           }
         });
       });
 
-      // 7. SPARE PART VS SPARE PART COLLISION
+      amoebas.forEach(amb => {
+        parts.forEach(part => {
+          if (part.status === 'FLOATING') {
+            resolveElasticCollision(amb, part);
+          }
+        });
+      });
+
       for (let i = 0; i < parts.length; i++) {
         for (let j = i + 1; j < parts.length; j++) {
-          if (!parts[i].collected && !parts[j].collected) {
+          if (parts[i].status === 'FLOATING' && parts[j].status === 'FLOATING') {
             resolveElasticCollision(parts[i], parts[j]);
           }
         }
       }
 
-      // 8. STICKMAN VS SUPER-DENSE ASTEROID BOUNCE
-      asteroids.forEach(ast => {
-        resolveElasticCollision(player, ast);
-      });
+      if (!player.absorbed) {
+        asteroids.forEach(ast => {
+          resolveElasticCollision(player, ast);
+        });
+      }
 
-      // 9. STICKMAN PICKING UP SPARE PARTS
-      parts.forEach(part => {
-        if (!part.collected) {
-          const dist = Math.hypot(player.x - part.x, player.y - part.y);
-          if (dist < player.radius + part.radius + 4) {
-            part.collected = true;
-            createParticles(part.x, part.y, palette.part, 15);
+      // --- 6. STICKMAN VS AMOEBA ABSORPTION CHECK ---
+      if (!player.absorbed && player.invulnerableTimer <= 0) {
+        amoebas.forEach(amb => {
+          const dist = Math.hypot(player.x - amb.x, player.y - amb.y);
+          if (dist < player.radius + amb.radius) {
+            player.absorbed = true;
+            player.absorbedAmoeba = amb;
+            player.absorbedTimer = 180;
+
+            // SCATTER ONLY UNBANKED (CARRIED) PARTS! BANKED PARTS REMAIN SAFE IN ROCKET!
+            parts.forEach(part => {
+              if (part.status === 'CARRIED') {
+                part.status = 'FLOATING';
+                part.x = amb.x + (Math.random() - 0.5) * 60;
+                part.y = amb.y + (Math.random() - 0.5) * 60;
+                part.vx = (Math.random() - 0.5) * 7;
+                part.vy = (Math.random() - 0.5) * 7;
+              }
+            });
+
+            createParticles(amb.x, amb.y, amb.color, 25);
+            updateHUD();
+          }
+        });
+      }
+
+      // --- 7. STICKMAN PICKING UP & BANKING ROCKET PARTS ---
+      if (!player.absorbed) {
+        // Collect floating parts
+        parts.forEach(part => {
+          if (part.status === 'FLOATING') {
+            const dist = Math.hypot(player.x - part.x, player.y - part.y);
+            if (dist < player.radius + part.radius + 6) {
+              part.status = 'CARRIED';
+              createParticles(part.x, part.y, palette.part, 12);
+              updateHUD();
+            }
+          }
+        });
+
+        // 2. BANK CARRIED PARTS AT THE ROCKET
+        const shipCenterX = ship.x + ship.width / 2;
+        const shipCenterY = ship.y + ship.height / 2;
+        const distToRocket = Math.hypot(player.x - shipCenterX, player.y - shipCenterY);
+
+        if (distToRocket < 65) {
+          let newlyBanked = false;
+          parts.forEach(part => {
+            if (part.status === 'CARRIED') {
+              part.status = 'BANKED';
+              newlyBanked = true;
+            }
+          });
+
+          if (newlyBanked) {
+            createParticles(shipCenterX, shipCenterY, '#76ff03', 25, 8, 8);
+            createParticles(shipCenterX, shipCenterY, '#ffd600', 15, 6, 6);
             updateHUD();
 
-            const allCollected = parts.every(p => p.collected);
-            if (allCollected) {
+            // Check if all parts are now banked
+            const allBanked = parts.every(p => p.status === 'BANKED');
+            if (allBanked) {
               ship.state = 'REPAIRED';
               updateHUD();
             }
           }
         }
-      });
+      }
 
-      // 10. BOARDING REPAIRED SPACESHIP
-      if (ship.state === 'REPAIRED') {
+      // --- 8. BOARDING REPAIRED SPACESHIP ---
+      if (ship.state === 'REPAIRED' && !player.absorbed) {
         const distToShip = Math.hypot(player.x - (ship.x + ship.width / 2), player.y - (ship.y + ship.height / 2));
         if (distToShip < 44) {
           gameState = 'TAKEOFF';
           ship.vy = -2;
           document.getElementById('status-text').innerText = "TAKING OFF TO NEXT PLANET...";
-          document.getElementById('status-text').style.color = '#ffffff';
+          document.getElementById('status-text').style.color = '#76ff03';
         }
       }
 
-      // 11. UPDATE PARTICLES
+      // --- 9. UPDATE PARTICLES ---
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.x += p.vx;
@@ -665,7 +888,60 @@
       }
     }
 
-    // DRAW STICKMAN ASTRONAUT WITH SUIT, HELMET, AND JETPACK
+    // DRAW AMOEBA SLIME ENEMIES
+    function drawAmoebas() {
+      amoebas.forEach(amb => {
+        ctx.save();
+        ctx.translate(amb.x, amb.y);
+
+        ctx.fillStyle = amb.color;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.5;
+
+        const numPoints = 14;
+        ctx.beginPath();
+        for (let i = 0; i < numPoints; i++) {
+          const angle = (i / numPoints) * Math.PI * 2;
+          const wobble = Math.sin(angle * 3 + amb.phase) * 5 + Math.cos(angle * 2 - amb.phase) * 4;
+          const r = amb.radius + wobble;
+          const px = Math.cos(angle) * r;
+          const py = Math.sin(angle) * r;
+
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.beginPath();
+        ctx.arc(0, 0, amb.radius * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+
+        const eyeOffsetAngle = amb.phase * 0.5;
+        const eyeX1 = Math.cos(eyeOffsetAngle) * (amb.radius * 0.3) - 6;
+        const eyeY1 = Math.sin(eyeOffsetAngle) * (amb.radius * 0.3) - 4;
+        const eyeX2 = eyeX1 + 12;
+        const eyeY2 = eyeY1 + 2;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(eyeX1, eyeY1, 5, 0, Math.PI * 2);
+        ctx.arc(eyeX2, eyeY2, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(eyeX1 + Math.cos(amb.phase) * 1.5, eyeY1 + Math.sin(amb.phase) * 1.5, 2.5, 0, Math.PI * 2);
+        ctx.arc(eyeX2 + Math.cos(amb.phase) * 1.5, eyeY2 + Math.sin(amb.phase) * 1.5, 2.0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      });
+    }
+
+    // DRAW STICKMAN ASTRONAUT
     function drawStickman(x, y, facing, walkFrame) {
       ctx.save();
 
@@ -676,31 +952,30 @@
       const headY = neckY - headRadius - 2;
       const shoulderY = neckY + 4;
 
-      // --- 1. JETPACK (Mounted on Stickman's Back) ---
+      if (player.absorbed) {
+        ctx.globalAlpha = 0.6;
+      }
+
       const jetWidth = 8;
       const jetHeight = 16;
       const jetX = x - facing * 10 - (facing === 1 ? jetWidth : 0);
       const jetY = neckY + 1;
 
-      // Jetpack metallic body
       ctx.fillStyle = '#78909c';
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1.5;
       ctx.fillRect(jetX, jetY, jetWidth, jetHeight);
       ctx.strokeRect(jetX, jetY, jetWidth, jetHeight);
 
-      // Jetpack thruster nozzle at base
       ctx.fillStyle = '#ff3d00';
       ctx.fillRect(jetX + 1, jetY + jetHeight, jetWidth - 2, 4);
 
-      // --- 2. ASTRONAUT SUIT (Bulky Torso & Padding) ---
       ctx.strokeStyle = '#ffffff';
       ctx.fillStyle = '#eceff1';
       ctx.lineWidth = 3;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      // Padded Legs
       const legSwing = Math.sin(walkFrame) * 6;
 
       ctx.beginPath();
@@ -713,24 +988,20 @@
       ctx.lineTo(x + legSwing, y + legLength);
       ctx.stroke();
 
-      // Space Boots
       ctx.fillStyle = '#b0bec5';
       ctx.fillRect(x - legSwing - 3, y + legLength, 6, 3);
       ctx.fillRect(x + legSwing - 3, y + legLength, 6, 3);
 
-      // Bulky Torso
       ctx.beginPath();
       ctx.moveTo(x, neckY);
       ctx.lineTo(x, y);
       ctx.stroke();
 
-      // Chest Control Unit / Badge
       ctx.fillStyle = palette.accent || '#00f0ff';
       ctx.fillRect(x - 3, neckY + 4, 6, 6);
       ctx.fillStyle = '#ff1744';
       ctx.fillRect(x - 1, neckY + 5, 2, 2);
 
-      // Padded Suit Arms
       const armSwing = Math.sin(walkFrame + Math.PI) * 4;
 
       ctx.beginPath();
@@ -743,45 +1014,38 @@
       ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 7);
       ctx.stroke();
 
-      // Suit Gloves
       ctx.fillStyle = '#b0bec5';
       ctx.beginPath();
       ctx.arc(x - facing * 4 - armSwing, shoulderY + 7, 2.5, 0, Math.PI * 2);
       ctx.arc(x + facing * 4 + armSwing, shoulderY + 7, 2.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // --- 3. SPACE HELMET & VISOR ---
-      // Inner Stickman Head
       ctx.lineWidth = 1.5;
       ctx.strokeStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(x, headY, headRadius - 1, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Head Eye Direction
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(x + facing * 2, headY - 0.5, 0.9, 0, Math.PI * 2);
       ctx.fill();
 
-      // Glass Space Helmet Bubble Dome
       const helmetRadius = 9;
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.arc(x, headY, helmetRadius, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0, 240, 255, 0.15)'; // Tinted helmet glass
+      ctx.fillStyle = 'rgba(0, 240, 255, 0.2)';
       ctx.fill();
       ctx.stroke();
 
-      // Helmet Visor Glossy Highlight
       ctx.strokeStyle = '#00f0ff';
       ctx.lineWidth = 1.8;
       ctx.beginPath();
       ctx.arc(x + facing * 3, headY - 2, 4, -Math.PI * 0.3, Math.PI * 0.3);
       ctx.stroke();
 
-      // Helmet Collar Joint
       ctx.fillStyle = '#78909c';
       ctx.fillRect(x - 5, neckY - 2, 10, 3);
 
@@ -792,10 +1056,9 @@
       ctx.save();
       ctx.translate(s.x, s.y);
 
-      // Rocket Hull
       ctx.fillStyle = s.state === 'REPAIRED' ? '#e0e0e0' : '#666666';
       ctx.strokeStyle = palette.accent;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
 
       // Nosecone
       ctx.beginPath();
@@ -836,7 +1099,6 @@
       ctx.fill();
       ctx.stroke();
 
-      // Damage Visual Effects
       if (s.state === 'DAMAGED') {
         ctx.strokeStyle = '#ff3d00';
         ctx.lineWidth = 2;
@@ -873,7 +1135,6 @@
         ctx.fill();
         ctx.stroke();
 
-        // Crater texture
         ctx.strokeStyle = palette.bg;
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -886,12 +1147,13 @@
 
     function drawParts() {
       parts.forEach(part => {
-        if (!part.collected) {
+        // Draw unbanked parts (Floating in space OR Carried behind Stickman)
+        if (part.status !== 'BANKED') {
           ctx.save();
           ctx.translate(part.x, part.y);
           ctx.rotate(part.angle);
 
-          ctx.fillStyle = palette.part;
+          ctx.fillStyle = part.status === 'CARRIED' ? '#ffd600' : palette.part;
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 1.5;
 
@@ -922,12 +1184,15 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       stars.forEach(star => {
-        ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+        ctx.fillStyle = star.color;
+        ctx.globalAlpha = star.alpha;
         ctx.fillRect(star.x, star.y, star.size, star.size);
+        ctx.globalAlpha = 1.0;
       });
 
       drawAsteroids();
       drawParts();
+      drawAmoebas();
       drawShip(ship);
 
       particles.forEach(p => {

@@ -34,49 +34,85 @@
       max-width: 1100px;
       margin-bottom: 10px;
       padding-bottom: 8px;
-      border-bottom: 2px solid #ff4081;
+      border-bottom: 3px solid #ff4081;
     }
 
     .title-group {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 4px;
     }
 
     h1 {
-      font-size: 18px;
+      font-size: 20px;
       letter-spacing: 2px;
       text-transform: uppercase;
       font-weight: bold;
       color: #ffeb3b;
-      text-shadow: 0 0 8px rgba(255, 235, 59, 0.4);
+      text-shadow: 0 0 10px rgba(255, 235, 59, 0.6);
     }
 
     .stats {
       font-size: 13px;
       color: #00e676;
       font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    /* Health Bar Styling */
+    #health-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #11111a;
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 2px solid #333344;
+    }
+
+    .health-label {
+      color: #ff1744;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    #health-bar-bg {
+      width: 120px;
+      height: 14px;
+      background: #331111;
+      border-radius: 7px;
+      overflow: hidden;
+      border: 1px solid #ff5252;
+    }
+
+    #health-bar-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-[#00e676];
+      background-color: #00e676;
+      transition: width 0.2s ease-in-out, background-color 0.2s;
     }
 
     .btn-reset {
-      background: transparent;
+      background: #ff4081;
       color: #ffffff;
-      border: 1px solid #ffffff;
-      padding: 6px 16px;
+      border: none;
+      padding: 8px 18px;
       font-size: 13px;
       font-weight: bold;
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 1px;
       transition: all 0.15s ease-in-out;
-      border-radius: 4px;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(255, 64, 129, 0.4);
     }
 
     .btn-reset:hover {
-      background: #ff4081;
-      border-color: #ff4081;
-      color: #ffffff;
-      box-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
+      background: #ff80ab;
+      transform: scale(1.05);
     }
 
     /* Main Canvas Container */
@@ -88,77 +124,73 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      box-shadow: 0 0 20px rgba(0,0,0,0.8);
-      border-radius: 6px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.9);
+      border-radius: 8px;
       overflow: hidden;
     }
 
     canvas {
       background-color: #000000;
-      border: 2px solid #333344;
+      border: 3px solid #ff4081;
       display: block;
       width: 100%;
       height: 100%;
     }
 
-    /* Level Complete Banner */
-    #toast-overlay {
+    /* Overlays */
+    #toast-overlay, #gameover-overlay {
       position: absolute;
-      top: 20px;
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255, 64, 129, 0.95);
-      color: #fff;
-      padding: 10px 24px;
-      border-radius: 20px;
-      font-size: 16px;
+      transform: translate(-50%, -50%);
+      padding: 20px 36px;
+      border-radius: 16px;
+      font-size: 20px;
       font-weight: bold;
       letter-spacing: 1px;
       display: none;
       pointer-events: none;
-      box-shadow: 0 0 15px rgba(255, 64, 129, 0.8);
-      animation: pulse 1s infinite alternate;
+      text-align: center;
       z-index: 20;
     }
 
-    @keyframes pulse {
-      from { transform: translateX(-50%) scale(1); }
-      to { transform: translateX(-50%) scale(1.05); }
+    #toast-overlay {
+      background: rgba(255, 64, 129, 0.95);
+      color: #fff;
+      box-shadow: 0 0 25px rgba(255, 64, 129, 0.9);
+      animation: pulse 0.8s infinite alternate;
     }
 
-    /* Onscreen Touch Controls for Chromebook Touchscreens */
-    #touch-controls {
-      display: none;
-      position: absolute;
-      bottom: 15px;
-      right: 15px;
-      grid-template-columns: repeat(3, 45px);
-      grid-template-rows: repeat(2, 45px);
-      gap: 5px;
-      z-index: 10;
+    #gameover-overlay {
+      background: rgba(20, 0, 5, 0.95);
+      color: #ff1744;
+      border: 3px solid #ff1744;
+      box-shadow: 0 0 30px rgba(255, 23, 68, 0.8);
+      pointer-events: auto;
     }
 
-    .touch-btn {
-      background: rgba(255, 255, 255, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      color: white;
-      border-radius: 8px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 18px;
+    #gameover-overlay button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
       font-weight: bold;
-      touch-action: manipulation;
+      background: #ff1744;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
 
-    .touch-btn:active {
-      background: rgba(255, 64, 129, 0.6);
+    @keyframes pulse {
+      from { transform: translate(-50%, -50%) scale(1); }
+      to { transform: translate(-50%, -50%) scale(1.08); }
     }
 
     .instructions {
       margin-top: 8px;
-      font-size: 12px;
-      color: #aaaabb;
+      font-size: 13px;
+      color: #ffeb3b;
+      font-weight: bold;
       text-align: center;
     }
   </style>
@@ -170,9 +202,21 @@
     <div class="title-group">
       <h1>Stickman Birthday Party</h1>
       <div class="stats">
-        LEVEL: <span id="level-display">1</span> | ROOMS: <span id="rooms-display">2</span> | PRESENTS LEFT: <span id="presents-display">0</span>
+        <span>LEVEL: <span id="level-display" style="color:#ffeb3b;">1</span></span>
+        <span>ROOMS: <span id="rooms-display" style="color:#00e5ff;">2</span></span>
+        <span>PRESENTS LEFT: <span id="presents-display" style="color:#ff4081;">0</span></span>
       </div>
     </div>
+
+    <!-- Health Bar -->
+    <div id="health-container">
+      <span class="health-label">HP:</span>
+      <div id="health-bar-bg">
+        <div id="health-bar-fill"></div>
+      </div>
+      <span id="health-text" style="font-size:12px; font-weight:bold; color:#fff;">50/50</span>
+    </div>
+
     <button class="btn-reset" onclick="resetGame()">Reset Game</button>
   </div>
 
@@ -180,20 +224,15 @@
   <div id="canvas-wrapper">
     <canvas id="simCanvas"></canvas>
     <div id="toast-overlay">🎉 ALL PRESENTS COLLECTED! ADVANCING LEVEL... 🎉</div>
-
-    <!-- Onscreen WASD Touch Controls -->
-    <div id="touch-controls">
-      <div></div>
-      <div class="touch-btn" id="btn-w">W</div>
-      <div></div>
-      <div class="touch-btn" id="btn-a">A</div>
-      <div class="touch-btn" id="btn-s">S</div>
-      <div class="touch-btn" id="btn-d">D</div>
+    <div id="gameover-overlay">
+      💥 GAME OVER! 💥<br>
+      <span style="font-size:14px; color:#ffffff;">The evil party treats got you!</span><br>
+      <button onclick="resetGame()">Try Again</button>
     </div>
   </div>
 
   <div class="instructions">
-    Use [WASD] Keys to Move (Arrow Keys Disabled) | Find High-Visibility Doorways & Collect All Presents
+    Use [WASD] Keys to Move (Arrow Keys Disabled) | Watch out for Evil Treats & Collect Real Presents!
   </div>
 
   <script>
@@ -204,17 +243,78 @@
     const levelDisplay = document.getElementById('level-display');
     const roomsDisplay = document.getElementById('rooms-display');
     const presentsDisplay = document.getElementById('presents-display');
+    const healthBarFill = document.getElementById('health-bar-fill');
+    const healthText = document.getElementById('health-text');
     const toastOverlay = document.getElementById('toast-overlay');
+    const gameoverOverlay = document.getElementById('gameover-overlay');
+
+    // AUDIO SYNTHESIZER (Web Audio API)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+
+      if (type === 'pop') {
+        // Loud Balloon Pop
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+        gain.gain.setValueAtTime(1.0, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'hit') {
+        // Enemy Hit / Damage
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.2);
+        gain.gain.setValueAtTime(0.6, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      } else if (type === 'icing') {
+        // Splat Sound
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'present') {
+        // Collect Present
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now); // C5
+        osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+        osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      }
+    }
 
     // GAME STATE
     let currentLevel = 1;
     let presents = [];
+    let enemies = [];
     let rooms = [];
     let doors = [];
     let totalPresentsCount = 0;
     let presentsRemaining = 0;
     let currentRoomIndex = 0;
     let scaleFactor = 1;
+    let isGameOver = false;
+
+    // SCREEN EFFECTS STATE
+    let icingTimer = 0; // Screen icing splatter duration (3s)
+    let icingSplatters = [];
 
     // KEYBOARD INPUT STATE (Strictly WASD)
     const keys = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
@@ -223,14 +323,18 @@
     const player = {
       x: 0,
       y: 0,
+      maxHealth: 50,
+      health: 50,
       baseSpeed: 4.2,
       speed: 4.2,
       facing: 1, // 1 = Right, -1 = Left
       walkFrame: 0,
-      radius: 10
+      radius: 10,
+      invulnerableTimer: 0,
+      burnTimer: 0 // Burn effect duration (3s)
     };
 
-    // Color Themes for Birthday Rooms
+    // Vibrant Color Themes for Rooms
     const roomThemes = [
       { bg: '#2b1e3a', wall: '#e040fb', name: 'Berry Purple' },
       { bg: '#1a2e3b', wall: '#00e5ff', name: 'Ocean Blue' },
@@ -240,23 +344,6 @@
       { bg: '#281b3a', wall: '#7c4dff', name: 'Deep Violet' },
       { bg: '#1b3a3a', wall: '#1de9b6', name: 'Confetti Teal' }
     ];
-
-    // Detect Touchscreen to enable onscreen controls
-    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-      document.getElementById('touch-controls').style.display = 'grid';
-    }
-
-    function setupTouchButton(id, code) {
-      const btn = document.getElementById(id);
-      btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[code] = true; });
-      btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[code] = false; });
-      btn.addEventListener('mousedown', () => { keys[code] = true; });
-      btn.addEventListener('mouseup', () => { keys[code] = false; });
-    }
-    setupTouchButton('btn-w', 'KeyW');
-    setupTouchButton('btn-a', 'KeyA');
-    setupTouchButton('btn-s', 'KeyS');
-    setupTouchButton('btn-d', 'KeyD');
 
     // STRICT WASD CONTROLS ONLY (Arrow Keys Suppressed)
     window.addEventListener('keydown', (e) => {
@@ -286,22 +373,24 @@
 
     window.addEventListener('resize', resizeCanvas);
 
-    // Dynamic House Generation with Irregular Room Sizes & Sparse Door Connections
+    // LEVEL GENERATION
     function buildLevel(lvl) {
-      const numRooms = lvl + 1; // Level 1 = 2 rooms, +1 room per level
+      const numRooms = lvl + 1;
       rooms = [];
       doors = [];
       presents = [];
+      enemies = [];
+      isGameOver = false;
+      gameoverOverlay.style.display = 'none';
 
       const margin = 20;
       const playableW = canvas.width - margin * 2;
       const playableH = canvas.height - margin * 2;
 
-      // 1. Binary Space Partitioning (BSP) to create varied room sizes
+      // 1. Binary Space Partitioning (BSP) for varied room sizes
       let regions = [{ x: margin, y: margin, w: playableW, h: playableH }];
 
       while (regions.length < numRooms) {
-        // Find region with largest area/dimension to split
         let maxIdx = 0;
         let maxDim = 0;
         for (let i = 0; i < regions.length; i++) {
@@ -316,7 +405,6 @@
         let splitHoriz = parent.w < parent.h;
         if (parent.w === parent.h) splitHoriz = Math.random() < 0.5;
 
-        // Randomized split ratio between 35% and 65% for non-uniform room dimensions
         let ratio = 0.35 + Math.random() * 0.3;
 
         if (splitHoriz) {
@@ -330,7 +418,7 @@
         }
       }
 
-      // Estimate scale factor based on smallest room dimension
+      // Estimate scale factor
       let minRoomDim = Infinity;
       regions.forEach(r => {
         minRoomDim = Math.min(minRoomDim, r.w, r.h);
@@ -339,7 +427,7 @@
       player.speed = player.baseSpeed * scaleFactor;
       player.radius = 12 * scaleFactor;
 
-      // Populate room structures
+      // Create rooms
       for (let i = 0; i < regions.length; i++) {
         const r = regions[i];
         const balloons = [];
@@ -362,14 +450,13 @@
         });
       }
 
-      // 2. Identify shared wall boundaries between adjacent rooms
+      // Shared wall checking & doorway placement
       let adjEdges = [];
       for (let i = 0; i < rooms.length; i++) {
         for (let j = i + 1; j < rooms.length; j++) {
           let r1 = rooms[i];
           let r2 = rooms[j];
 
-          // Vertical Shared Wall Check
           if (Math.abs((r1.x + r1.w) - r2.x) < 2 || Math.abs((r2.x + r2.w) - r1.x) < 2) {
             let sharedX = Math.abs((r1.x + r1.w) - r2.x) < 2 ? r2.x : r1.x;
             let yMin = Math.max(r1.y, r2.y);
@@ -383,7 +470,6 @@
             }
           }
 
-          // Horizontal Shared Wall Check
           if (Math.abs((r1.y + r1.h) - r2.y) < 2 || Math.abs((r2.y + r2.h) - r1.y) < 2) {
             let sharedY = Math.abs((r1.y + r1.h) - r2.y) < 2 ? r2.y : r1.y;
             let xMin = Math.max(r1.x, r2.x);
@@ -399,8 +485,7 @@
         }
       }
 
-      // 3. Generate Minimal Spanning Tree Doorways so every room is connected without maximizing all walls
-      adjEdges.sort(() => Math.random() - 0.5); // Shuffle edges randomly
+      adjEdges.sort(() => Math.random() - 0.5);
       let parentSet = rooms.map((_, idx) => idx);
 
       function findRoot(i) {
@@ -412,7 +497,6 @@
         let root1 = findRoot(edge.r1);
         let root2 = findRoot(edge.r2);
 
-        // Always connect if disconnected (Spanning Tree), plus 15% chance for occasional extra door loop
         if (root1 !== root2 || Math.random() < 0.15) {
           if (root1 !== root2) parentSet[root1] = root2;
 
@@ -428,7 +512,7 @@
         }
       });
 
-      // 4. Spawn Birthday Presents: (level number) + random(0-3)
+      // Spawn Birthday Presents: (level number) + random(0-3)
       totalPresentsCount = lvl + Math.floor(Math.random() * 4);
       presentsRemaining = totalPresentsCount;
 
@@ -448,12 +532,40 @@
         });
       }
 
-      // Place Stickman in Center of Room 0
+      // SPAWN ENEMIES ACROSS ROOMS
+      const enemyTypes = ['cupcake', 'cake', 'balloon', 'fakepresent', 'candle', 'toy'];
+      rooms.forEach((r, idx) => {
+        // Spawn 1 to 2 enemies per room (skip heavy spawning in starting room 0)
+        const count = idx === 0 ? 1 : 1 + Math.floor(Math.random() * 2);
+        for (let e = 0; e < count; e++) {
+          const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+          const padding = 30 * scaleFactor;
+          const ex = r.x + padding + Math.random() * (r.w - padding * 2);
+          const ey = r.y + padding + Math.random() * (r.h - padding * 2);
+
+          enemies.push({
+            type: type,
+            x: ex,
+            y: ey,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: (Math.random() - 0.5) * 1.5,
+            size: 16 * scaleFactor,
+            roomId: r.id,
+            active: true
+          });
+        }
+      });
+
+      // Reset Player State
       player.x = rooms[0].x + rooms[0].w / 2;
       player.y = rooms[0].y + rooms[0].h / 2;
+      player.health = 50;
+      player.invulnerableTimer = 0;
+      player.burnTimer = 0;
       currentRoomIndex = 0;
+      updateHealthUI();
 
-      // Update UI Text
+      // Update Header Text
       levelDisplay.innerText = currentLevel;
       roomsDisplay.innerText = numRooms;
       presentsDisplay.innerText = presentsRemaining;
@@ -464,7 +576,48 @@
       buildLevel(currentLevel);
     }
 
-    // Identify which room Stickman is inside
+    function updateHealthUI() {
+      const percentage = Math.max(0, (player.health / player.maxHealth) * 100);
+      healthBarFill.style.width = percentage + '%';
+      healthText.innerText = `${Math.max(0, Math.ceil(player.health))}/${player.maxHealth}`;
+
+      if (percentage > 50) {
+        healthBarFill.style.backgroundColor = '#00e676';
+      } else if (percentage > 25) {
+        healthBarFill.style.backgroundColor = '#ffeb3b';
+      } else {
+        healthBarFill.style.backgroundColor = '#ff1744';
+      }
+    }
+
+    function applyDamage(amount, type) {
+      if (player.invulnerableTimer > 0) return;
+
+      player.health -= amount;
+      player.invulnerableTimer = 1.0; // 1s invulnerability window
+      updateHealthUI();
+
+      if (player.health <= 0) {
+        player.health = 0;
+        updateHealthUI();
+        isGameOver = true;
+        gameoverOverlay.style.display = 'block';
+        playSound('hit');
+      }
+    }
+
+    function generateIcingSplatters() {
+      icingSplatters = [];
+      for (let i = 0; i < 12; i++) {
+        icingSplatters.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          r: 25 + Math.random() * 40,
+          color: ['#ff80ab', '#ffffff', '#f48fb1', '#ea80fc'][Math.floor(Math.random() * 4)]
+        });
+      }
+    }
+
     function updateCurrentRoom() {
       for (let i = 0; i < rooms.length; i++) {
         const r = rooms[i];
@@ -476,8 +629,26 @@
       }
     }
 
-    // MOVEMENT & COLLISION LOGIC
-    function updatePhysics() {
+    // PHYSICS & COLLISION LOGIC
+    function updatePhysics(dt) {
+      if (isGameOver) return;
+
+      // Update Timers
+      if (player.invulnerableTimer > 0) player.invulnerableTimer -= dt;
+      if (icingTimer > 0) icingTimer -= dt;
+
+      // Handle Candle Burn Effect (Burns stickman for 3 seconds)
+      if (player.burnTimer > 0) {
+        player.burnTimer -= dt;
+        player.health -= 0.8 * dt; // Continuous burn tick damage
+        updateHealthUI();
+        if (player.health <= 0) {
+          isGameOver = true;
+          gameoverOverlay.style.display = 'block';
+        }
+      }
+
+      // Movement Input
       let dx = 0;
       let dy = 0;
 
@@ -486,7 +657,6 @@
       if (keys['KeyA']) { dx -= 1; player.facing = -1; }
       if (keys['KeyD']) { dx += 1; player.facing = 1; }
 
-      // Normalize diagonal velocity
       if (dx !== 0 && dy !== 0) {
         dx *= 0.7071;
         dy *= 0.7071;
@@ -504,11 +674,9 @@
         let allowX = false;
         let allowY = false;
 
-        // Horizontal Movement Wall Check
         if (nextX - pR > currentRoom.x + wallThick && nextX + pR < currentRoom.x + currentRoom.w - wallThick) {
           allowX = true;
         } else {
-          // Check vertical doorway passage
           for (let d of doors) {
             if (d.type === 'vertical' && Math.abs(nextX - d.x) < pR + 6 && Math.abs(nextY - d.y) < d.size / 2 - 2) {
               allowX = true;
@@ -517,11 +685,9 @@
           }
         }
 
-        // Vertical Movement Wall Check
         if (nextY - pR > currentRoom.y + wallThick && nextY + pR < currentRoom.y + currentRoom.h - wallThick) {
           allowY = true;
         } else {
-          // Check horizontal doorway passage
           for (let d of doors) {
             if (d.type === 'horizontal' && Math.abs(nextY - d.y) < pR + 6 && Math.abs(nextX - d.x) < d.size / 2 - 2) {
               allowY = true;
@@ -539,21 +705,71 @@
 
       updateCurrentRoom();
 
-      // Walking Leg Swing Animation
       if (dx !== 0 || dy !== 0) {
         player.walkFrame += 0.25;
       } else {
         player.walkFrame = 0;
       }
 
-      // Present Pickups
+      // Update Wandering Enemies in Active Room
+      enemies.forEach(e => {
+        if (!e.active || e.roomId !== currentRoomIndex) return;
+
+        // Move stationary items vs mobile enemies
+        if (e.type !== 'fakepresent') {
+          e.x += e.vx;
+          e.y += e.vy;
+
+          // Bounce off room boundaries
+          const r = rooms[e.roomId];
+          if (e.x - e.size / 2 < r.x + 6 || e.x + e.size / 2 > r.x + r.w - 6) e.vx *= -1;
+          if (e.y - e.size / 2 < r.y + 6 || e.y + e.size / 2 > r.y + r.h - 6) e.vy *= -1;
+        }
+
+        // Enemy Collision with Stickman
+        const dist = Math.hypot(player.x - e.x, player.y - e.y);
+        if (dist < player.radius + e.size / 2) {
+          // Trigger Specific Enemy Effects
+          if (e.type === 'cupcake' || e.type === 'cake') {
+            // Evil Cupcakes & Birthday Cakes: -2 Health, Icing on screen for 3s
+            applyDamage(2, 'icing');
+            icingTimer = 3.0;
+            generateIcingSplatters();
+            playSound('icing');
+          } else if (e.type === 'balloon') {
+            // Evil Balloons: 0 Health damage, loud pop sound & pops
+            playSound('pop');
+            e.active = false; // Pops balloon
+          } else if (e.type === 'fakepresent') {
+            // Fake Presents: -5 Health
+            applyDamage(5, 'fakepresent');
+            e.active = false; // Trap triggered
+            playSound('hit');
+          } else if (e.type === 'candle') {
+            // Evil Candles: -10 Health, Burns stickman for 3s
+            applyDamage(10, 'candle');
+            player.burnTimer = 3.0;
+            playSound('hit');
+          } else if (e.type === 'toy') {
+            // Evil Toys: -3 Health, Hits stickman
+            applyDamage(3, 'toy');
+            // Knockback effect
+            player.x -= dx * 18;
+            player.y -= dy * 18;
+            playSound('hit');
+          }
+        }
+      });
+
+      // Real Present Collection
       presents.forEach(p => {
-        if (!p.collected) {
+        if (!p.collected && p.roomId === currentRoomIndex) {
           const dist = Math.hypot(player.x - p.x, player.y - p.y);
           if (dist < player.radius + p.size / 2) {
             p.collected = true;
             presentsRemaining--;
             presentsDisplay.innerText = presentsRemaining;
+            playSound('present');
 
             if (presentsRemaining === 0) {
               triggerLevelComplete();
@@ -572,15 +788,84 @@
       }, 1400);
     }
 
-    // DRAWING FUNCTIONS
+    // ENEMY DRAWING PROCEDURES
+    function drawEnemies() {
+      enemies.forEach(e => {
+        if (!e.active || e.roomId !== currentRoomIndex) return;
+
+        ctx.save();
+        ctx.translate(e.x, e.y);
+        const s = e.size;
+
+        if (e.type === 'cupcake') {
+          // Evil Cupcake
+          ctx.fillStyle = '#ff80ab';
+          ctx.beginPath();
+          ctx.arc(0, -2, s / 2, Math.PI, 0);
+          ctx.fill();
+          ctx.fillStyle = '#795548';
+          ctx.fillRect(-s / 2 + 2, -2, s - 4, s / 2);
+          // Angry eyes
+          ctx.fillStyle = '#ff1744';
+          ctx.fillRect(-4, -6, 3, 3);
+          ctx.fillRect(2, -6, 3, 3);
+        } else if (e.type === 'cake') {
+          // Evil Birthday Cake
+          ctx.fillStyle = '#e040fb';
+          ctx.fillRect(-s / 2, -s / 4, s, s / 2);
+          ctx.fillStyle = '#00e5ff';
+          ctx.fillRect(-s / 2 + 2, -s / 2, s - 4, s / 4);
+          // Angry Face
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(-4, -2, 3, 3);
+          ctx.fillRect(2, -2, 3, 3);
+        } else if (e.type === 'balloon') {
+          // Evil Balloon
+          ctx.fillStyle = '#ff1744';
+          ctx.beginPath();
+          ctx.arc(0, -2, s / 2, 0, Math.PI * 2);
+          ctx.fill();
+          // String
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(0, s / 2);
+          ctx.lineTo(0, s / 2 + 6);
+          ctx.stroke();
+        } else if (e.type === 'fakepresent') {
+          // Fake Present (Looks like normal present)
+          ctx.fillStyle = '#00e676';
+          ctx.fillRect(-s / 2, -s / 2, s, s);
+          ctx.fillStyle = '#ff1744';
+          ctx.fillRect(-s / 2, -1.5, s, 3);
+          ctx.fillRect(-1.5, -s / 2, 3, s);
+        } else if (e.type === 'candle') {
+          // Evil Candle
+          ctx.fillStyle = '#ffeb3b';
+          ctx.fillRect(-3, -s / 2, 6, s);
+          // Flame
+          ctx.fillStyle = '#ff5722';
+          ctx.beginPath();
+          ctx.arc(0, -s / 2 - 4, 4, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (e.type === 'toy') {
+          // Evil Toy (Bouncy robot)
+          ctx.fillStyle = '#00e5ff';
+          ctx.fillRect(-s / 2, -s / 2, s, s);
+          ctx.fillStyle = '#ffeb3b';
+          ctx.fillRect(-3, -3, 6, 6);
+        }
+
+        ctx.restore();
+      });
+    }
+
+    // DRAW HOUSE & FOG
     function drawHouse() {
-      // Render Rooms
       rooms.forEach((r) => {
-        // Floor
         ctx.fillStyle = r.theme.bg;
         ctx.fillRect(r.x, r.y, r.w, r.h);
 
-        // Party Confetti Pattern
         ctx.fillStyle = r.theme.wall;
         ctx.globalAlpha = 0.15;
         for (let c = 12; c < r.w; c += 28) {
@@ -590,7 +875,6 @@
         }
         ctx.globalAlpha = 1.0;
 
-        // Floor Balloons
         r.balloons.forEach(b => {
           ctx.fillStyle = b.color;
           ctx.beginPath();
@@ -598,31 +882,23 @@
           ctx.fill();
         });
 
-        // Room Wall Borders
         ctx.strokeStyle = r.theme.wall;
         ctx.lineWidth = 4;
         ctx.strokeRect(r.x, r.y, r.w, r.h);
       });
 
-      // Render Distinct Doorways
+      // Distinct Doorways
       doors.forEach(d => {
         const thickness = 10;
-
         if (d.type === 'vertical') {
-          // Yellow Floor Mat
           ctx.fillStyle = '#ffea00';
           ctx.fillRect(d.x - thickness / 2, d.y - d.size / 2, thickness, d.size);
-
-          // Cyan Frame Endposts
           ctx.fillStyle = '#00e5ff';
           ctx.fillRect(d.x - thickness / 2 - 2, d.y - d.size / 2 - 3, thickness + 4, 4);
           ctx.fillRect(d.x - thickness / 2 - 2, d.y + d.size / 2 - 1, thickness + 4, 4);
         } else {
-          // Yellow Floor Mat
           ctx.fillStyle = '#ffea00';
           ctx.fillRect(d.x - d.size / 2, d.y - thickness / 2, d.size, thickness);
-
-          // Cyan Frame Endposts
           ctx.fillStyle = '#00e5ff';
           ctx.fillRect(d.x - d.size / 2 - 3, d.y - thickness / 2 - 2, 4, thickness + 4);
           ctx.fillRect(d.x + d.size / 2 - 1, d.y - thickness / 2 - 2, 4, thickness + 4);
@@ -630,14 +906,12 @@
       });
     }
 
-    // Fog of War: Conceals all unvisited/inactive rooms
     function drawFogOfWar() {
       rooms.forEach((r, idx) => {
         if (idx !== currentRoomIndex) {
           ctx.fillStyle = 'rgba(5, 5, 8, 0.97)';
           ctx.fillRect(r.x - 2, r.y - 2, r.w + 4, r.h + 4);
 
-          // Dark Room Label
           ctx.fillStyle = '#444455';
           ctx.font = `${Math.max(10, 12 * scaleFactor)}px Courier New`;
           ctx.textAlign = 'center';
@@ -645,7 +919,6 @@
         }
       });
 
-      // Highlight doors connected to current room on top of fog
       doors.forEach(d => {
         if (d.roomA === currentRoomIndex || d.roomB === currentRoomIndex) {
           const thickness = 8;
@@ -665,18 +938,15 @@
 
     function drawPresents() {
       presents.forEach(p => {
-        // Render presents only if inside the current active room
         if (!p.collected && p.roomId === currentRoomIndex) {
           const s = p.size;
           ctx.fillStyle = p.color;
           ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
 
-          // Present Ribbon Cross
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(p.x - s / 2, p.y - 1.5, s, 3);
           ctx.fillRect(p.x - 1.5, p.y - s / 2, 3, s);
 
-          // Ribbon Bow
           ctx.fillStyle = '#ffeb3b';
           ctx.beginPath();
           ctx.arc(p.x, p.y, Math.max(1.5, 2.5 * scaleFactor), 0, Math.PI * 2);
@@ -686,6 +956,11 @@
     }
 
     function drawStickman(x, y, facing, walkFrame) {
+      ctx.save();
+      if (player.invulnerableTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
+        ctx.globalAlpha = 0.4; // Flash on hit
+      }
+
       ctx.strokeStyle = '#ffffff';
       ctx.fillStyle = '#ffffff';
       ctx.lineWidth = Math.max(1.2, 1.8 * scaleFactor);
@@ -712,6 +987,14 @@
       ctx.lineTo(x, headY - headRadius * 2.2);
       ctx.closePath();
       ctx.fill();
+
+      // Burn Effect Flame Overlay
+      if (player.burnTimer > 0) {
+        ctx.fillStyle = '#ff5722';
+        ctx.beginPath();
+        ctx.arc(x + (Math.random() - 0.5) * 6, y - 10, 8 * scaleFactor, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       // Eye
       ctx.fillStyle = '#ffffff';
@@ -748,29 +1031,49 @@
       ctx.moveTo(x, shoulderY);
       ctx.lineTo(x + facing * (4 * scaleFactor) + armSwing, shoulderY + 5 * scaleFactor);
       ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawScreenIcing() {
+      if (icingTimer > 0) {
+        ctx.save();
+        ctx.globalAlpha = Math.min(1.0, icingTimer);
+        icingSplatters.forEach(s => {
+          ctx.fillStyle = s.color;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
+      }
     }
 
     function draw() {
-      // Clear Background
       ctx.fillStyle = '#0a0a0f';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Render Simulation Layers
       drawHouse();
       drawPresents();
+      drawEnemies();
       drawStickman(player.x, player.y, player.facing, player.walkFrame);
       drawFogOfWar();
+      drawScreenIcing();
     }
 
-    function animate() {
-      updatePhysics();
+    let lastTime = performance.now();
+    function animate(now) {
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      updatePhysics(dt);
       draw();
       requestAnimationFrame(animate);
     }
 
     window.onload = function() {
       resizeCanvas();
-      animate();
+      requestAnimationFrame(animate);
     };
   </script>
 </body>
