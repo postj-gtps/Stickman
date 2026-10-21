@@ -51,9 +51,9 @@
 
  .stats-container {
  display: flex;
- gap: 20px;
+ gap: 16px;
  align-items: center;
- font-size: 15px;
+ font-size: 14px;
  font-weight: 900;
  text-shadow: 1px 1px 0px #000;
  }
@@ -61,7 +61,7 @@
  .stat-item {
  display: flex;
  align-items: center;
- gap: 6px;
+ gap: 4px;
  }
 
  .btn-reset {
@@ -69,8 +69,8 @@
  color: #ffffff;
  border: 2px solid #ffffff;
  border-radius: 8px;
- padding: 6px 18px;
- font-size: 14px;
+ padding: 6px 16px;
+ font-size: 13px;
  font-weight: 900;
  cursor: pointer;
  text-transform: uppercase;
@@ -128,10 +128,11 @@
  <h1>Stickman Ocean Diver</h1>
  <div class="stats-container">
  <div class="stat-item">LEVEL: <span id="level-display" style="color:#00f0ff">1</span></div>
+ <div class="stat-item">DEPTH: <span id="depth-display" style="color:#70e0ff">50.0m</span></div>
  <div class="stat-item">CARRIED: $<span id="carried-display" style="color:#ffcc00">0</span></div>
  <div class="stat-item">SECURED: $<span id="secured-display" style="color:#00ffcc">0</span></div>
  </div>
- <button class="btn-reset" onclick="resetGame()">Reset Game</button>
+ <button class="btn-reset" onclick="resetGame(); this.blur();">Reset Game</button>
  </div>
 
  <!-- Canvas Container -->
@@ -140,24 +141,32 @@
  </div>
 
  <div class="instructions">
- 🎮 Movement: [W][A][S][D] Keys Only | Open chests & swim treasure up to the Motorboat to clear levels!
+ 🎮 Movement: [W][A][S][D] Keys Only | Press [ENTER] or [E] to talk to Shopkeeper | Deliver treasure to Motorboat!
  </div>
 
  <script>
  const canvas = document.getElementById('simCanvas');
  const ctx = canvas.getContext('2d');
 
- // KEYBOARD INPUT STATE (Strictly WASD - Arrow keys explicitly blocked)
+ // KEYBOARD INPUT STATE (Strictly WASD - Arrow keys & Space explicitly blocked)
  const keys = {};
+
+ // GAME STATE MANAGERS ('intro', 'playing', 'shop', 'confirm_skip_shop', 'gameover')
+ let gameState = 'intro';
+
+ // SHOP VISIT TRACKER FOR EVEN LEVEL PROGRESSION
+ let hasVisitedShopThisLevel = false;
 
  // STICKMAN PLAYER STATE
  const player = {
  x: 0,
  y: 0,
- speed: 4.8,
+ baseSpeed: 2.4,
+ speed: 2.4,
  facing: 1, // 1 = Right, -1 = Left
  walkFrame: 0,
- invulnerableTimer: 0
+ invulnerableTimer: 0,
+ oxygenUpgradeLevel: 0
  };
 
  // MOTORBOAT DIVE BASE STATE
@@ -166,6 +175,14 @@
  y: 0,
  width: 110,
  height: 32
+ };
+
+ // SHOPKEEPER BOAT STATE (Appears on even levels)
+ const shopBoat = {
+ x: 0,
+ y: 0,
+ width: 130,
+ height: 38
  };
 
  // GAME ENVIRONMENT & MECHANICS STATE
@@ -182,15 +199,15 @@
  let alertTimer = 0;
  let alertColor = "#ffd700";
 
- let isGameOver = false;
-
- // OCTOPUS GRAB MECHANIC STATE
+ // OCTOPUS GRAB MECHANIC & TRAP ESCAPE STATE
  let grabbedByOctopusTimer = 0;
  let grabbingOctopus = null;
+ let escapePressesRemaining = 15;
 
  // ENTITIES
  let corals = [];
  let chests = [];
+ let ambientFish = [];
  let wreckedShip = null;
  let bubbles = [];
  let zapParticles = [];
@@ -205,29 +222,90 @@
  canvas.width = wrapper.clientWidth;
  canvas.height = wrapper.clientHeight;
  
- seabedY = canvas.height - 50;
+ updateSeabedDepth();
 
  if (player.x === 0 && player.y === 0) {
  resetGame();
  } else {
  calculateOxygenCapacity();
- motorboat.x = canvas.width / 2;
+ motorboat.x = canvas.width / 2 - 100;
  motorboat.y = surfaceY;
+ shopBoat.x = canvas.width / 2 + 100;
+ shopBoat.y = surfaceY;
  }
  }
 
  window.addEventListener('resize', resizeCanvas);
 
- // CONTROLS HANDLERS - STRICTLY WASD ONLY (Arrow keys explicitly blocked)
+ // CONTROLS HANDLERS - STRICTLY WASD ONLY
  window.addEventListener('keydown', (e) => {
  const key = e.key.toLowerCase();
+ 
+ // Explicitly block Spacebar and Arrow Keys from triggering page scroll or button clicks
+ if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', ' '].includes(e.code) || e.key === ' ') {
+ e.preventDefault();
+ }
+
+ // Exclusive WASD Movement Mapping
  if (['w', 'a', 's', 'd'].includes(key) || ['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
  e.preventDefault();
  keys[e.code] = true;
  keys[key] = true;
  }
- if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+
+ // ACTION KEYS: ENTER OR E
+ if (e.code === 'Enter' || e.key === 'Enter' || e.code === 'KeyE' || key === 'e') {
  e.preventDefault();
+
+ if (gameState === 'intro') {
+ gameState = 'playing';
+ return;
+ }
+
+ // Trap escape when grabbed by Octopus
+ if (grabbedByOctopusTimer > 0) {
+ escapePressesRemaining--;
+ if (escapePressesRemaining <= 0) {
+ grabbedByOctopusTimer = 0;
+ grabbingOctopus = null;
+ alertMessage = "⚡ FREED! BROKE OUT OF OCTOPUS TRAP! ⚡";
+ alertColor = "#00ffcc";
+ alertTimer = 90;
+ player.invulnerableTimer = 60;
+ }
+ return;
+ }
+
+ // Talk to Shopkeeper / Open Shop when near Shop Boat
+ if (gameState === 'playing' && (currentLevel % 2 === 0)) {
+ const distToShop = Math.hypot(player.x - shopBoat.x, player.y - surfaceY);
+ if (distToShop < 90 && player.y <= surfaceY + 30) {
+ hasVisitedShopThisLevel = true;
+ gameState = 'shop';
+ return;
+ }
+ }
+
+ // In Shop UI: ENTER exits shop and advances to next level
+ if (gameState === 'shop') {
+ closeShopAndAdvance();
+ return;
+ }
+ }
+
+ // HOTKEYS FOR SKIP SHOP CONFIRMATION DIALOG (Y / N)
+ if (gameState === 'confirm_skip_shop') {
+ if (key === 'y') {
+ advanceToNextLevel();
+ } else if (key === 'n') {
+ gameState = 'playing';
+ }
+ }
+
+ // Shop Quick Hotkeys (1 & 2)
+ if (gameState === 'shop') {
+ if (e.key === '1') buyOxygenUpgrade();
+ if (e.key === '2') buySpeedFins();
  }
  });
 
@@ -237,26 +315,68 @@
  keys[key] = false;
  });
 
+ // Touch/Click support for UI Dialogs & Shop
+ canvas.addEventListener('click', (e) => {
+ const rect = canvas.getBoundingClientRect();
+ const clickX = e.clientX - rect.left;
+ const clickY = e.clientY - rect.top;
+
+ if (gameState === 'intro') {
+ gameState = 'playing';
+ return;
+ }
+
+ if (gameState === 'shop') {
+ handleShopClick(clickX, clickY);
+ return;
+ }
+
+ if (gameState === 'confirm_skip_shop') {
+ handleSkipShopClick(clickX, clickY);
+ return;
+ }
+ });
+
+ function updateSeabedDepth() {
+ const maxAvailableDepth = canvas.height - 35 - surfaceY;
+ const baseWaterDepth = maxAvailableDepth * 0.60;
+ const scaledWaterDepth = baseWaterDepth * Math.pow(1.05, currentLevel - 1);
+ 
+ seabedY = Math.min(canvas.height - 35, surfaceY + scaledWaterDepth);
+ }
+
  function calculateOxygenCapacity() {
- // 5.0x travel time from surface to seabed
  const verticalDistance = seabedY - surfaceY;
  const travelTimeFrames = verticalDistance / player.speed;
- maxOxygen = travelTimeFrames * 5.0;
+ const baseCapacity = travelTimeFrames * 5.0;
+ maxOxygen = baseCapacity * (1 + player.oxygenUpgradeLevel * 0.25);
  currentOxygen = maxOxygen;
  }
 
  function generateSeabedFeatures() {
  corals = [];
  chests = [];
+ ambientFish = [];
  bubbles = [];
 
- const coralCount = Math.floor(canvas.width / 40);
+ const coralCount = Math.floor(canvas.width / 35);
  for (let i = 0; i < coralCount; i++) {
  const cx = Math.random() * (canvas.width - 40) + 20;
- const type = Math.floor(Math.random() * 3);
+ const type = Math.floor(Math.random() * 5);
  const height = 25 + Math.random() * 45;
- const colorHue = [120, 310, 35, 270, 190][Math.floor(Math.random() * 5)];
+ const colorHue = [120, 310, 35, 270, 190, 50, 160][Math.floor(Math.random() * 7)];
  corals.push({ x: cx, height: height, type: type, hue: colorHue });
+ }
+
+ const fishCount = 6 + Math.floor(Math.random() * 5);
+ for (let i = 0; i < fishCount; i++) {
+ ambientFish.push({
+ x: Math.random() * canvas.width,
+ y: surfaceY + 40 + Math.random() * Math.max(20, seabedY - surfaceY - 80),
+ vx: (0.5 + Math.random() * 0.8) * (Math.random() < 0.5 ? 1 : -1),
+ color: ['#ff9900', '#00ffff', '#ff00ff', '#ffff00', '#00ff66'][Math.floor(Math.random() * 5)],
+ size: 8 + Math.random() * 6
+ });
  }
 
  if (Math.random() < 0.15) {
@@ -269,7 +389,6 @@
  wreckedShip = null;
  }
 
- // Hidden Treasure Chests on each level (3 to 5 chests)
  const numChests = 3 + Math.floor(Math.random() * 3);
  for (let i = 0; i < numChests; i++) {
  const chestX = 70 + Math.random() * (canvas.width - 140);
@@ -295,12 +414,11 @@
  const minY = surfaceY + 50;
  const maxY = seabedY - 50;
 
- // Speeds slowed down to 66% of baseline
  for (let i = 0; i < numJellyfish; i++) {
  const dir = Math.random() < 0.5 ? 1 : -1;
  jellyfishList.push({
  x: Math.random() * (canvas.width - 60) + 30,
- y: minY + Math.random() * (maxY - minY),
+ y: minY + Math.random() * Math.max(10, maxY - minY),
  vx: (0.8 + Math.random() * 1.0) * dir,
  phase: Math.random() * Math.PI * 2,
  radius: 18
@@ -311,7 +429,7 @@
  const dir = Math.random() < 0.5 ? 1 : -1;
  octopusList.push({
  x: Math.random() * (canvas.width - 80) + 40,
- y: minY + Math.random() * (maxY - minY),
+ y: minY + Math.random() * Math.max(10, maxY - minY),
  vx: (0.66 + Math.random() * 0.8) * dir,
  vy: (Math.random() - 0.5) * 0.5,
  pulse: Math.random() * Math.PI * 2,
@@ -323,7 +441,7 @@
  const dir = Math.random() < 0.5 ? 1 : -1;
  sharkList.push({
  x: Math.random() * (canvas.width - 100) + 50,
- y: minY + Math.random() * (maxY - minY),
+ y: minY + Math.random() * Math.max(10, maxY - minY),
  vx: (1.45 + Math.random() * 1.05) * dir,
  tailAngle: 0,
  radius: 28
@@ -332,19 +450,24 @@
  }
 
  function resetGame() {
+ if (document.activeElement) document.activeElement.blur();
  currentLevel = 1;
  carriedTreasure = 0;
  securedTreasure = 0;
- isGameOver = false;
+ gameState = 'intro';
  grabbedByOctopusTimer = 0;
  grabbingOctopus = null;
+ player.oxygenUpgradeLevel = 0;
+ player.speed = player.baseSpeed;
  resetLevel();
  }
 
  function resetLevel() {
  surfaceY = 65;
- seabedY = canvas.height - 50;
- player.x = canvas.width / 2;
+ hasVisitedShopThisLevel = false;
+ updateSeabedDepth();
+
+ player.x = canvas.width / 2 - 100;
  player.y = surfaceY;
  player.facing = 1;
  player.walkFrame = 0;
@@ -353,8 +476,10 @@
  grabbingOctopus = null;
  carriedTreasure = 0;
 
- motorboat.x = canvas.width / 2;
+ motorboat.x = canvas.width / 2 - 100;
  motorboat.y = surfaceY;
+ shopBoat.x = canvas.width / 2 + 100;
+ shopBoat.y = surfaceY;
 
  calculateOxygenCapacity();
  generateSeabedFeatures();
@@ -364,6 +489,8 @@
 
  function updateUI() {
  document.getElementById('level-display').innerText = currentLevel;
+ const depthMeters = (50 * Math.pow(1.05, currentLevel - 1)).toFixed(1);
+ document.getElementById('depth-display').innerText = `${depthMeters}m`;
  document.getElementById('carried-display').innerText = carriedTreasure;
  document.getElementById('secured-display').innerText = securedTreasure;
  }
@@ -395,13 +522,92 @@
  }
  }
 
+ function buyOxygenUpgrade() {
+ if (securedTreasure >= 200) {
+ securedTreasure -= 200;
+ player.oxygenUpgradeLevel++;
+ calculateOxygenCapacity();
+ alertMessage = "🛒 BOUGHT OXYGEN TANK UPGRADE (+25%)!";
+ alertColor = "#00ffcc";
+ alertTimer = 90;
+ updateUI();
+ } else {
+ alertMessage = "❌ NEED $200 FOR OXYGEN UPGRADE!";
+ alertColor = "#ff3300";
+ alertTimer = 90;
+ }
+ }
+
+ function buySpeedFins() {
+ if (securedTreasure >= 150) {
+ securedTreasure -= 150;
+ player.speed += 0.4;
+ alertMessage = "🛒 BOUGHT SPEED FINS (+15% SWIM SPEED)!";
+ alertColor = "#00ffcc";
+ alertTimer = 90;
+ updateUI();
+ } else {
+ alertMessage = "❌ NEED $150 FOR SPEED FINS!";
+ alertColor = "#ff3300";
+ alertTimer = 90;
+ }
+ }
+
+ function advanceToNextLevel() {
+ gameState = 'playing';
+ currentLevel++;
+ alertMessage = `🎉 LEVEL ${currentLevel} CLEARED! Ocean 5% Deeper! 🎉`;
+ alertColor = "#00ffcc";
+ alertTimer = 150;
+ resetLevel();
+ }
+
+ function closeShopAndAdvance() {
+ advanceToNextLevel();
+ }
+
+ function handleShopClick(clickX, clickY) {
+ const centerX = canvas.width / 2;
+ const centerY = canvas.height / 2;
+
+ // Buy Oxygen Upgrade ($200)
+ if (clickX > centerX - 200 && clickX < centerX + 200 && clickY > centerY - 40 && clickY < centerY - 5) {
+ buyOxygenUpgrade();
+ }
+
+ // Buy Speed Fins ($150)
+ if (clickX > centerX - 200 && clickX < centerX + 200 && clickY > centerY + 10 && clickY < centerY + 45) {
+ buySpeedFins();
+ }
+
+ // Close Shop & Continue Button
+ if (clickX > centerX - 180 && clickX < centerX + 180 && clickY > centerY + 65 && clickY < centerY + 105) {
+ closeShopAndAdvance();
+ }
+ }
+
+ function handleSkipShopClick(clickX, clickY) {
+ const centerX = canvas.width / 2;
+ const centerY = canvas.height / 2;
+
+ // Click YES [Y] -> Advance to next level
+ if (clickX > centerX - 160 && clickX < centerX - 10 && clickY > centerY + 30 && clickY < centerY + 75) {
+ advanceToNextLevel();
+ }
+
+ // Click NO [N] -> Exit dialog, stay on current level to allow shop interaction
+ if (clickX > centerX + 10 && clickX < centerX + 160 && clickY > centerY + 30 && clickY < centerY + 75) {
+ gameState = 'playing';
+ }
+ }
+
  function updatePhysics() {
- if (isGameOver) return;
+ if (gameState !== 'playing') return;
 
  waveOffset += 0.05;
  if (player.invulnerableTimer > 0) player.invulnerableTimer--;
 
- // --- 1. MOVEMENT & OCTOPUS GRAB MECHANIC ---
+ // --- 1. MOVEMENT & OCTOPUS TRAP MECHANIC ---
  if (grabbedByOctopusTimer > 0) {
  grabbedByOctopusTimer--;
  if (grabbingOctopus) {
@@ -469,6 +675,13 @@
  if (p.life <= 0) zapParticles.splice(i, 1);
  }
 
+ // Ambient Swimming Fish
+ ambientFish.forEach(f => {
+ f.x += f.vx;
+ if (f.vx > 0 && f.x > canvas.width + 20) f.x = -20;
+ if (f.vx < 0 && f.x < -20) f.x = canvas.width + 20;
+ });
+
  // --- 2. OXYGEN MECHANIC ---
  if (player.y > surfaceY) {
  currentOxygen -= 1;
@@ -478,7 +691,6 @@
  return;
  }
  } else {
- // Replenish oxygen at surface
  currentOxygen = Math.min(maxOxygen, currentOxygen + 6);
  }
 
@@ -528,9 +740,10 @@
  if (grabbedByOctopusTimer <= 0 && player.invulnerableTimer <= 0) {
  const dist = Math.hypot(player.x - octo.x, player.y - octo.y);
  if (dist < octo.radius + 12) {
- grabbedByOctopusTimer = 300;
+ grabbedByOctopusTimer = 180;
+ escapePressesRemaining = 15;
  grabbingOctopus = octo;
- alertMessage = "🐙 OCTOPUS GRAB! Trapped for 5 Seconds! 🐙";
+ alertMessage = "🐙 OCTOPUS GRAB! SPAM [ENTER] 15x TO ESCAPE! 🐙";
  alertColor = "#ff6600";
  alertTimer = 180;
  }
@@ -552,14 +765,14 @@
 
  const dist = Math.hypot(player.x - shark.x, player.y - shark.y);
  if (dist < shark.radius + 10) {
- isGameOver = true;
+ gameState = 'gameover';
  alertMessage = "🦈 EATEN BY SHARK! GAME OVER! 🦈";
  alertColor = "#ff0000";
  alertTimer = 9999;
  }
  });
 
- // --- 4. CHEST INTERACTION & MOTORBOAT DELIVERIES ---
+ // --- 4. CHESTS & MOTORBOAT DELIVERIES ---
 
  chests.forEach(chest => {
  if (!chest.opened) {
@@ -589,21 +802,28 @@
  });
  updateUI();
  }
- }
 
+ // --- 5. LEVEL CLEAR & ESCAPE CLAUSE CHECK ---
  const allOpened = chests.every(c => c.opened);
  const allDelivered = chests.every(c => c.delivered);
  if (allOpened && allDelivered && carriedTreasure === 0 && chests.length > 0) {
- currentLevel++;
- alertMessage = `🎉 LEVEL ${currentLevel} CLEARED! Diving Deeper! 🎉`;
- alertColor = "#00ffcc";
- alertTimer = 150;
- resetLevel();
+ if (currentLevel % 2 === 0) {
+ if (hasVisitedShopThisLevel) {
+ // Player visited shop and returned to dive boat -> next level!
+ advanceToNextLevel();
+ } else {
+ // Player went to dive boat WITHOUT visiting shop -> trigger escape clause popup!
+ gameState = 'confirm_skip_shop';
+ }
+ } else {
+ advanceToNextLevel();
+ }
+ }
  }
  }
 
  function triggerOxygenDepletion() {
- isGameOver = true;
+ gameState = 'gameover';
  alertMessage = "🫧 RAN OUT OF OXYGEN! GAME OVER! 🫧";
  alertColor = "#ff0055";
  alertTimer = 9999;
@@ -616,7 +836,7 @@
  oceanGrad.addColorStop(0, '#0077be');
  oceanGrad.addColorStop(0.3, '#004f8b');
  oceanGrad.addColorStop(0.8, '#002654');
- oceanGrad.addColorStop(1, '#00112c');
+ oceanGrad.addColorStop(1, '#000c1e');
  ctx.fillStyle = oceanGrad;
  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -712,6 +932,66 @@
  ctx.restore();
  }
 
+ function drawShopKeeperBoat() {
+ ctx.save();
+ const bx = shopBoat.x;
+ const by = surfaceY - 10;
+
+ ctx.fillStyle = '#9933ff';
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 3;
+
+ ctx.beginPath();
+ ctx.moveTo(bx - 60, by);
+ ctx.lineTo(bx - 48, by + 24);
+ ctx.lineTo(bx + 52, by + 24);
+ ctx.lineTo(bx + 68, by - 2);
+ ctx.closePath();
+ ctx.fill();
+ ctx.stroke();
+
+ ctx.fillStyle = '#ffcc00';
+ ctx.fillRect(bx - 40, by - 34, 80, 10);
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 2;
+ ctx.strokeRect(bx - 40, by - 34, 80, 10);
+
+ ctx.fillStyle = '#ffcc99';
+ ctx.beginPath();
+ ctx.arc(bx, by - 18, 10, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.fillStyle = '#3399ff';
+ ctx.fillRect(bx - 12, by - 8, 24, 10);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = '900 11px Comic Sans MS, sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText('🛒 SHOP', bx, by + 16);
+
+ const bounce = Math.sin(Date.now() * 0.005) * 4;
+ ctx.fillStyle = '#ffcc00';
+ ctx.fillRect(bx - 60, by - 55 + bounce, 120, 18);
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 2;
+ ctx.strokeRect(bx - 60, by - 55 + bounce, 120, 18);
+
+ ctx.fillStyle = '#000000';
+ ctx.font = '900 10px Comic Sans MS, sans-serif';
+ ctx.fillText('🛒 SHOP OPEN!', bx, by - 42 + bounce);
+
+ const distToShop = Math.hypot(player.x - bx, player.y - surfaceY);
+ if (distToShop < 90 && player.y <= surfaceY + 30 && gameState === 'playing') {
+ ctx.fillStyle = '#00ffcc';
+ ctx.font = '900 13px Comic Sans MS, sans-serif';
+ ctx.shadowColor = '#000000';
+ ctx.shadowBlur = 4;
+ ctx.fillText('👉 PRESS [ENTER] OR [E] TO TALK TO SHOPKEEPER 👈', bx, by - 65 + bounce);
+ }
+
+ ctx.restore();
+ }
+
  function drawCoralsAndPlants() {
  corals.forEach(c => {
  ctx.save();
@@ -734,12 +1014,56 @@
  ctx.moveTo(c.x, seabedY - c.height + 6);
  ctx.lineTo(c.x + 12, seabedY - c.height - 10);
  ctx.stroke();
- } else {
+ } else if (c.type === 2) {
  ctx.beginPath();
  ctx.arc(c.x, seabedY - 12, 15, Math.PI, 0);
  ctx.fill();
  ctx.stroke();
+ } else if (c.type === 3) {
+ ctx.beginPath();
+ ctx.moveTo(c.x, seabedY);
+ ctx.lineTo(c.x - 14, seabedY - c.height);
+ ctx.lineTo(c.x + 14, seabedY - c.height);
+ ctx.closePath();
+ ctx.fill();
+ ctx.stroke();
+ } else {
+ for (let a = -10; a <= 10; a += 5) {
+ ctx.beginPath();
+ ctx.moveTo(c.x, seabedY);
+ ctx.quadraticCurveTo(c.x + a * 2, seabedY - 15, c.x + a, seabedY - 22);
+ ctx.lineWidth = 4;
+ ctx.stroke();
  }
+ }
+ ctx.restore();
+ });
+ }
+
+ function drawAmbientFish() {
+ ambientFish.forEach(f => {
+ ctx.save();
+ ctx.translate(f.x, f.y);
+ const facing = f.vx >= 0 ? 1 : -1;
+ ctx.scale(facing, 1);
+
+ ctx.fillStyle = f.color;
+ ctx.beginPath();
+ ctx.ellipse(0, 0, f.size, f.size * 0.6, 0, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.beginPath();
+ ctx.moveTo(-f.size, 0);
+ ctx.lineTo(-f.size - 6, -5);
+ ctx.lineTo(-f.size - 6, 5);
+ ctx.closePath();
+ ctx.fill();
+
+ ctx.fillStyle = '#ffffff';
+ ctx.beginPath();
+ ctx.arc(f.size * 0.4, -2, 2, 0, Math.PI * 2);
+ ctx.fill();
+
  ctx.restore();
  });
  }
@@ -1025,6 +1349,14 @@
  ctx.stroke();
  }
 
+ // Spam ENTER Escape Prompt overlay when trapped
+ if (grabbedByOctopusTimer > 0) {
+ ctx.fillStyle = '#ff0055';
+ ctx.font = '900 14px Comic Sans MS, sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText(`🚨 SPAM ENTER TO ESCAPE! (${escapePressesRemaining} LEFT) 🚨`, x, y - 40);
+ }
+
  ctx.restore();
  }
 
@@ -1082,7 +1414,7 @@
  }
 
  function drawAlerts() {
- if (alertTimer > 0 && !isGameOver) {
+ if (alertTimer > 0 && gameState === 'playing') {
  alertTimer--;
  ctx.save();
  ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
@@ -1099,11 +1431,165 @@
  }
  }
 
- function drawGameOverScreen() {
- if (!isGameOver) return;
+ function drawIntroScreen() {
+ if (gameState !== 'intro') return;
 
  ctx.save();
- ctx.fillStyle = 'rgba(3, 10, 22, 0.88)';
+ ctx.fillStyle = 'rgba(3, 15, 35, 0.92)';
+ ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+ const centerX = canvas.width / 2;
+ const centerY = canvas.height / 2;
+
+ // Scuba Diver NPC Avatar
+ ctx.fillStyle = '#00d2ff';
+ ctx.beginPath();
+ ctx.arc(centerX, centerY - 110, 36, 0, Math.PI * 2);
+ ctx.fill();
+
+ // Goggles
+ ctx.fillStyle = '#030a16';
+ ctx.fillRect(centerX - 20, centerY - 120, 40, 16);
+ ctx.fillStyle = '#00ffff';
+ ctx.fillRect(centerX - 16, centerY - 118, 32, 12);
+
+ // Title & Dialogue Box
+ ctx.fillStyle = '#ffffff';
+ ctx.font = '900 28px Comic Sans MS, sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText('🤿 SCUBA DIVER GUIDE 🤿', centerX, centerY - 45);
+
+ ctx.fillStyle = 'rgba(7, 34, 66, 0.9)';
+ ctx.strokeStyle = '#00f0ff';
+ ctx.lineWidth = 3;
+ ctx.fillRect(centerX - 280, centerY - 25, 560, 140);
+ ctx.strokeRect(centerX - 280, centerY - 25, 560, 140);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = '900 15px Comic Sans MS, sans-serif';
+ ctx.fillText('"Welcome Diver! Collect treasure from chests at the bottom', centerX, centerY + 5);
+ ctx.fillText('of the ocean, then swim back up to our Motorboat!', centerX, centerY + 30);
+ ctx.fillText('Avoid sea creatures! If trapped by an Octopus, SPAM [ENTER] 15x!"', centerX, centerY + 55);
+
+ // Start Button
+ ctx.fillStyle = '#ff0055';
+ ctx.fillRect(centerX - 160, centerY + 80, 320, 42);
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 2;
+ ctx.strokeRect(centerX - 160, centerY + 80, 320, 42);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = '900 18px Comic Sans MS, sans-serif';
+ ctx.fillText('PRESS [ENTER] TO START DIVE!', centerX, centerY + 107);
+
+ ctx.restore();
+ }
+
+ function drawShopScreen() {
+ if (gameState !== 'shop') return;
+
+ ctx.save();
+ ctx.fillStyle = 'rgba(3, 15, 35, 0.92)';
+ ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+ const centerX = canvas.width / 2;
+ const centerY = canvas.height / 2;
+
+ ctx.fillStyle = '#ffcc00';
+ ctx.font = '900 28px Comic Sans MS, sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText('🛒 BOAT SHOPKEEPER 🛒', centerX, centerY - 110);
+
+ ctx.fillStyle = '#00ffcc';
+ ctx.font = '900 18px Comic Sans MS, sans-serif';
+ ctx.fillText(`Secured Coins Available: $${securedTreasure}`, centerX, centerY - 75);
+
+ // 1. Oxygen Tank Upgrade Button ($200)
+ ctx.fillStyle = securedTreasure >= 200 ? '#0077be' : '#444444';
+ ctx.fillRect(centerX - 200, centerY - 40, 400, 35);
+ ctx.strokeStyle = '#00f0ff';
+ ctx.lineWidth = 2;
+ ctx.strokeRect(centerX - 200, centerY - 40, 400, 35);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = '900 14px Comic Sans MS, sans-serif';
+ ctx.fillText(`[1] Buy Oxygen Tank (+25% Capacity) - $200 (Lvl ${player.oxygenUpgradeLevel})`, centerX, centerY - 18);
+
+ // 2. Speed Fins Button ($150)
+ ctx.fillStyle = securedTreasure >= 150 ? '#0077be' : '#444444';
+ ctx.fillRect(centerX - 200, centerY + 10, 400, 35);
+ ctx.strokeRect(centerX - 200, centerY + 10, 400, 35);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.fillText(`[2] Buy Speed Fins (+15% Swim Speed) - $150`, centerX, centerY + 32);
+
+ // 3. Continue / Dive Deeper Button
+ ctx.fillStyle = '#ff0055';
+ ctx.fillRect(centerX - 180, centerY + 65, 360, 40);
+ ctx.strokeStyle = '#ffffff';
+ ctx.strokeRect(centerX - 180, centerY + 65, 360, 40);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = '900 16px Comic Sans MS, sans-serif';
+ ctx.fillText('PRESS [ENTER] TO CONTINUE DIVING', centerX, centerY + 91);
+
+ ctx.restore();
+ }
+
+ function drawConfirmSkipShopScreen() {
+ if (gameState !== 'confirm_skip_shop') return;
+
+ ctx.save();
+ ctx.fillStyle = 'rgba(3, 15, 35, 0.94)';
+ ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+ const centerX = canvas.width / 2;
+ const centerY = canvas.height / 2;
+
+ // Dialog Modal Box
+ ctx.fillStyle = 'rgba(7, 34, 66, 0.95)';
+ ctx.strokeStyle = '#ffd700';
+ ctx.lineWidth = 4;
+ ctx.fillRect(centerX - 280, centerY - 90, 560, 180);
+ ctx.strokeRect(centerX - 280, centerY - 90, 560, 180);
+
+ ctx.fillStyle = '#ffd700';
+ ctx.font = '900 20px Comic Sans MS, sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText('⚠️ UNSPENT TREASURE DETECTED! ⚠️', centerX, centerY - 55);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = '900 15px Comic Sans MS, sans-serif';
+ ctx.fillText('You have unspent treasure.', centerX, centerY - 25);
+ ctx.fillText('Are you sure you don\'t want to buy anything?', centerX, centerY - 2);
+
+ // YES Button [Y]
+ ctx.fillStyle = '#ff0055';
+ ctx.fillRect(centerX - 160, centerY + 30, 150, 45);
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 2;
+ ctx.strokeRect(centerX - 160, centerY + 30, 150, 45);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = '900 16px Comic Sans MS, sans-serif';
+ ctx.fillText('YES [Y]', centerX - 85, centerY + 58);
+
+ // NO Button [N]
+ ctx.fillStyle = '#0077be';
+ ctx.fillRect(centerX + 10, centerY + 30, 150, 45);
+ ctx.strokeRect(centerX + 10, centerY + 30, 150, 45);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.fillText('NO [N]', centerX + 85, centerY + 58);
+
+ ctx.restore();
+ }
+
+ function drawGameOverScreen() {
+ if (gameState !== 'gameover') return;
+
+ ctx.save();
+ ctx.fillStyle = 'rgba(3, 10, 22, 0.92)';
  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
  ctx.fillStyle = '#ff0055';
@@ -1132,8 +1618,10 @@
  function draw() {
  drawBackground();
  drawMotorboat();
+ if (currentLevel % 2 === 0 || gameState === 'shop') drawShopKeeperBoat();
  drawWreckedShip();
  drawCoralsAndPlants();
+ drawAmbientFish();
  drawChests();
  drawJellyfish();
  drawOctopus();
@@ -1143,6 +1631,9 @@
  drawStickman(player.x, player.y, player.facing, player.walkFrame);
  drawOxygenMeter();
  drawAlerts();
+ drawIntroScreen();
+ drawShopScreen();
+ drawConfirmSkipShopScreen();
  drawGameOverScreen();
  }
 
