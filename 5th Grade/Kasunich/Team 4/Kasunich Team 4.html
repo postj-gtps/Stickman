@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Stickman Engine - Pac-Man Maze</title>
+ <title>Stickman Beast Run - Full Maze Patrol Ostrich</title>
  <style>
  * {
  box-sizing: border-box;
@@ -14,7 +14,7 @@
  }
 
  body {
- background-color: #000000;
+ background-color: #060612;
  color: #ffffff;
  display: flex;
  flex-direction: column;
@@ -22,19 +22,22 @@
  justify-content: flex-start;
  height: 100vh;
  overflow: hidden;
- padding: 16px;
+ padding: 12px;
  }
 
- /* Top Header Bar */
+ /* Header & UI Bar */
  #header {
  display: flex;
  justify-content: space-between;
  align-items: center;
  width: 100%;
  max-width: 1100px;
- margin-bottom: 12px;
- padding-bottom: 8px;
- border-bottom: 1px solid #ffffff;
+ margin-bottom: 8px;
+ padding: 10px 16px;
+ background: #121228;
+ border: 2px solid #ff007f;
+ border-radius: 10px;
+ box-shadow: 0 0 15px rgba(255, 0, 127, 0.3);
  }
 
  h1 {
@@ -42,34 +45,64 @@
  letter-spacing: 2px;
  text-transform: uppercase;
  font-weight: bold;
+ color: #00ffff;
+ text-shadow: 0 0 8px #00ffff;
  }
 
- .stats {
- font-size: 16px;
+ .stats-container {
+ display: flex;
+ gap: 16px;
+ align-items: center;
+ font-size: 14px;
  font-weight: bold;
- letter-spacing: 2px;
  text-transform: uppercase;
  }
 
+ .stat-box {
+ display: flex;
+ align-items: center;
+ gap: 6px;
+ }
+
+ .egg-status {
+ padding: 6px 12px;
+ border-radius: 6px;
+ font-size: 12px;
+ font-weight: bold;
+ background: #332200;
+ border: 2px solid #ffd700;
+ color: #ffd700;
+ text-shadow: 0 0 4px #ffd700;
+ }
+
+ .egg-status.collected {
+ background: #004411;
+ border-color: #00ff66;
+ color: #00ff66;
+ text-shadow: 0 0 8px #00ff66;
+ }
+
  .btn-reset {
- background: transparent;
+ background: #ff0055;
  color: #ffffff;
- border: 1px solid #ffffff;
- padding: 6px 16px;
- font-size: 14px;
+ border: none;
+ padding: 8px 16px;
+ font-size: 12px;
  font-weight: bold;
  cursor: pointer;
  text-transform: uppercase;
  letter-spacing: 1px;
+ border-radius: 6px;
+ box-shadow: 0 0 10px #ff0055;
  transition: all 0.15s ease-in-out;
  }
 
  .btn-reset:hover {
- background: #ffffff;
- color: #000000;
+ background: #ff3388;
+ transform: scale(1.05);
  }
 
- /* Main Canvas Container */
+ /* Main Canvas Wrapper */
  #canvas-wrapper {
  position: relative;
  width: 100%;
@@ -81,46 +114,56 @@
  }
 
  canvas {
- background-color: #000000;
- border: 1px solid #ffffff;
+ background-color: #08081a;
+ border: 3px solid #00ffff;
+ border-radius: 10px;
+ box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
  display: block;
  width: 100%;
  height: 100%;
  }
 
  .instructions {
- margin-top: 8px;
- font-size: 11px;
- color: #888888;
+ margin-top: 6px;
+ font-size: 12px;
+ font-weight: bold;
+ color: #00ffff;
  text-align: center;
+ letter-spacing: 1px;
+ }
+
+ .highlight {
+ color: #ffff00;
  }
  </style>
 </head>
 <body>
 
- <!-- Header Section -->
+ <!-- Header Bar -->
  <div id="header">
- <h1>Stickman Engine</h1>
- <div class="stats">
- LEVEL: <span id="level-display" style="color: #2121ff;">1</span>
+ <h1>Stickman Beast Run</h1>
+ <div class="stats-container">
+ <div class="stat-box">LEVEL: <span id="level-display" style="color: #00ffff;">1</span></div>
+ <div class="stat-box">HP: <span id="hp-display" style="color: #ff3366;">❤️❤️❤️</span></div>
+ <div id="egg-status" class="egg-status">🥚 GOLDEN EGG NEEDED!</div>
  </div>
- <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+ <button class="btn-reset" onclick="resetGame()">Reset Game</button>
  </div>
 
- <!-- Canvas Container -->
+ <!-- Canvas Wrapper -->
  <div id="canvas-wrapper">
  <canvas id="simCanvas"></canvas>
  </div>
 
  <div class="instructions">
- [WASD] Move &nbsp;|&nbsp; Navigate the maze to reach the EXIT!
+ Movement: <span class="highlight">[WASD] ONLY</span> &nbsp;|&nbsp; 🥚 Find Golden Egg &nbsp;|&nbsp; 🚪 Reach Exit!
  </div>
 
  <script>
  const canvas = document.getElementById('simCanvas');
  const ctx = canvas.getContext('2d');
 
- // KEYBOARD INPUT STATE
+ // KEYBOARD INPUT STATE - EXCLUSIVELY WASD MOVEMENT
  const keys = {};
 
  // MAZE CONFIGURATION
@@ -129,41 +172,94 @@
  let maze = [];
  let currentLevel = 1;
 
- // Pac-Man inspired neon palette per level
  const LEVEL_COLORS = [
- '#2121FF', // Pac-Man Classic Blue
- '#FF007F', // Neon Pink
  '#00FFFF', // Cyan
- '#FF9900', // Neon Orange
+ '#FF007F', // Neon Pink
  '#00FF66', // Bright Green
+ '#FF9900', // Neon Orange
  '#B537F7', // Electric Purple
- '#FF3333', // Crimson Red
- '#FFFF00'  // Pac-Man Yellow
+ '#FFFF00', // Yellow
+ '#FF3333'  // Crimson Red
  ];
 
- // STICKMAN PLAYER STATE
+ // GAME STATE
+ let playerHp = 3;
+ let invincibilityTimer = 0;
+ let hasGoldenEgg = false;
+ let eggsLaidCount = 0;
+ let goldenEggTargetIndex = 1; // Chosen randomly between 1 and 10
+
+ // ENTITIES & PARTICLES
+ let eggs = [];       // Ostrich eggs
+ let projectiles = [];// Pizza mozzarella shots
+ let particles = [];  // Visual explosion particles
+
+ // STICKMAN PLAYER
  const player = {
  x: 0,
  y: 0,
  radius: 11,
- speed: 3.5,
- facing: 1, // 1 = Right, -1 = Left
+ speed: 3.8,
+ facing: 1,
  walkFrame: 0
+ };
+
+ // OSTRICH FULL-MAZE PATROL
+ const ostrich = {
+ x: 0, y: 0,
+ speed: 4.8,       // Rapid running speed through corridors
+ radius: 15,
+ eggTimer: 180,    // Lays egg every 3 seconds (180 frames)
+ path: [],         // Full patrol waypoint array
+ pathIndex: 0,     // Target waypoint index
+ angle: Math.PI    // Orientation angle for drawing
+ };
+
+ const kangaroo = {
+ x: 0, y: 0,
+ radius: 16,
+ speed: 1.8,
+ state: 'pursue', // pursue, preparing, jumping, recharging
+ stateTimer: 0,
+ jumpStartX: 0, jumpStartY: 0,
+ targetX: 0, targetY: 0,
+ rechargeTimer: 0
+ };
+
+ const pizza = {
+ x: 0, y: 0,
+ radius: 16,
+ shootTimer: 90,
+ shotsFired: 0,
+ angle: 0
  };
 
  function getLevelColor() {
  return LEVEL_COLORS[(currentLevel - 1) % LEVEL_COLORS.length];
  }
 
- function updateLevelUI() {
- const display = document.getElementById('level-display');
- if (display) {
- display.textContent = currentLevel;
- display.style.color = getLevelColor();
+ function updateUI() {
+ document.getElementById('level-display').textContent = currentLevel;
+ document.getElementById('level-display').style.color = getLevelColor();
+
+ // Hearts display
+ let hearts = '';
+ for (let i = 0; i < playerHp; i++) hearts += '❤️';
+ if (playerHp <= 0) hearts = '💀 DEAD';
+ document.getElementById('hp-display').textContent = hearts;
+
+ // Golden Egg Badge
+ const eggBox = document.getElementById('egg-status');
+ if (hasGoldenEgg) {
+ eggBox.textContent = '✨ 🥚 GOLDEN EGG SECURED!';
+ eggBox.classList.add('collected');
+ } else {
+ eggBox.textContent = `🥚 GOLDEN EGG NEEDED! (${eggsLaidCount}/10)`;
+ eggBox.classList.remove('collected');
  }
  }
 
- // RANDOMIZED MAZE GENERATOR (Depth-First Search)
+ // RANDOM MAZE GENERATOR (Depth-First Search)
  function generateMaze(cols, rows) {
  const grid = [];
  for (let r = 0; r < rows; r++) {
@@ -218,26 +314,85 @@
  break;
  }
  }
-
  return grid;
+ }
+
+ // OSTRICH PATROL PATH GENERATOR (Eulerian Traversal of Maze Tree)
+ function generateOstrichPatrolPath(grid, startC, startR) {
+ const path = [];
+
+ function dfs(c, r, parentC, parentR) {
+ path.push({ c, r });
+ const cell = grid[r][c];
+
+ const dirs = [
+ { name: 'top', dc: 0, dr: -1 },
+ { name: 'right', dc: 1, dr: 0 },
+ { name: 'bottom', dc: 0, dr: 1 },
+ { name: 'left', dc: -1, dr: 0 }
+ ];
+
+ for (const d of dirs) {
+ const nc = c + d.dc;
+ const nr = r + d.dr;
+ if (!cell.walls[d.name] && (nc !== parentC || nr !== parentR)) {
+ dfs(nc, nr, c, r);
+ path.push({ c, r }); // Return step back to parent cell
+ }
+ }
+ }
+
+ dfs(startC, startR, -1, -1);
+ return path;
  }
 
  function initLevel() {
  maze = generateMaze(COLS, ROWS);
- updateLevelUI();
+ hasGoldenEgg = false;
+ eggsLaidCount = 0;
+ goldenEggTargetIndex = Math.floor(Math.random() * 10) + 1; // Golden Egg chosen randomly between #1 and #10
+
+ eggs = [];
+ projectiles = [];
+ particles = [];
 
  const cw = canvas.width / COLS;
  const ch = canvas.height / ROWS;
 
- // Place player in center of start cell (0, 0)
+ // Player starts in top-left cell
  player.x = cw * 0.5;
  player.y = ch * 0.5;
  player.facing = 1;
  player.walkFrame = 0;
+
+ // Generate Ostrich Full Patrol Path starting at top-right cell
+ ostrich.path = generateOstrichPatrolPath(maze, COLS - 1, 0);
+ ostrich.pathIndex = 0;
+ ostrich.x = (COLS - 0.5) * cw;
+ ostrich.y = ch * 0.5;
+ ostrich.eggTimer = 180;
+ ostrich.angle = Math.PI;
+
+ // Kangaroo starts in bottom-left cell
+ kangaroo.x = cw * 0.5;
+ kangaroo.y = (ROWS - 0.5) * ch;
+ kangaroo.state = 'pursue';
+ kangaroo.stateTimer = 0;
+ kangaroo.rechargeTimer = 0;
+
+ // Pizza starts in middle corridor
+ pizza.x = Math.floor(COLS / 2) * cw + cw * 0.5;
+ pizza.y = Math.floor(ROWS / 2) * ch + ch * 0.5;
+ pizza.shotsFired = 0;
+ pizza.shootTimer = 90;
+
+ updateUI();
  }
 
- function resetSimulation() {
+ function resetGame() {
  currentLevel = 1;
+ playerHp = 3;
+ invincibilityTimer = 0;
  initLevel();
  }
 
@@ -259,16 +414,18 @@
  } else if (oldWidth > 0 && oldHeight > 0) {
  player.x = (player.x / oldWidth) * canvas.width;
  player.y = (player.y / oldHeight) * canvas.height;
+ ostrich.x = (ostrich.x / oldWidth) * canvas.width;
+ ostrich.y = (ostrich.y / oldHeight) * canvas.height;
  }
  }
 
  window.addEventListener('resize', resizeCanvas);
 
- // CONTROLS HANDLERS - STRICTLY WASD MOVEMENT ONLY
+ // KEYBOARD CONTROLS - EXCLUSIVELY WASD KEY CODES
  window.addEventListener('keydown', (e) => {
- // Prevent default scrolling/actions for arrow keys and spacebar
  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
  e.preventDefault();
+ return;
  }
  if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
  e.preventDefault();
@@ -277,106 +434,390 @@
  });
 
  window.addEventListener('keyup', (e) => {
+ if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
  keys[e.code] = false;
+ }
  });
 
- // SMOOTH WALL COLLISION RESOLUTION
- function clampToSegment(x1, y1, x2, y2, radius) {
+ // WALL COLLISION HANDLING FOR STICKMAN & OTHER ENTITIES
+ function clampToSegment(px, py, x1, y1, x2, y2, radius) {
  const dx = x2 - x1;
  const dy = y2 - y1;
  const lenSq = dx * dx + dy * dy;
- if (lenSq === 0) return;
+ if (lenSq === 0) return { x: px, y: py };
 
- let t = ((player.x - x1) * dx + (player.y - y1) * dy) / lenSq;
+ let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
  t = Math.max(0, Math.min(1, t));
 
  const closestX = x1 + t * dx;
  const closestY = y1 + t * dy;
 
- const distX = player.x - closestX;
- const distY = player.y - closestY;
+ const distX = px - closestX;
+ const distY = py - closestY;
  const dist = Math.hypot(distX, distY);
 
  if (dist < radius && dist > 0) {
  const overlap = radius - dist;
- player.x += (distX / dist) * overlap;
- player.y += (distY / dist) * overlap;
+ return {
+ x: px + (distX / dist) * overlap,
+ y: py + (distY / dist) * overlap
+ };
  }
+ return { x: px, y: py };
  }
 
- function resolveWallCollisions() {
+ function resolveWallCollisions(entity, radius) {
  const cw = canvas.width / COLS;
  const ch = canvas.height / ROWS;
- const pr = player.radius;
 
- let c = Math.floor(player.x / cw);
- let r = Math.floor(player.y / ch);
+ let c = Math.floor(entity.x / cw);
+ let r = Math.floor(entity.y / ch);
  c = Math.max(0, Math.min(COLS - 1, c));
  r = Math.max(0, Math.min(ROWS - 1, r));
 
- // Check surrounding 3x3 cells for wall collisions
  for (let nr = Math.max(0, r - 1); nr <= Math.min(ROWS - 1, r + 1); nr++) {
  for (let nc = Math.max(0, c - 1); nc <= Math.min(COLS - 1, c + 1); nc++) {
  const cell = maze[nr][nc];
- const x1 = nc * cw;
- const y1 = nr * ch;
- const x2 = (nc + 1) * cw;
- const y2 = (nr + 1) * ch;
+ const x1 = nc * cw; const y1 = nr * ch;
+ const x2 = (nc + 1) * cw; const y2 = (nr + 1) * ch;
 
- if (cell.walls.top) clampToSegment(x1, y1, x2, y1, pr);
- if (cell.walls.bottom) clampToSegment(x1, y2, x2, y2, pr);
- if (cell.walls.left) clampToSegment(x1, y1, x1, y2, pr);
- if (cell.walls.right) clampToSegment(x2, y1, x2, y2, pr);
+ if (cell.walls.top) {
+ const pos = clampToSegment(entity.x, entity.y, x1, y1, x2, y1, radius);
+ entity.x = pos.x; entity.y = pos.y;
+ }
+ if (cell.walls.bottom) {
+ const pos = clampToSegment(entity.x, entity.y, x1, y2, x2, y2, radius);
+ entity.x = pos.x; entity.y = pos.y;
+ }
+ if (cell.walls.left) {
+ const pos = clampToSegment(entity.x, entity.y, x1, y1, x1, y2, radius);
+ entity.x = pos.x; entity.y = pos.y;
+ }
+ if (cell.walls.right) {
+ const pos = clampToSegment(entity.x, entity.y, x2, y1, x2, y2, radius);
+ entity.x = pos.x; entity.y = pos.y;
+ }
+ }
+ }
+
+ entity.x = Math.max(radius, Math.min(canvas.width - radius, entity.x));
+ entity.y = Math.max(radius, Math.min(canvas.height - radius, entity.y));
+ }
+
+ function hurtPlayer(reason) {
+ if (invincibilityTimer > 0) return;
+
+ playerHp--;
+ invincibilityTimer = 90; // ~1.5s invincibility
+ updateUI();
+
+ createExplosion(player.x, player.y, '#ff0055', 15);
+
+ if (playerHp <= 0) {
+ setTimeout(() => {
+ alert(`💥 Game Over! ${reason}`);
+ resetGame();
+ }, 100);
  }
  }
 
- // Outer canvas boundary safety clamp
- player.x = Math.max(pr, Math.min(canvas.width - pr, player.x));
- player.y = Math.max(pr, Math.min(canvas.height - pr, player.y));
+ function createExplosion(x, y, color, count = 12) {
+ for (let i = 0; i < count; i++) {
+ const angle = Math.random() * Math.PI * 2;
+ const speed = Math.random() * 4 + 1;
+ particles.push({
+ x, y,
+ vx: Math.cos(angle) * speed,
+ vy: Math.sin(angle) * speed,
+ radius: Math.random() * 4 + 2,
+ color: color,
+ life: 25
+ });
+ }
  }
 
  function updatePhysics() {
+ if (invincibilityTimer > 0) invincibilityTimer--;
+
+ // 1. STICKMAN WASD MOVEMENT EXCLUSIVELY
  let dx = 0;
  let dy = 0;
 
- // WASD Movement Keys Only
  if (keys['KeyW'] || keys['Keyw']) dy -= 1;
  if (keys['KeyS'] || keys['Keys']) dy += 1;
  if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
  if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
 
- // Normalize diagonal movement vector speed
  if (dx !== 0 && dy !== 0) {
  dx *= 0.7071;
  dy *= 0.7071;
  }
 
- // Update stickman position
  player.x += dx * player.speed;
  player.y += dy * player.speed;
+ resolveWallCollisions(player, player.radius);
 
- // Wall collision handling
- resolveWallCollisions();
+ if (dx !== 0 || dy !== 0) player.walkFrame += 0.25;
+ else player.walkFrame = 0;
 
- // Walk animation cycle updates
- if (dx !== 0 || dy !== 0) {
- player.walkFrame += 0.25;
- } else {
- player.walkFrame = 0;
+ // 2. OSTRICH ENGINE (Full Maze Patrol Circuit)
+ updateOstrich();
+
+ // 3. KANGAROO ENGINE (Always pursues Stickman, jumps walls, 2s recharge)
+ updateKangaroo();
+
+ // 4. PIZZA ENGINE (Mozzarella fire & Teleport every 5 shots)
+ updatePizza();
+
+ // 5. EGGS ENGINE
+ updateEggs();
+
+ // 6. PROJECTILES ENGINE
+ updateProjectiles();
+
+ // 7. PARTICLES
+ updateParticles();
+
+ // 8. EXIT CHECK
+ checkGoalAndExit();
  }
 
- // Check goal destination reached
+ function updateOstrich() {
+ if (!ostrich.path || ostrich.path.length === 0) return;
+
+ const cw = canvas.width / COLS;
+ const ch = canvas.height / ROWS;
+
+ const target = ostrich.path[ostrich.pathIndex];
+ const targetX = (target.c + 0.5) * cw;
+ const targetY = (target.r + 0.5) * ch;
+
+ const dx = targetX - ostrich.x;
+ const dy = targetY - ostrich.y;
+ const dist = Math.hypot(dx, dy);
+
+ if (dist <= ostrich.speed) {
+ // Reached cell center waypoint: snap to exact center & advance to next waypoint
+ ostrich.x = targetX;
+ ostrich.y = targetY;
+ ostrich.pathIndex = (ostrich.pathIndex + 1) % ostrich.path.length;
+ } else {
+ // Move along center corridor toward waypoint
+ const vx = (dx / dist) * ostrich.speed;
+ const vy = (dy / dist) * ostrich.speed;
+ ostrich.x += vx;
+ ostrich.y += vy;
+ ostrich.angle = Math.atan2(vy, vx);
+ }
+
+ // Touch damage to player
+ if (Math.hypot(player.x - ostrich.x, player.y - ostrich.y) < player.radius + ostrich.radius) {
+ hurtPlayer('Ostrich Peck Power!');
+ }
+
+ // Lay egg every 3 seconds (180 frames)
+ ostrich.eggTimer--;
+ if (ostrich.eggTimer <= 0) {
+ ostrich.eggTimer = 180;
+ eggsLaidCount++;
+
+ const isGolden = (eggsLaidCount === goldenEggTargetIndex);
+ eggs.push({
+ x: ostrich.x,
+ y: ostrich.y,
+ isGolden: isGolden,
+ radius: isGolden ? 8 : 7
+ });
+
+ updateUI();
+ createExplosion(ostrich.x, ostrich.y, isGolden ? '#ffd700' : '#ff0055', 8);
+ }
+ }
+
+ function updateKangaroo() {
+ if (kangaroo.state === 'pursue') {
+ const angle = Math.atan2(player.y - kangaroo.y, player.x - kangaroo.x);
+ kangaroo.x += Math.cos(angle) * kangaroo.speed;
+ kangaroo.y += Math.sin(angle) * kangaroo.speed;
+ resolveWallCollisions(kangaroo, kangaroo.radius);
+
+ if (Math.hypot(player.x - kangaroo.x, player.y - kangaroo.y) < player.radius + kangaroo.radius) {
+ hurtPlayer('Kangaroo Hit');
+ }
+
+ kangaroo.stateTimer++;
+ if (kangaroo.stateTimer > 120) {
+ kangaroo.state = 'preparing';
+ kangaroo.stateTimer = 20;
+ }
+ } else if (kangaroo.state === 'preparing') {
+ kangaroo.stateTimer--;
+ if (kangaroo.stateTimer <= 0) {
+ kangaroo.state = 'jumping';
+ kangaroo.jumpStartX = kangaroo.x;
+ kangaroo.jumpStartY = kangaroo.y;
+ kangaroo.targetX = player.x;
+ kangaroo.targetY = player.y;
+ kangaroo.stateTimer = 40;
+ }
+ } else if (kangaroo.state === 'jumping') {
+ kangaroo.stateTimer--;
+ const progress = 1 - (kangaroo.stateTimer / 40);
+
+ kangaroo.x = kangaroo.jumpStartX + (kangaroo.targetX - kangaroo.jumpStartX) * progress;
+ kangaroo.y = kangaroo.jumpStartY + (kangaroo.targetY - kangaroo.jumpStartY) * progress;
+
+ if (kangaroo.stateTimer <= 0) {
+ createExplosion(kangaroo.x, kangaroo.y, '#ffaa00', 16);
+ if (Math.hypot(player.x - kangaroo.x, player.y - kangaroo.y) < player.radius + kangaroo.radius + 6) {
+ hurtPlayer('Kangaroo Landed On You!');
+ }
+
+ kangaroo.state = 'recharging';
+ kangaroo.rechargeTimer = 120; // 2.0 Seconds
+ }
+ } else if (kangaroo.state === 'recharging') {
+ kangaroo.rechargeTimer--;
+ if (kangaroo.rechargeTimer <= 0) {
+ kangaroo.state = 'pursue';
+ kangaroo.stateTimer = 0;
+ }
+ }
+ }
+
+ function updatePizza() {
+ pizza.angle += 0.03;
+
+ pizza.shootTimer--;
+ if (pizza.shootTimer <= 0) {
+ pizza.shootTimer = 90;
+
+ const angle = Math.atan2(player.y - pizza.y, player.x - pizza.x);
+ projectiles.push({
+ x: pizza.x,
+ y: pizza.y,
+ vx: Math.cos(angle) * 4.8,
+ vy: Math.sin(angle) * 4.8,
+ radius: 6,
+ life: 180
+ });
+
+ pizza.shotsFired++;
+
+ if (pizza.shotsFired >= 5) {
+ pizza.shotsFired = 0;
+ createExplosion(pizza.x, pizza.y, '#ffcc00', 15);
+
+ const randomCol = Math.floor(Math.random() * COLS);
+ const randomRow = Math.floor(Math.random() * ROWS);
+ const cw = canvas.width / COLS;
+ const ch = canvas.height / ROWS;
+
+ pizza.x = (randomCol + 0.5) * cw;
+ pizza.y = (randomRow + 0.5) * ch;
+
+ createExplosion(pizza.x, pizza.y, '#00ffff', 15);
+ }
+ }
+
+ if (Math.hypot(player.x - pizza.x, player.y - pizza.y) < player.radius + pizza.radius) {
+ hurtPlayer('Pizza Burn');
+ }
+ }
+
+ function updateEggs() {
+ for (let i = eggs.length - 1; i >= 0; i--) {
+ const egg = eggs[i];
+ const dist = Math.hypot(player.x - egg.x, player.y - egg.y);
+
+ if (dist < player.radius + egg.radius) {
+ if (egg.isGolden) {
+ hasGoldenEgg = true;
+ eggs.splice(i, 1);
+ updateUI();
+ createExplosion(player.x, player.y, '#ffd700', 25);
+ } else {
+ hurtPlayer('Exploding Egg');
+ createExplosion(egg.x, egg.y, '#ff3300', 20);
+ eggs.splice(i, 1);
+ }
+ }
+ }
+ }
+
+ function updateProjectiles() {
+ for (let i = projectiles.length - 1; i >= 0; i--) {
+ const p = projectiles[i];
+ p.x += p.vx;
+ p.y += p.vy;
+ p.life--;
+
+ if (Math.random() < 0.4) {
+ particles.push({
+ x: p.x, y: p.y,
+ vx: (Math.random() - 0.5) * 0.5,
+ vy: (Math.random() - 0.5) * 0.5,
+ radius: Math.random() * 3 + 1,
+ color: '#fff8aa',
+ life: 15
+ });
+ }
+
+ if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + p.radius) {
+ hurtPlayer('Hot Mozzarella');
+ createExplosion(p.x, p.y, '#ffcc00', 10);
+ projectiles.splice(i, 1);
+ continue;
+ }
+
+ const cw = canvas.width / COLS;
+ const ch = canvas.height / ROWS;
+ const c = Math.floor(p.x / cw);
+ const r = Math.floor(p.y / ch);
+
+ if (c >= 0 && c < COLS && r >= 0 && r < ROWS) {
+ const cell = maze[r][c];
+ const relX = p.x - c * cw;
+ const relY = p.y - r * ch;
+
+ if ((cell.walls.top && relY < p.radius) ||
+ (cell.walls.bottom && relY > ch - p.radius) ||
+ (cell.walls.left && relX < p.radius) ||
+ (cell.walls.right && relX > cw - p.radius) ||
+ p.life <= 0) {
+ createExplosion(p.x, p.y, '#ffea75', 8);
+ projectiles.splice(i, 1);
+ }
+ }
+ }
+ }
+
+ function updateParticles() {
+ for (let i = particles.length - 1; i >= 0; i--) {
+ const pt = particles[i];
+ pt.x += pt.vx;
+ pt.y += pt.vy;
+ pt.life--;
+ if (pt.life <= 0) particles.splice(i, 1);
+ }
+ }
+
+ function checkGoalAndExit() {
  const cw = canvas.width / COLS;
  const ch = canvas.height / ROWS;
  const goalX = (COLS - 0.5) * cw;
  const goalY = (ROWS - 0.5) * ch;
- const distToGoal = Math.hypot(player.x - goalX, player.y - goalY);
 
- if (distToGoal < player.radius + Math.min(cw, ch) * 0.2) {
+ const distToExit = Math.hypot(player.x - goalX, player.y - goalY);
+
+ if (distToExit < player.radius + 15) {
+ if (hasGoldenEgg) {
  nextLevel();
  }
  }
+ }
 
+ // DRAWING ENGINE
  function drawMaze() {
  const cw = canvas.width / COLS;
  const ch = canvas.height / ROWS;
@@ -393,32 +834,17 @@
  for (let r = 0; r < ROWS; r++) {
  for (let c = 0; c < COLS; c++) {
  const cell = maze[r][c];
- const x1 = c * cw;
- const y1 = r * ch;
- const x2 = (c + 1) * cw;
- const y2 = (r + 1) * ch;
+ const x1 = c * cw; const y1 = r * ch;
+ const x2 = (c + 1) * cw; const y2 = (r + 1) * ch;
 
- if (cell.walls.top) {
- ctx.moveTo(x1, y1);
- ctx.lineTo(x2, y1);
- }
- if (cell.walls.left) {
- ctx.moveTo(x1, y1);
- ctx.lineTo(x1, y2);
- }
- if (cell.walls.bottom && r === ROWS - 1) {
- ctx.moveTo(x1, y2);
- ctx.lineTo(x2, y2);
- }
- if (cell.walls.right && c === COLS - 1) {
- ctx.moveTo(x2, y1);
- ctx.lineTo(x2, y2);
- }
+ if (cell.walls.top) { ctx.moveTo(x1, y1); ctx.lineTo(x2, y1); }
+ if (cell.walls.left) { ctx.moveTo(x1, y1); ctx.lineTo(x1, y2); }
+ if (cell.walls.bottom && r === ROWS - 1) { ctx.moveTo(x1, y2); ctx.lineTo(x2, y2); }
+ if (cell.walls.right && c === COLS - 1) { ctx.moveTo(x2, y1); ctx.lineTo(x2, y2); }
  }
  }
  ctx.stroke();
 
- // Pac-Man arcade style inner line split
  ctx.strokeStyle = '#000000';
  ctx.lineWidth = Math.max(2, wallWidth * 0.35);
  ctx.stroke();
@@ -426,48 +852,49 @@
  ctx.restore();
  }
 
- function drawGoal() {
+ function drawExit() {
  const cw = canvas.width / COLS;
  const ch = canvas.height / ROWS;
  const goalX = (COLS - 0.5) * cw;
  const goalY = (ROWS - 0.5) * ch;
 
- const time = Date.now() * 0.005;
- const pulse = Math.sin(time) * 2 + Math.min(cw, ch) * 0.18;
+ const pulse = Math.sin(Date.now() * 0.006) * 3 + 14;
 
  ctx.save();
- ctx.shadowColor = '#ffffff';
- ctx.shadowBlur = 10;
+ ctx.shadowColor = hasGoldenEgg ? '#00ff00' : '#ff0000';
+ ctx.shadowBlur = 12;
 
- // Outer pulsating exit circle
- ctx.fillStyle = '#ffff00';
+ ctx.fillStyle = hasGoldenEgg ? '#00ff00' : '#440000';
+ ctx.strokeStyle = hasGoldenEgg ? '#ffffff' : '#ff0000';
+ ctx.lineWidth = 2;
+
  ctx.beginPath();
- ctx.arc(goalX, goalY, Math.max(6, pulse), 0, Math.PI * 2);
+ ctx.arc(goalX, goalY, pulse, 0, Math.PI * 2);
  ctx.fill();
+ ctx.stroke();
 
- // Core center
- ctx.fillStyle = '#ffffff';
- ctx.beginPath();
- ctx.arc(goalX, goalY, Math.max(2, pulse * 0.4), 0, Math.PI * 2);
- ctx.fill();
-
- // Text label
- ctx.shadowBlur = 0;
  ctx.fillStyle = '#ffffff';
  ctx.font = 'bold 10px "Courier New", monospace';
  ctx.textAlign = 'center';
  ctx.textBaseline = 'middle';
- ctx.fillText('EXIT', goalX, goalY + pulse + 10);
+ ctx.fillText(hasGoldenEgg ? 'EXIT!' : 'LOCKED', goalX, goalY);
 
  ctx.restore();
  }
 
- function drawStickman(x, y, facing, walkFrame) {
+ function drawStickman() {
+ if (invincibilityTimer > 0 && Math.floor(invincibilityTimer / 4) % 2 === 0) return;
+
+ const x = player.x;
+ const y = player.y;
+ const facing = player.facing;
+ const walkFrame = player.walkFrame;
+
+ ctx.save();
  ctx.strokeStyle = '#ffffff';
  ctx.fillStyle = '#ffffff';
- ctx.lineWidth = 1.8;
+ ctx.lineWidth = 2;
  ctx.lineCap = 'round';
- ctx.lineJoin = 'round';
 
  const headRadius = 4.5;
  const bodyLength = 12;
@@ -475,59 +902,224 @@
  const centerY = y + 2;
  const neckY = centerY - bodyLength;
  const headY = neckY - headRadius;
- const shoulderY = neckY + 3;
 
- // 1. Head
- ctx.beginPath();
- ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
- ctx.stroke();
+ // Head
+ ctx.beginPath(); ctx.arc(x, headY, headRadius, 0, Math.PI * 2); ctx.stroke();
+ ctx.beginPath(); ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2); ctx.fill();
 
- // Eye indicator
+ // Torso
+ ctx.beginPath(); ctx.moveTo(x, neckY); ctx.lineTo(x, centerY); ctx.stroke();
+
+ // Legs
+ const legSwing = Math.sin(walkFrame) * 5;
+ ctx.beginPath(); ctx.moveTo(x, centerY); ctx.lineTo(x - legSwing, centerY + legLength); ctx.stroke();
+ ctx.beginPath(); ctx.moveTo(x, centerY); ctx.lineTo(x + legSwing, centerY + legLength); ctx.stroke();
+
+ // Arms
+ const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+ ctx.beginPath(); ctx.moveTo(x, neckY + 3); ctx.lineTo(x - facing * 3 - armSwing, neckY + 8); ctx.stroke();
+ ctx.beginPath(); ctx.moveTo(x, neckY + 3); ctx.lineTo(x + facing * 3 + armSwing, neckY + 8); ctx.stroke();
+
+ ctx.restore();
+ }
+
+ function drawOstrich() {
+ ctx.save();
+ ctx.translate(ostrich.x, ostrich.y);
+ ctx.rotate(ostrich.angle);
+
+ // Ostrich Body
+ ctx.fillStyle = '#e6ccb2';
  ctx.beginPath();
- ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+ ctx.ellipse(0, 0, 14, 10, 0, 0, Math.PI * 2);
  ctx.fill();
 
- // 2. Torso
+ // Neck
+ ctx.strokeStyle = '#e6ccb2';
+ ctx.lineWidth = 4;
  ctx.beginPath();
- ctx.moveTo(x, neckY);
- ctx.lineTo(x, centerY);
+ ctx.moveTo(4, 0);
+ ctx.lineTo(12, -10);
  ctx.stroke();
 
- // 3. Legs
- const legSwing = Math.sin(walkFrame) * 5;
-
+ // Head
+ ctx.fillStyle = '#ff9900';
  ctx.beginPath();
- ctx.moveTo(x, centerY);
- ctx.lineTo(x - legSwing, centerY + legLength);
+ ctx.arc(12, -10, 4, 0, Math.PI * 2);
+ ctx.fill();
+
+ // Beak
+ ctx.beginPath();
+ ctx.moveTo(15, -12); ctx.lineTo(21, -9); ctx.lineTo(15, -6);
+ ctx.fill();
+
+ // Eye
+ ctx.fillStyle = '#000000';
+ ctx.beginPath(); ctx.arc(13, -11, 1, 0, Math.PI * 2); ctx.fill();
+
+ // Legs
+ ctx.strokeStyle = '#ff9900';
+ ctx.lineWidth = 2;
+ ctx.beginPath();
+ ctx.moveTo(-4, 8); ctx.lineTo(-4, 16);
+ ctx.moveTo(4, 8); ctx.lineTo(4, 16);
  ctx.stroke();
 
- ctx.beginPath();
- ctx.moveTo(x, centerY);
- ctx.lineTo(x + legSwing, centerY + legLength);
- ctx.stroke();
+ ctx.restore();
+ }
 
- // 4. Arms
- const armSwing = Math.sin(walkFrame + Math.PI) * 4;
- ctx.beginPath();
- ctx.moveTo(x, shoulderY);
- ctx.lineTo(x - facing * 3 - armSwing, shoulderY + 5);
- ctx.stroke();
+ function drawKangaroo() {
+ ctx.save();
 
+ let drawY = kangaroo.y;
+ let shadowY = kangaroo.y + 12;
+
+ if (kangaroo.state === 'jumping') {
+ const progress = 1 - (kangaroo.stateTimer / 40);
+ const height = Math.sin(progress * Math.PI) * 45;
+ drawY -= height;
+ }
+
+ ctx.fillStyle = 'rgba(0,0,0,0.4)';
  ctx.beginPath();
- ctx.moveTo(x, shoulderY);
- ctx.lineTo(x + facing * 3 + armSwing, shoulderY + 5);
+ ctx.ellipse(kangaroo.x, shadowY, 12, 5, 0, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.translate(kangaroo.x, drawY);
+
+ ctx.fillStyle = '#ff9933';
+ ctx.beginPath();
+ ctx.ellipse(0, 0, 12, 15, 0, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.fillStyle = '#cc6600';
+ ctx.beginPath();
+ ctx.arc(2, 4, 6, 0, Math.PI);
+ ctx.fill();
+
+ ctx.fillStyle = '#ff9933';
+ ctx.beginPath(); ctx.arc(4, -15, 6, 0, Math.PI * 2); ctx.fill();
+ ctx.beginPath(); ctx.ellipse(2, -22, 2, 6, -0.2, 0, Math.PI * 2); ctx.fill();
+ ctx.beginPath(); ctx.ellipse(6, -22, 2, 6, 0.2, 0, Math.PI * 2); ctx.fill();
+
+ ctx.strokeStyle = '#ff9933';
+ ctx.lineWidth = 4;
+ ctx.beginPath(); ctx.moveTo(-10, 8); ctx.lineTo(-18, 14); ctx.stroke();
+
+ if (kangaroo.state === 'recharging') {
+ ctx.fillStyle = '#00ffff';
+ ctx.font = 'bold 9px monospace';
+ ctx.textAlign = 'center';
+ ctx.fillText('⚡2s RECHARGE', 0, -26);
+ } else if (kangaroo.state === 'preparing') {
+ ctx.fillStyle = '#ff0000';
+ ctx.font = 'bold 10px monospace';
+ ctx.textAlign = 'center';
+ ctx.fillText('❗JUMPING!', 0, -26);
+ }
+
+ ctx.restore();
+ }
+
+ function drawPizza() {
+ ctx.save();
+ ctx.translate(pizza.x, pizza.y);
+ ctx.rotate(pizza.angle);
+
+ ctx.fillStyle = '#ffcc00';
+ ctx.beginPath();
+ ctx.moveTo(0, -18);
+ ctx.lineTo(14, 14);
+ ctx.lineTo(-14, 14);
+ ctx.closePath();
+ ctx.fill();
+
+ ctx.fillStyle = '#cc6600';
+ ctx.beginPath();
+ ctx.rect(-15, 12, 30, 5);
+ ctx.fill();
+
+ ctx.fillStyle = '#ff0000';
+ ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fill();
+ ctx.beginPath(); ctx.arc(-5, 8, 2.5, 0, Math.PI * 2); ctx.fill();
+ ctx.beginPath(); ctx.arc(5, 8, 2.5, 0, Math.PI * 2); ctx.fill();
+
+ ctx.rotate(-pizza.angle);
+ ctx.fillStyle = '#00ffff';
+ ctx.font = 'bold 9px monospace';
+ ctx.textAlign = 'center';
+ ctx.fillText(`SHOTS: ${pizza.shotsFired}/5`, 0, -22);
+
+ ctx.restore();
+ }
+
+ function drawEggs() {
+ eggs.forEach(egg => {
+ ctx.save();
+ if (egg.isGolden) {
+ const pulse = Math.sin(Date.now() * 0.008) * 2;
+ ctx.shadowColor = '#ffd700';
+ ctx.shadowBlur = 12;
+ ctx.fillStyle = '#ffd700';
+ ctx.beginPath();
+ ctx.ellipse(egg.x, egg.y, 7 + pulse, 10 + pulse, 0, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.fillStyle = '#ffffff';
+ ctx.beginPath();
+ ctx.ellipse(egg.x - 2, egg.y - 3, 2, 4, 0, 0, Math.PI * 2);
+ ctx.fill();
+ } else {
+ ctx.fillStyle = '#ff3300';
+ ctx.beginPath();
+ ctx.ellipse(egg.x, egg.y, 6, 8, 0, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.strokeStyle = '#ffff00';
+ ctx.lineWidth = 1.5;
  ctx.stroke();
+ }
+ ctx.restore();
+ });
+ }
+
+ function drawProjectiles() {
+ projectiles.forEach(p => {
+ ctx.save();
+ ctx.shadowColor = '#ffff00';
+ ctx.shadowBlur = 8;
+ ctx.fillStyle = '#fff59d';
+ ctx.beginPath();
+ ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.restore();
+ });
+ }
+
+ function drawParticles() {
+ particles.forEach(pt => {
+ ctx.save();
+ ctx.fillStyle = pt.color;
+ ctx.beginPath();
+ ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.restore();
+ });
  }
 
  function draw() {
- // Clear canvas background
- ctx.fillStyle = '#000000';
+ ctx.fillStyle = '#08081a';
  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
- // Draw canvas components
  drawMaze();
- drawGoal();
- drawStickman(player.x, player.y, player.facing, player.walkFrame);
+ drawExit();
+ drawEggs();
+ drawProjectiles();
+ drawParticles();
+
+ drawOstrich();
+ drawKangaroo();
+ drawPizza();
+ drawStickman();
  }
 
  function animate() {
