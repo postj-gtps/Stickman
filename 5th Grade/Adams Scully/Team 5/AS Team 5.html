@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stickman Engine - Dragon's Forest & Chasing Mimics</title>
+  <title>Stickman Engine - Dragon's Castle & Bubble Blower</title>
   <style>
     * {
       box-sizing: border-box;
@@ -25,7 +25,7 @@
       padding: 12px;
     }
 
-    /* Top Header Bar */
+    /* Header Section */
     #header {
       display: flex;
       justify-content: space-between;
@@ -40,7 +40,7 @@
     .title-group {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
     }
 
     h1 {
@@ -55,19 +55,31 @@
     .hud-badge {
       background: #ff4757;
       color: #ffffff;
-      padding: 4px 14px;
+      padding: 4px 12px;
       border-radius: 16px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 800;
       box-shadow: 0 3px 0px #b21f2d;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
 
     .gold-badge {
       background: #ffa502;
       box-shadow: 0 3px 0px #cc8e00;
+    }
+
+    .level-badge {
+      background: #00d2d3;
+      box-shadow: 0 3px 0px #01a3a4;
+      color: #000000;
+    }
+
+    .shield-badge {
+      background: #ff9ff3;
+      box-shadow: 0 3px 0px #f368e0;
+      color: #222;
     }
 
     .btn-reset {
@@ -95,7 +107,7 @@
       box-shadow: 0 1px 0px #1e90ff;
     }
 
-    /* Distance Meter HUD */
+    /* Radar Distance HUD */
     #hud {
       display: flex;
       align-items: center;
@@ -140,11 +152,11 @@
       font-size: 13px;
       font-weight: 800;
       color: #ffffff;
-      min-width: 220px;
+      min-width: 250px;
       text-align: right;
     }
 
-    /* Main Canvas Container */
+    /* Main Canvas Wrapper */
     #canvas-wrapper {
       position: relative;
       width: 100%;
@@ -173,14 +185,14 @@
       text-align: center;
     }
 
-    /* Game Over / Victory Overlay */
+    /* Game Over & Victory Overlay */
     #overlay {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(15, 25, 35, 0.85);
+      background: rgba(15, 25, 35, 0.88);
       display: none;
       flex-direction: column;
       justify-content: center;
@@ -190,23 +202,35 @@
     }
 
     #overlay h2 {
-      font-size: 36px;
+      font-size: 48px;
       font-weight: 900;
-      color: #ff4757;
-      text-shadow: 3px 3px 0 #000;
-      margin-bottom: 12px;
+      text-shadow: 4px 4px 0 #000;
+      margin-bottom: 8px;
+    }
+
+    #overlay p {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fffa65;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 0 #000;
     }
 
     #overlay button {
       background: #fffa65;
       color: #000;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 900;
-      padding: 10px 24px;
+      padding: 12px 32px;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
-      box-shadow: 0 4px 0 #ffa502;
+      box-shadow: 0 5px 0 #ffa502;
+      transition: transform 0.1s;
+    }
+
+    #overlay button:hover {
+      transform: scale(1.05);
     }
   </style>
 </head>
@@ -216,10 +240,12 @@
   <div id="header">
     <div class="title-group">
       <h1>Stickman Engine</h1>
+      <div id="levelBadge" class="hud-badge level-badge">Level 1</div>
       <div id="livesBadge" class="hud-badge">Lives: ❤️❤️❤️</div>
-      <div id="scoreBadge" class="hud-badge gold-badge">Gold: 0</div>
+      <div id="scoreBadge" class="hud-badge gold-badge">Gold: 0 / 10</div>
+      <div id="shieldBadge" class="hud-badge shield-badge">[E] Shield: OFF</div>
     </div>
-    <button class="btn-reset" onclick="resetSimulation()">Reset Level</button>
+    <button class="btn-reset" onclick="resetSimulation()">Reset Game</button>
   </div>
 
   <!-- HUD Distance Meter Bar -->
@@ -235,25 +261,29 @@
   <div id="canvas-wrapper">
     <canvas id="simCanvas"></canvas>
 
-    <!-- Overlay Screen -->
+    <!-- Victory / Defeat Overlay Screen -->
     <div id="overlay">
-      <h2 id="overlayTitle">GAME OVER</h2>
-      <button onclick="resetSimulation()">Try Again!</button>
+      <h2 id="overlayTitle">YOU WIN!</h2>
+      <p id="overlaySub">WOOHOO! YOU CLEARED THE LEVEL!</p>
+      <button id="overlayBtn" onclick="nextLevelOrReset()">Next Level</button>
     </div>
   </div>
 
   <div class="instructions">
-    [WASD] Movement | [SPACEBAR] Dig / Open Chest
+    [WASD] Movement | [SPACEBAR] Dig / Open Chest | [E] Inflated Star Shield | [B] Bubble Blower
   </div>
 
   <script>
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
 
-    // WORLD CONFIGURATION
-    const WORLD_WIDTH = 4200;
+    // WORLD MAP CONFIGURATION
+    const WORLD_WIDTH = 4500;
 
-    // KEYBOARD INPUT STATE (EXCLUSIVE WASD MOVEMENT)
+    // GAME LEVEL & PROGRESSION STATE
+    let currentLevel = 1;
+
+    // KEYBOARD INPUT STATE (STRICTLY WASD Movement - Arrow Keys Blocked)
     const keys = {};
 
     // CAMERA STATE
@@ -273,24 +303,26 @@
       isDigging: false,
       digTimer: 0,
       score: 0,
+      goldNeeded: 10,
       lives: 3,
       maxLives: 3,
       invulnerableTimer: 0,
       knockbackVx: 0,
       knockbackVy: 0,
-      isDead: false
+      isDead: false,
+      shieldActive: false
     };
 
-    // REAL HIDDEN TREASURE STATE
+    // REAL HIDDEN TREASURE STATE (Marked with Green Checkmark when un-earthed)
     const treasure = {
       x: 0,
       y: 0,
       state: 'hidden', // 'hidden' -> 'uncovered' -> 'opened'
-      digRadius: 45,
-      totalCoins: 25
+      digRadius: 48,
+      totalCoins: 15
     };
 
-    // ABOVEGROUND CHASING FAKE TREASURE CHESTS (MIMICS)
+    // FAKE CHESTS (Start Underground with X when dug up, then chase player)
     let fakeTreasures = [];
 
     // DRAGON ENEMY
@@ -300,14 +332,20 @@
       baseY: 0,
       hoverTimer: 0,
       fireballCooldown: 0,
-      facing: -1
+      facing: -1,
+      trappedInBubble: false,
+      bubbleY: 0
     };
+
+    // DIAMOND ARMOR CASTLE GUARDS
+    let diamondGuards = [];
 
     // EVIL SOCCER GOAL POSTS
     let soccerGoals = [];
 
-    // PROJECTILES, COINS & PARTICLES
+    // PROJECTILES, BUBBLES, COINS & PARTICLES
     let fireballs = [];
+    let playerBubbles = [];
     let coins = [];
     let clouds = [];
     let backgroundTrees = [];
@@ -316,7 +354,11 @@
     let birds = [];
     let squirrels = [];
     let particles = [];
+    let confetti = [];
+    let rainDrops = [];
     let floatingTexts = [];
+
+    let isLevelCleared = false;
 
     function resizeCanvas() {
       const wrapper = document.getElementById('canvas-wrapper');
@@ -330,19 +372,32 @@
 
     window.addEventListener('resize', resizeCanvas);
 
-    // KEYBOARD INPUT - WASD IS EXCLUSIVE FOR MOVEMENT (Arrow Keys Explicitly Ignored)
+    // KEYBOARD INPUT - WASD ONLY FOR MOVEMENT (Arrow Keys Explicitly Prevented)
     window.addEventListener('keydown', (e) => {
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code)) {
+      // Prevent default page scroll
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyE', 'KeyB'].includes(e.code)) {
         e.preventDefault();
       }
 
-      // STRICT REQUIREMENT: ONLY WASD allowed for movement
+      // ONLY WASD allowed for movement
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
         keys[e.code] = true;
       }
 
+      // Action Keys
       if (e.code === 'Space' && !player.isDigging && !player.isDead) {
         handleActionKey();
+      }
+
+      // Shield Toggle [E]
+      if (e.code === 'KeyE' && !player.isDead) {
+        player.shieldActive = !player.shieldActive;
+        updateUI();
+      }
+
+      // Bubble Blower [B]
+      if (e.code === 'KeyB' && !player.isDead) {
+        shootBubble();
       }
     });
 
@@ -356,6 +411,7 @@
       document.getElementById('overlay').style.display = 'none';
       const groundY = canvas.height * 0.72;
 
+      isLevelCleared = false;
       player.x = 250;
       player.y = groundY;
       player.facing = 1;
@@ -363,62 +419,72 @@
       player.isDigging = false;
       player.digTimer = 0;
       player.score = 0;
+      player.goldNeeded = 10 + (currentLevel - 1) * 10; // Gold requirement increases each level
       player.lives = 3;
       player.invulnerableTimer = 0;
       player.knockbackVx = 0;
       player.knockbackVy = 0;
       player.isDead = false;
+      player.shieldActive = false;
 
       // Real Treasure Location
-      treasure.x = 2200 + Math.random() * (WORLD_WIDTH - 2600);
+      treasure.x = 1800 + Math.random() * (WORLD_WIDTH - 2800);
       treasure.y = groundY + Math.random() * (canvas.height * 0.14);
       treasure.state = 'hidden';
+      treasure.totalCoins = player.goldNeeded + 5;
 
-      // Dragon positioned guarding real treasure
-      dragon.x = treasure.x + 120;
+      // Dragon Guarding Real Treasure
+      dragon.x = treasure.x + 130;
       dragon.baseY = canvas.height * 0.38;
       dragon.y = dragon.baseY;
       dragon.hoverTimer = 0;
-      dragon.fireballCooldown = 60;
+      dragon.fireballCooldown = 50;
+      dragon.trappedInBubble = false;
 
-      // Aboveground Chasing Fake Treasure Chests
+      // Underground Fake Chests (Start hidden, dug up to reveal red X & chase)
       fakeTreasures = [];
-      const fakeCount = 4;
+      const fakeCount = 4 + currentLevel;
       for (let i = 0; i < fakeCount; i++) {
-        let fakeX = 700 + Math.random() * (WORLD_WIDTH - 1000);
-        while (Math.abs(fakeX - treasure.x) < 350) {
-          fakeX = 700 + Math.random() * (WORLD_WIDTH - 1000);
+        let fakeX = 600 + Math.random() * (WORLD_WIDTH - 1200);
+        while (Math.abs(fakeX - treasure.x) < 300) {
+          fakeX = 600 + Math.random() * (WORLD_WIDTH - 1200);
         }
         fakeTreasures.push({
           x: fakeX,
-          y: groundY + Math.random() * (canvas.height * 0.12),
-          speed: 2.2 + Math.random() * 0.8,
-          chaseRadius: 650,
-          mouthOpenFrame: 0
+          y: groundY + Math.random() * (canvas.height * 0.14),
+          state: 'hidden', // 'hidden' -> 'chasing' -> 'trapped'
+          speed: 2.3 + Math.random() * 0.7,
+          chaseRadius: 600,
+          mouthOpenFrame: 0,
+          bubbleY: 0
         });
       }
 
+      // Diamond Armor Guards at Castle Gates
+      const castleGatesX = WORLD_WIDTH - 500;
+      diamondGuards = [
+        { x: castleGatesX - 60, y: groundY - 10, facing: -1, dialogueTimer: 0 },
+        { x: castleGatesX + 40, y: groundY - 10, facing: -1, dialogueTimer: 0 }
+      ];
+
       // Evil Soccer Goal Posts
-      soccerGoals = [];
-      const goalPositions = [900, 1700, 2800, 3600];
-      goalPositions.forEach(gx => {
-        soccerGoals.push({
-          x: gx,
-          y: groundY + 10,
-          width: 70,
-          height: 55,
-          mouthOpen: 0
-        });
-      });
+      soccerGoals = [
+        { x: 900, y: groundY + 10, width: 70, height: 55, mouthOpen: 0, trappedInBubble: false, bubbleY: 0 },
+        { x: 1700, y: groundY + 10, width: 70, height: 55, mouthOpen: 0, trappedInBubble: false, bubbleY: 0 },
+        { x: 2800, y: groundY + 10, width: 70, height: 55, mouthOpen: 0, trappedInBubble: false, bubbleY: 0 }
+      ];
 
       coins = [];
       fireballs = [];
+      playerBubbles = [];
       particles = [];
+      confetti = [];
+      rainDrops = [];
       floatingTexts = [];
 
       // Clouds
       clouds = [];
-      for (let i = 0; i < 24; i++) {
+      for (let i = 0; i < 26; i++) {
         clouds.push({
           x: Math.random() * WORLD_WIDTH,
           y: 20 + Math.random() * (canvas.height * 0.22),
@@ -427,7 +493,7 @@
         });
       }
 
-      // Background Pine Trees
+      // Background Trees
       backgroundTrees = [];
       for (let x = 0; x < WORLD_WIDTH; x += 70 + Math.random() * 40) {
         backgroundTrees.push({
@@ -439,7 +505,7 @@
 
       // World Trees
       worldTrees = [];
-      for (let x = 80; x < WORLD_WIDTH; x += 110 + Math.random() * 70) {
+      for (let x = 80; x < WORLD_WIDTH - 600; x += 110 + Math.random() * 70) {
         worldTrees.push({
           x: x,
           y: groundY - 10 + Math.random() * (canvas.height * 0.18),
@@ -449,7 +515,7 @@
 
       // Foreground Trees
       foregroundTrees = [];
-      for (let x = 150; x < WORLD_WIDTH; x += 320 + Math.random() * 220) {
+      for (let x = 150; x < WORLD_WIDTH - 700; x += 320 + Math.random() * 220) {
         foregroundTrees.push({
           x: x,
           y: canvas.height * 0.88,
@@ -457,7 +523,7 @@
         });
       }
 
-      // Wildlife: Birds & Squirrels
+      // Wildlife
       birds = [];
       for (let i = 0; i < 10; i++) {
         birds.push({
@@ -472,7 +538,7 @@
       squirrels = [];
       for (let i = 0; i < 12; i++) {
         squirrels.push({
-          x: 200 + Math.random() * (WORLD_WIDTH - 300),
+          x: 200 + Math.random() * (WORLD_WIDTH - 800),
           y: groundY + Math.random() * (canvas.height * 0.15),
           vx: (Math.random() - 0.5) * 1.6,
           stateTimer: Math.random() * 100,
@@ -481,6 +547,18 @@
       }
 
       updateUI();
+    }
+
+    function shootBubble() {
+      playerBubbles.push({
+        x: player.x + player.facing * 18,
+        y: player.y - 10,
+        vx: player.facing * 8,
+        vy: (Math.random() - 0.5) * 1.5,
+        radius: 14,
+        life: 120
+      });
+      addFloatingText("🫧 BUBBLE!", player.x, player.y - 25, '#70a1ff');
     }
 
     function handleActionKey() {
@@ -501,23 +579,44 @@
         });
       }
 
-      // Check Interaction with Real Hidden Treasure
+      // 1. Check Interaction with Real Hidden Treasure
       const distToReal = Math.hypot(player.x - treasure.x, player.y - treasure.y);
       if (treasure.state === 'hidden' && distToReal <= treasure.digRadius) {
         treasure.state = 'uncovered';
-        spawnSparkles(treasure.x, treasure.y, '#fffa65', 25);
-        addFloatingText("Real Treasure Uncovered!", treasure.x, treasure.y - 20, '#2ed573');
+        spawnSparkles(treasure.x, treasure.y, '#2ed573', 25);
+        addFloatingText("✓ Real Gold Chest Uncovered!", treasure.x, treasure.y - 20, '#2ed573');
+        return;
       } else if (treasure.state === 'uncovered' && distToReal <= treasure.digRadius + 20) {
         treasure.state = 'opened';
         spawnGoldFountain();
+        return;
       }
+
+      // 2. Check Interaction with Underground Fake Chests
+      fakeTreasures.forEach(fake => {
+        const distToFake = Math.hypot(player.x - fake.x, player.y - fake.y);
+        if (fake.state === 'hidden' && distToFake <= fake.chaseRadius) {
+          fake.state = 'chasing';
+          camera.shake = 10;
+          spawnSparkles(fake.x, fake.y, '#ff4757', 20);
+          addFloatingText("❌ IT'S A FAKE CHEST! RUN!", fake.x, fake.y - 25, '#ff4757');
+        }
+      });
     }
 
     function damagePlayer(reasonText, knockVx, knockVy) {
+      // Inflated Star Shield protects player!
+      if (player.shieldActive) {
+        camera.shake = 6;
+        addFloatingText("🛡️ SHIELD BLOCKED ATTACK!", player.x, player.y - 30, '#ff9ff3');
+        spawnSparkles(player.x, player.y, '#ff9ff3', 15);
+        return;
+      }
+
       if (player.invulnerableTimer > 0 || player.isDead) return;
 
       player.lives--;
-      player.invulnerableTimer = 60; // Invulnerability window
+      player.invulnerableTimer = 60;
       player.knockbackVx = knockVx;
       player.knockbackVy = knockVy;
 
@@ -526,9 +625,60 @@
       updateUI();
 
       if (player.lives <= 0) {
-        player.isDead = true;
-        document.getElementById('overlayTitle').textContent = "GAME OVER!";
-        document.getElementById('overlay').style.display = 'flex';
+        triggerGameOver();
+      }
+    }
+
+    function triggerGameOver() {
+      player.isDead = true;
+      // Rain animation starts
+      rainDrops = [];
+      for (let i = 0; i < 150; i++) {
+        rainDrops.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          speed: 12 + Math.random() * 8,
+          length: 15 + Math.random() * 10
+        });
+      }
+
+      document.getElementById('overlayTitle').textContent = "YOU LOOSE";
+      document.getElementById('overlayTitle').style.color = "#ff4757";
+      document.getElementById('overlaySub').textContent = "🌧️ Oh no! Rain falls as you ran out of lives!";
+      document.getElementById('overlayBtn').textContent = "Try Again";
+      document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function triggerLevelClear() {
+      isLevelCleared = true;
+
+      // Confetti burst
+      confetti = [];
+      for (let i = 0; i < 180; i++) {
+        confetti.push({
+          x: Math.random() * canvas.width,
+          y: -20 - Math.random() * 200,
+          vx: (Math.random() - 0.5) * 6,
+          vy: 3 + Math.random() * 5,
+          color: ['#ff4757', '#ffa502', '#fffa65', '#2ed573', '#1e90ff', '#ff9ff3'][Math.floor(Math.random() * 6)],
+          size: 6 + Math.random() * 6,
+          rotation: Math.random() * Math.PI * 2
+        });
+      }
+
+      document.getElementById('overlayTitle').textContent = "WOOHOO! YOU WIN!";
+      document.getElementById('overlayTitle').style.color = "#2ed573";
+      document.getElementById('overlaySub').textContent = `🎉 Level ${currentLevel} Complete! You entered the Castle!`;
+      document.getElementById('overlayBtn').textContent = "Next Level";
+      document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function nextLevelOrReset() {
+      if (player.isDead) {
+        resetSimulation();
+      } else {
+        currentLevel++;
+        resetSimulation();
       }
     }
 
@@ -566,19 +716,19 @@
     }
 
     function addFloatingText(text, x, y, color) {
-      floatingTexts.push({ text, x, y, color, life: 50, vy: -1.2 });
+      floatingTexts.push({ text, x, y, color, life: 55, vy: -1.2 });
     }
 
     function updatePhysics() {
       if (camera.shake > 0) camera.shake *= 0.88;
 
-      // Apply Knockback forces
+      // Handle Knockback
       if (Math.abs(player.knockbackVx) > 0.2 || Math.abs(player.knockbackVy) > 0.2) {
         player.x += player.knockbackVx;
         player.y += player.knockbackVy;
         player.knockbackVx *= 0.85;
         player.knockbackVy *= 0.85;
-      } else if (!player.isDead) {
+      } else if (!player.isDead && !isLevelCleared) {
         // WASD Movement Processing
         let dx = 0;
         let dy = 0;
@@ -603,7 +753,7 @@
         }
       }
 
-      // World Boundary Constraints
+      // World Constraints
       const minPlayableY = canvas.height * 0.52;
       const maxPlayableY = canvas.height * 0.92;
       player.x = Math.max(20, Math.min(WORLD_WIDTH - 20, player.x));
@@ -621,47 +771,107 @@
       camera.x += (targetCameraX - camera.x) * 0.1;
       camera.x = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, camera.x));
 
-      // --- ABOVEGROUND FAKE CHESTS (CHASING MIMICS) ---
-      fakeTreasures.forEach(fake => {
-        const distToPlayer = Math.hypot(player.x - fake.x, player.y - fake.y);
-
-        // Chase player when within detection range
-        if (distToPlayer < fake.chaseRadius && !player.isDead) {
-          const angle = Math.atan2(player.y - fake.y, player.x - fake.x);
-          fake.x += Math.cos(angle) * fake.speed;
-          fake.y += Math.sin(angle) * fake.speed;
-          fake.mouthOpenFrame += 0.15;
-
-          // Attack/Bite on collision
-          if (distToPlayer < 28) {
-            const knockDir = player.x < fake.x ? -1 : 1;
-            damagePlayer("CHOMP! Fake Chest Bit You!", knockDir * 10, -4);
-            spawnSparkles(player.x, player.y, '#ff4757', 15);
+      // --- DIAMOND GUARDS & CASTLE GATE INTERACTION ---
+      diamondGuards.forEach(guard => {
+        const distToGuard = Math.abs(player.x - guard.x);
+        if (distToGuard < 70 && !isLevelCleared) {
+          if (player.score >= player.goldNeeded) {
+            // Player has enough gold! Pass through into castle!
+            addFloatingText("💎 GUARD: Welcome! Enter the Castle!", guard.x, guard.y - 40, '#00d2d3');
+            triggerLevelClear();
+          } else {
+            // Not enough gold! Guard stops you!
+            player.x = guard.x - 75; // Push player back
+            addFloatingText(`💎 GUARD: Halt! You need ${player.goldNeeded} Gold Coins!`, guard.x, guard.y - 40, '#ff4757');
           }
         }
       });
 
-      // --- DRAGON & FIREBALL AI ---
-      dragon.hoverTimer += 0.05;
-      dragon.y = dragon.baseY + Math.sin(dragon.hoverTimer) * 25;
-      dragon.facing = player.x < dragon.x ? -1 : 1;
+      // --- BUBBLE PROJECTILES PHYSICS & ENEMY CAPTURE ---
+      for (let i = playerBubbles.length - 1; i >= 0; i--) {
+        const bub = playerBubbles[i];
+        bub.x += bub.vx;
+        bub.y += bub.vy;
+        bub.life--;
 
-      const distToDragon = Math.hypot(player.x - dragon.x, player.y - dragon.y);
-      if (distToDragon < 900 && !player.isDead) {
-        dragon.fireballCooldown--;
-        if (dragon.fireballCooldown <= 0) {
-          dragon.fireballCooldown = 110;
+        // Check Bubble Collision with Chasing Fake Chests
+        fakeTreasures.forEach(fake => {
+          if (fake.state === 'chasing') {
+            if (Math.hypot(bub.x - fake.x, bub.y - fake.y) < bub.radius + 20) {
+              fake.state = 'trapped';
+              fake.bubbleY = fake.y;
+              addFloatingText("🫧 TRAPPED IN BUBBLE!", fake.x, fake.y - 20, '#70a1ff');
+            }
+          }
+        });
 
-          const angle = Math.atan2(player.y - dragon.y, player.x - dragon.x);
-          const speed = 6.5;
-          fireballs.push({
-            x: dragon.x + dragon.facing * 40,
-            y: dragon.y + 10,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            radius: 12
-          });
-          addFloatingText("🔥 ROAR!", dragon.x, dragon.y - 40, '#ff4757');
+        // Check Bubble Collision with Dragon
+        if (!dragon.trappedInBubble) {
+          if (Math.hypot(bub.x - dragon.x, bub.y - dragon.y) < bub.radius + 35) {
+            dragon.trappedInBubble = true;
+            dragon.bubbleY = dragon.y;
+            addFloatingText("🫧 DRAGON TRAPPED!", dragon.x, dragon.y - 30, '#70a1ff');
+          }
+        }
+
+        // Check Bubble Collision with Soccer Goals
+        soccerGoals.forEach(goal => {
+          if (!goal.trappedInBubble) {
+            if (Math.hypot(bub.x - goal.x, bub.y - goal.y) < bub.radius + 30) {
+              goal.trappedInBubble = true;
+              goal.bubbleY = goal.y;
+              addFloatingText("🫧 GOAL POST TRAPPED!", goal.x, goal.y - 20, '#70a1ff');
+            }
+          }
+        });
+
+        if (bub.life <= 0) playerBubbles.splice(i, 1);
+      }
+
+      // --- TRAPPED ENEMIES FLOAT UP & OUT OF SCENE ---
+      fakeTreasures.forEach(fake => {
+        if (fake.state === 'chasing') {
+          const distToPlayer = Math.hypot(player.x - fake.x, player.y - fake.y);
+          if (distToPlayer < fake.chaseRadius && !player.isDead) {
+            const angle = Math.atan2(player.y - fake.y, player.x - fake.x);
+            fake.x += Math.cos(angle) * fake.speed;
+            fake.y += Math.sin(angle) * fake.speed;
+            fake.mouthOpenFrame += 0.15;
+
+            if (distToPlayer < 28) {
+              const knockDir = player.x < fake.x ? -1 : 1;
+              damagePlayer("CHOMP! Fake Chest Bit You!", knockDir * 10, -4);
+            }
+          }
+        } else if (fake.state === 'trapped') {
+          fake.y -= 3.5; // Float up out of screen
+        }
+      });
+
+      if (dragon.trappedInBubble) {
+        dragon.y -= 3.0; // Float dragon up into the sky
+      } else {
+        dragon.hoverTimer += 0.05;
+        dragon.y = dragon.baseY + Math.sin(dragon.hoverTimer) * 25;
+        dragon.facing = player.x < dragon.x ? -1 : 1;
+
+        // Shoot fireballs
+        const distToDragon = Math.hypot(player.x - dragon.x, player.y - dragon.y);
+        if (distToDragon < 950 && !player.isDead && !isLevelCleared) {
+          dragon.fireballCooldown--;
+          if (dragon.fireballCooldown <= 0) {
+            dragon.fireballCooldown = 100;
+            const angle = Math.atan2(player.y - dragon.y, player.x - dragon.x);
+            const speed = 6.8;
+            fireballs.push({
+              x: dragon.x + dragon.facing * 40,
+              y: dragon.y + 10,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+              radius: 12
+            });
+            addFloatingText("🔥 ROAR!", dragon.x, dragon.y - 40, '#ff4757');
+          }
         }
       }
 
@@ -692,28 +902,26 @@
         }
       }
 
-      // --- EVIL SOCCER GOAL POSTS COLLISION ---
+      // --- EVIL SOCCER GOALS PHYSICS ---
       soccerGoals.forEach(goal => {
-        const left = goal.x - goal.width / 2;
-        const right = goal.x + goal.width / 2;
-        const top = goal.y - goal.height;
-        const bottom = goal.y;
+        if (goal.trappedInBubble) {
+          goal.y -= 3.5; // Float goal post up away
+        } else {
+          const left = goal.x - goal.width / 2;
+          const right = goal.x + goal.width / 2;
+          const top = goal.y - goal.height;
+          const bottom = goal.y;
 
-        if (player.x > left && player.x < right && player.y > top && player.y < bottom) {
-          const knockDir = player.x < goal.x ? -1 : 1;
-          player.knockbackVx = knockDir * 14;
-          player.knockbackVy = -5;
-          camera.shake = 10;
-          goal.mouthOpen = 20;
-
-          addFloatingText("⚽ BOING! Knocked Back!", player.x, player.y - 25, '#fffa65');
-          spawnSparkles(player.x, player.y, '#ffffff', 15);
+          if (player.x > left && player.x < right && player.y > top && player.y < bottom) {
+            const knockDir = player.x < goal.x ? -1 : 1;
+            damagePlayer("⚽ BOING! Knocked Back!", knockDir * 14, -5);
+            goal.mouthOpen = 20;
+          }
+          if (goal.mouthOpen > 0) goal.mouthOpen--;
         }
-
-        if (goal.mouthOpen > 0) goal.mouthOpen--;
       });
 
-      // Update Clouds, Birds, Squirrels
+      // Update Scenery: Clouds, Birds, Squirrels
       clouds.forEach(c => {
         c.x += c.speed;
         if (c.x > WORLD_WIDTH + 100) c.x = -100;
@@ -736,7 +944,7 @@
         }
         s.x += s.vx;
         s.tailPhase += 0.12;
-        s.x = Math.max(40, Math.min(WORLD_WIDTH - 40, s.x));
+        s.x = Math.max(40, Math.min(WORLD_WIDTH - 800, s.x));
       });
 
       // Update Gold Coins
@@ -786,16 +994,32 @@
         if (ft.life <= 0) floatingTexts.splice(i, 1);
       }
 
+      // Update Confetti
+      confetti.forEach(c => {
+        c.x += c.vx;
+        c.y += c.vy;
+        c.rotation += 0.1;
+      });
+
+      // Update Rain
+      rainDrops.forEach(r => {
+        r.y += r.speed;
+        if (r.y > canvas.height) r.y = -20;
+      });
+
       updateHUD();
     }
 
     function updateUI() {
+      document.getElementById('levelBadge').textContent = `Level ${currentLevel}`;
       let hearts = '';
       for (let i = 0; i < player.maxLives; i++) {
         hearts += i < player.lives ? '❤️' : '🖤';
       }
       document.getElementById('livesBadge').textContent = `Lives: ${hearts}`;
-      document.getElementById('scoreBadge').textContent = `Gold: ${player.score} / ${treasure.totalCoins}`;
+      document.getElementById('scoreBadge').textContent = `Gold: ${player.score} / ${player.goldNeeded}`;
+      document.getElementById('shieldBadge').textContent = player.shieldActive ? "[E] Shield: ON 🛡️" : "[E] Shield: OFF";
+      document.getElementById('shieldBadge').style.background = player.shieldActive ? "#2ed573" : "#ff9ff3";
     }
 
     function updateHUD() {
@@ -810,10 +1034,10 @@
 
       if (treasure.state === 'hidden') {
         if (dist <= treasure.digRadius) {
-          meterText.textContent = "PRESS [SPACE] TO DIG!";
+          meterText.textContent = "PRESS [SPACE] TO DIG TREASURE!";
           meterText.style.color = "#fffa65";
         } else {
-          meterText.textContent = `Distance to Real Treasure: ${Math.round(dist)}m`;
+          meterText.textContent = `Distance to Real Gold: ${Math.round(dist)}m`;
           meterText.style.color = "#ffffff";
         }
       } else if (treasure.state === 'uncovered') {
@@ -821,15 +1045,15 @@
           meterText.textContent = "PRESS [SPACE] TO OPEN CHEST!";
           meterText.style.color = "#fffa65";
         } else {
-          meterText.textContent = "REAL CHEST UNCOVERED!";
+          meterText.textContent = "REAL GOLD CHEST UNCOVERED!";
           meterText.style.color = "#2ed573";
         }
       } else if (treasure.state === 'opened') {
-        if (player.score >= treasure.totalCoins) {
-          meterText.textContent = "VICTORY! ALL GOLD COLLECTED! 🎉";
-          meterText.style.color = "#2ed573";
+        if (player.score >= player.goldNeeded) {
+          meterText.textContent = "GO TO CASTLE GATES TO WIN LEVEL! 🏰";
+          meterText.style.color = "#00d2d3";
         } else {
-          meterText.textContent = `COLLECT GOLD! (${player.score}/${treasure.totalCoins})`;
+          meterText.textContent = `COLLECT GOLD! (${player.score}/${player.goldNeeded})`;
           meterText.style.color = "#ffa502";
         }
       }
@@ -864,36 +1088,84 @@
       });
     }
 
-    function drawLoomingCastle(parallaxFactor) {
-      const castleWorldX = 750;
+    // EXPANDED CASTLE WITH ENTRANCE AT WORLD END
+    function drawCastle(parallaxFactor) {
+      const castleWorldX = WORLD_WIDTH - 450;
       const renderX = castleWorldX - camera.x * parallaxFactor;
       const castleY = canvas.height * 0.52;
 
-      if (renderX > -300 && renderX < canvas.width + 300) {
+      if (renderX > -400 && renderX < canvas.width + 400) {
         ctx.save();
         ctx.translate(renderX, castleY);
 
+        // Stone Base Wall
         ctx.fillStyle = '#747d8c';
-        ctx.fillRect(-110, -80, 220, 80);
+        ctx.fillRect(-180, -120, 360, 120);
 
+        // Main Keep Structure
         ctx.fillStyle = '#a4b0be';
-        ctx.fillRect(-65, -125, 130, 45);
+        ctx.fillRect(-100, -180, 200, 60);
 
+        // Towers
         ctx.fillStyle = '#747d8c';
-        ctx.fillRect(-140, -130, 50, 130);
-        ctx.fillRect(90, -130, 50, 130);
-        ctx.fillRect(-30, -165, 60, 40);
+        ctx.fillRect(-220, -200, 70, 200);
+        ctx.fillRect(150, -200, 70, 200);
+        ctx.fillRect(-45, -240, 90, 60);
 
+        // Conical Roofs
         ctx.fillStyle = '#ff4757';
+        ctx.beginPath(); ctx.moveTo(-230, -200); ctx.lineTo(-185, -270); ctx.lineTo(-140, -200); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(140, -200); ctx.lineTo(185, -270); ctx.lineTo(230, -200); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-50, -240); ctx.lineTo(0, -310); ctx.lineTo(50, -240); ctx.fill();
+
+        // Open Castle Arch Entrance Door
+        ctx.fillStyle = '#1e272e';
         ctx.beginPath();
-        ctx.moveTo(-145, -130); ctx.lineTo(-115, -185); ctx.lineTo(-85, -130); ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(85, -130); ctx.lineTo(115, -185); ctx.lineTo(145, -130); ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(-35, -165); ctx.lineTo(0, -215); ctx.lineTo(35, -165); ctx.fill();
+        ctx.arc(0, -20, 36, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(-36, -20, 72, 20);
 
         ctx.restore();
       }
+    }
+
+    // DRAW DIAMOND ARMOR GUARDS
+    function drawDiamondGuards(parallaxFactor) {
+      diamondGuards.forEach(guard => {
+        const renderX = guard.x - camera.x * parallaxFactor;
+        if (renderX > -100 && renderX < canvas.width + 100) {
+          ctx.save();
+          ctx.translate(renderX, guard.y);
+
+          // Shiny Diamond Blue Armor Body
+          ctx.fillStyle = '#00d2d3';
+          ctx.strokeStyle = '#54a0ff';
+          ctx.lineWidth = 2;
+          ctx.fillRect(-10, -32, 20, 24);
+          ctx.strokeRect(-10, -32, 20, 24);
+
+          // Diamond Helmet
+          ctx.beginPath();
+          ctx.arc(0, -38, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          // Helmet Visor Slit
+          ctx.fillStyle = '#1e272e';
+          ctx.fillRect(-6, -40, 12, 4);
+
+          // Spear
+          ctx.strokeStyle = '#c8d6e5';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(12, -52); ctx.lineTo(12, 0); ctx.stroke();
+          ctx.fillStyle = '#00d2d3';
+          ctx.beginPath();
+          ctx.moveTo(12, -62); ctx.lineTo(8, -52); ctx.lineTo(16, -52); ctx.fill();
+
+          ctx.restore();
+        }
+      });
     }
 
     function drawPineTree(x, y, scale, trunkColor, needleColor) {
@@ -946,6 +1218,17 @@
           ctx.save();
           ctx.translate(renderX, goal.y);
 
+          if (goal.trappedInBubble) {
+            // Drawn Trapped in Giant Soap Bubble
+            ctx.fillStyle = 'rgba(112, 161, 255, 0.4)';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, -goal.height / 2, 45, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          }
+
           ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
           ctx.fillRect(-goal.width / 2, -goal.height, goal.width, goal.height);
 
@@ -964,7 +1247,7 @@
           ctx.lineWidth = 5;
           ctx.strokeRect(-goal.width / 2, -goal.height, goal.width, goal.height);
 
-          // Evil Face Details
+          // Evil Face
           ctx.fillStyle = '#ff4757';
           ctx.beginPath();
           ctx.arc(-15, -goal.height + 18, 6, 0, Math.PI * 2);
@@ -995,47 +1278,48 @@
       });
     }
 
-    function drawChasingFakeChests(parallaxFactor) {
+    function drawFakeChests(parallaxFactor) {
       fakeTreasures.forEach(fake => {
         const renderX = fake.x - camera.x * parallaxFactor;
         if (renderX > -100 && renderX < canvas.width + 100) {
-          ctx.save();
-          ctx.translate(renderX, fake.y);
+          if (fake.state === 'chasing' || fake.state === 'trapped') {
+            ctx.save();
+            ctx.translate(renderX, fake.y);
 
-          // Aboveground Chest Body
-          ctx.fillStyle = '#8b5a2b';
-          ctx.fillRect(-16, -12, 32, 18);
+            if (fake.state === 'trapped') {
+              // Giant Bubble Enclosure
+              ctx.fillStyle = 'rgba(112, 161, 255, 0.4)';
+              ctx.strokeStyle = '#ffffff';
+              ctx.lineWidth = 3;
+              ctx.beginPath();
+              ctx.arc(0, -5, 30, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.stroke();
+            }
 
-          ctx.fillStyle = '#212529'; // Iron Trim
-          ctx.fillRect(-16, -12, 4, 18);
-          ctx.fillRect(12, -12, 4, 18);
+            // Chest Body
+            ctx.fillStyle = '#8b5a2b';
+            ctx.fillRect(-16, -12, 32, 18);
 
-          // Snapping Mouth Lid
-          const mouthOffset = Math.sin(fake.mouthOpenFrame) * 6;
-          ctx.fillStyle = '#a0522d';
-          ctx.fillRect(-16, -18 - mouthOffset, 32, 7);
+            ctx.fillStyle = '#212529';
+            ctx.fillRect(-16, -12, 4, 18);
+            ctx.fillRect(12, -12, 4, 18);
 
-          // Sharp Teeth Inside Mouth
-          ctx.fillStyle = '#ff4757';
-          ctx.fillRect(-12, -12 - mouthOffset, 24, mouthOffset + 4);
+            // Biting Mouth Lid
+            const mouthOffset = Math.sin(fake.mouthOpenFrame) * 6;
+            ctx.fillStyle = '#a0522d';
+            ctx.fillRect(-16, -18 - mouthOffset, 32, 7);
 
-          ctx.fillStyle = '#ffffff';
-          for (let tx = -12; tx <= 8; tx += 6) {
+            // Red X Mark on Fake Chest
+            ctx.strokeStyle = '#ff4757';
+            ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.moveTo(tx, -12);
-            ctx.lineTo(tx + 3, -12 - mouthOffset);
-            ctx.lineTo(tx + 6, -12);
-            ctx.fill();
+            ctx.moveTo(-8, -8); ctx.lineTo(8, 2);
+            ctx.moveTo(8, -8); ctx.lineTo(-8, 2);
+            ctx.stroke();
+
+            ctx.restore();
           }
-
-          // Glowing Red Eyes
-          ctx.fillStyle = '#ff4757';
-          ctx.beginPath();
-          ctx.arc(-6, -7, 2.5, 0, Math.PI * 2);
-          ctx.arc(6, -7, 2.5, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.restore();
         }
       });
     }
@@ -1046,6 +1330,16 @@
         ctx.save();
         ctx.translate(renderX, dragon.y);
         ctx.scale(dragon.facing, 1);
+
+        if (dragon.trappedInBubble) {
+          ctx.fillStyle = 'rgba(112, 161, 255, 0.4)';
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(0, 0, 55, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
 
         ctx.fillStyle = '#ff4757';
         ctx.beginPath();
@@ -1099,6 +1393,24 @@
       });
     }
 
+    function drawPlayerBubbles(parallaxFactor) {
+      playerBubbles.forEach(bub => {
+        const renderX = bub.x - camera.x * parallaxFactor;
+        ctx.fillStyle = 'rgba(112, 161, 255, 0.45)';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(renderX, bub.y, bub.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(renderX - 4, bub.y - 4, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
     function drawTreasureChest(parallaxFactor) {
       const renderX = treasure.x - camera.x * parallaxFactor;
       if (renderX < -100 || renderX > canvas.width + 100) return;
@@ -1127,6 +1439,15 @@
           ctx.fillStyle = '#fffa65';
           ctx.fillRect(renderX - 10, treasure.y - 10, 20, 6);
         }
+
+        // Green Checkmark (✓) on Real Treasure Chest
+        ctx.strokeStyle = '#2ed573';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(renderX - 6, treasure.y - 2);
+        ctx.lineTo(renderX - 1, treasure.y + 3);
+        ctx.lineTo(renderX + 7, treasure.y - 6);
+        ctx.stroke();
       }
     }
 
@@ -1178,6 +1499,47 @@
 
       if (player.invulnerableTimer > 0 && Math.floor(player.invulnerableTimer / 4) % 2 === 0) {
         return;
+      }
+
+      // DRAW INFLATED SHIELD WITH STAR IN CENTER
+      if (player.shieldActive) {
+        ctx.save();
+        ctx.translate(renderX + facing * 8, y - 8);
+
+        // Big Inflated Bubble Shield
+        ctx.fillStyle = 'rgba(255, 159, 243, 0.45)';
+        ctx.strokeStyle = '#f368e0';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, 26, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Shiny Highlight Rim
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.beginPath();
+        ctx.arc(-8, -8, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bright Yellow Star in Center
+        ctx.fillStyle = '#fffa65';
+        ctx.strokeStyle = '#ffa502';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        const numPoints = 5;
+        for (let i = 0; i < numPoints * 2; i++) {
+          const r = (i % 2 === 0) ? 11 : 5;
+          const a = (i * Math.PI) / numPoints;
+          const sx = Math.cos(a) * r;
+          const sy = Math.sin(a) * r;
+          if (i === 0) ctx.moveTo(sx, sy);
+          else ctx.lineTo(sx, sy);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
       }
 
       ctx.strokeStyle = '#000000';
@@ -1248,6 +1610,28 @@
       });
     }
 
+    function drawConfetti() {
+      confetti.forEach(c => {
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.rotation);
+        ctx.fillStyle = c.color;
+        ctx.fillRect(-c.size / 2, -c.size / 2, c.size, c.size);
+        ctx.restore();
+      });
+    }
+
+    function drawRain() {
+      ctx.strokeStyle = 'rgba(116, 185, 255, 0.75)';
+      ctx.lineWidth = 2;
+      rainDrops.forEach(r => {
+        ctx.beginPath();
+        ctx.moveTo(r.x, r.y);
+        ctx.lineTo(r.x - 2, r.y + r.length);
+        ctx.stroke();
+      });
+    }
+
     function draw() {
       ctx.save();
       if (camera.shake > 0.5) {
@@ -1256,16 +1640,18 @@
 
       drawBrightSky();
       drawClouds(0.15);
-      drawLoomingCastle(0.25);
+      drawCastle(0.25);
       drawBackgroundTrees(0.45);
       drawGround();
 
       drawEvilSoccerGoals(1.0);
-      drawChasingFakeChests(1.0);
+      drawFakeChests(1.0);
       drawTreasureChest(1.0);
       drawCoins(1.0);
       drawDragon(1.0);
       drawFireballs(1.0);
+      drawPlayerBubbles(1.0);
+      drawDiamondGuards(1.0);
 
       drawStickman(player.x, player.y, player.facing, player.walkFrame, player.isDigging, 1.0);
 
@@ -1273,6 +1659,14 @@
       drawParticles(1.0);
       drawFloatingTexts(1.0);
       drawForegroundTrees(1.35);
+
+      if (isLevelCleared) {
+        drawConfetti();
+      }
+
+      if (player.isDead) {
+        drawRain();
+      }
 
       ctx.restore();
     }
