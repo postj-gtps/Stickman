@@ -1,0 +1,21 @@
+This is the current state of Seddon Team 3's code.  Please update it with the following changes:
+
+Hereafter, the term "candy" will refer to any of the candies, snacks, or sodas already in the game.
+
+Enemies:
+
+1.) Healthy food is trying to steal the candy.  The healthy food consists of Carrot, Broccoli, Cabbage, and Apple.  The healthy food will spawn from the fire exit doors at the front of the theater.  It will target the nearest candy and grab it, running back to the fire exit doors.
+
+Carrots:  Fast, but must rest for 30 seconds after getting back to the fire exit.  They cannot go for more candy during this time.  They can hold one piece of candy.
+
+Broccoli:  Medium speed, but can use TREE POWER to block stickman.  If a stickman comes close to a broccoli that doesn't have any candy, stickman is caught for 5 seconds.  TREE POWER cannot be used again until Broccoli goes back to the fire exit.
+
+Cabbage: Cabbage cannot pick up any candy, but chases stickman to use BOUNCE POWER.  When cabbage hits stickman, stickman is bounced away with newtonian physics.
+
+Apple:  Apple only moves at 75% of stickman's speed, but can pick up 3 pieces of candy at a time before returning to the fire exits.
+
+Stickmen:  Stickman has 3 allies.  They are all as fast as him, but can only hold 1 piece of candy each.  The allies will attempt to avoid the healthy foods, but if they are caught, they behave just as the player stickman would, i.e., bouncing, tree catching, etc.  The allies are dressed in pants and shirt of the team color (determined randomly at game start), but the player character's stickman has the CAPTAIN's HAT.  This allows him to take on the powers of any 1 of the healthy foods, selected at game start.
+
+Stickmen goals:  To collect the candy and get it back to the theater entrances at the back of the theater.
+
+Game End:  The game is over when all the candy has been removed from the theater.  The winning team is the group that has gotten the most pieces of candy.

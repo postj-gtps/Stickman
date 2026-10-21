@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cinema Stickman</title>
+  <title>Seddon Team 3 - Cinema Candy Clash</title>
   <style>
     * {
       box-sizing: border-box;
       user-select: none;
       margin: 0;
       padding: 0;
-      font-family: 'Courier New', Courier, monospace, sans-serif;
+      font-family: 'Fredoka', 'Comic Sans MS', 'Courier New', Courier, monospace, sans-serif;
     }
 
     body {
-      background-color: #000000;
+      background-color: #0b0c10;
       color: #ffffff;
       display: flex;
       flex-direction: column;
@@ -22,7 +22,7 @@
       justify-content: flex-start;
       height: 100vh;
       overflow: hidden;
-      padding: 16px;
+      padding: 10px;
     }
 
     /* Top Header Bar */
@@ -32,47 +32,67 @@
       align-items: center;
       width: 100%;
       max-width: 1100px;
-      margin-bottom: 12px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #ffffff;
+      margin-bottom: 8px;
+      padding: 8px 16px;
+      background: #1f2833;
+      border: 3px solid #66fcf1;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(102, 252, 241, 0.2);
     }
 
     h1 {
-      font-size: 18px;
-      letter-spacing: 2px;
+      font-size: 20px;
+      letter-spacing: 1px;
       text-transform: uppercase;
-      font-weight: bold;
+      font-weight: 900;
+      color: #ff007f;
+      text-shadow: 2px 2px #000000;
     }
 
-    .stats {
+    .scoreboard {
       display: flex;
-      gap: 16px;
-      font-size: 14px;
+      gap: 20px;
+      font-size: 15px;
       font-weight: bold;
     }
 
-    .stat-item {
+    .score-box {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
+      background: #0b0c10;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 2px solid #45f3ff;
     }
 
-    .btn-reset {
-      background: transparent;
+    .score-stickmen { color: #00ff66; border-color: #00ff66; }
+    .score-foods { color: #ff3366; border-color: #ff3366; }
+
+    .btn-action {
+      background: #ff007f;
       color: #ffffff;
-      border: 1px solid #ffffff;
+      border: 2px solid #ffffff;
       padding: 6px 16px;
       font-size: 14px;
-      font-weight: bold;
+      font-weight: 900;
+      border-radius: 8px;
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 1px;
       transition: all 0.15s ease-in-out;
+      box-shadow: 0 4px 0 #b30059;
     }
 
-    .btn-reset:hover {
-      background: #ffffff;
-      color: #000000;
+    .btn-action:hover {
+      background: #ff3399;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 #b30059;
+    }
+
+    .btn-action:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #b30059;
     }
 
     /* Main Canvas Container */
@@ -80,7 +100,7 @@
       position: relative;
       width: 100%;
       max-width: 1100px;
-      height: 70vh;
+      height: 72vh;
       min-height: 420px;
       flex-grow: 1;
       display: flex;
@@ -89,18 +109,97 @@
     }
 
     canvas {
-      background-color: #0a0a0c;
-      border: 1px solid #ffffff;
+      background-color: #0f0f15;
+      border: 4px solid #ffffff;
+      border-radius: 12px;
       display: block;
       width: 100%;
       height: 100%;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
     }
 
     .instructions {
-      margin-top: 8px;
-      font-size: 11px;
-      color: #888888;
+      margin-top: 6px;
+      font-size: 12px;
+      color: #00ffcc;
+      font-weight: bold;
       text-align: center;
+      background: rgba(0,0,0,0.6);
+      padding: 4px 16px;
+      border-radius: 10px;
+    }
+
+    /* Modal Dialogs */
+    .modal-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.88);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .modal-title {
+      font-size: 28px;
+      color: #ffea00;
+      margin-bottom: 12px;
+      text-shadow: 3px 3px #ff0055;
+      font-weight: 900;
+    }
+
+    .modal-subtitle {
+      font-size: 14px;
+      color: #ffffff;
+      margin-bottom: 18px;
+      max-width: 620px;
+      line-height: 1.4;
+    }
+
+    .power-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      max-width: 700px;
+      width: 100%;
+      margin-bottom: 18px;
+    }
+
+    .power-card {
+      background: #1f2833;
+      border: 3px solid #45f3ff;
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .power-card:hover {
+      background: #00ffcc;
+      color: #000;
+      border-color: #ffffff;
+      transform: scale(1.04);
+    }
+
+    .power-card h3 {
+      font-size: 17px;
+      margin-bottom: 4px;
+    }
+
+    .power-card p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .hidden {
+      display: none !important;
     }
   </style>
 </head>
@@ -108,83 +207,143 @@
 
   <!-- Header Section -->
   <div id="header">
-    <h1>Cinema Stickman</h1>
-    <div class="stats">
-      <span class="stat-item">🍿 Popcorn: <span id="score-popcorn">0</span></span>
-      <span class="stat-item">🍬 Candy: <span id="score-candy">0</span></span>
-      <span class="stat-item">🥤 Soda: <span id="score-drink">0</span></span>
-      <span class="stat-item">🎬 Level: <span id="level-display">1</span></span>
+    <h1>Seddon Team 3 - Cinema Candy Clash</h1>
+    <div class="scoreboard">
+      <div class="score-box score-stickmen">
+        <span>🍿 Stickmen Candy:</span>
+        <span id="score-stickmen">0</span>
+      </div>
+      <div class="score-box score-foods">
+        <span>🥦 Healthy Food Candy:</span>
+        <span id="score-foods">0</span>
+      </div>
     </div>
-    <button class="btn-reset" onclick="resetGame()">Reset</button>
+    <button class="btn-action" onclick="resetGame()">Restart</button>
   </div>
 
   <!-- Canvas Container -->
   <div id="canvas-wrapper">
     <canvas id="simCanvas"></canvas>
+
+    <!-- Start / Captain Power Selection Modal -->
+    <div id="startModal" class="modal-overlay">
+      <h2 class="modal-title">CAPTAIN'S POWER SELECTION!</h2>
+      <p class="modal-subtitle">
+        Healthy Foods spawn at <strong>FRONT FIRE EXITS</strong> to steal theater candy!<br>
+        Lead your Stickmen Team, grab candy, and return it to <strong>BACK ENTRANCES</strong>.<br>
+        <strong>⚡ STEALING UNLOCKED:</strong> Run into opponents to steal candy! (2-sec immunity after a steal).<br>
+        Choose your Captain Hat ability:
+      </p>
+      <div class="power-grid">
+        <div class="power-card" onclick="selectPower('carrot')">
+          <h3>🥕 CARROT DASH</h3>
+          <p>Gain a permanent +30% Speed Boost for high mobility!</p>
+        </div>
+        <div class="power-card" onclick="selectPower('broccoli')">
+          <h3>🥦 TREE TRAP</h3>
+          <p>Press [SPACE] or [E] to freeze nearby Healthy Foods for 5 seconds!</p>
+        </div>
+        <div class="power-card" onclick="selectPower('cabbage')">
+          <h3>🥬 BOUNCE BLAST</h3>
+          <p>Press [SPACE] or [E] to trigger a shockwave that bounces enemies away!</p>
+        </div>
+        <div class="power-card" onclick="selectPower('apple')">
+          <h3>🍎 MULTI-BAGGER</h3>
+          <p>Carry up to 3 pieces of candy at the same time!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="modal-overlay hidden">
+      <h2 id="winnerText" class="modal-title">GAME OVER!</h2>
+      <p id="winnerSubtext" class="modal-subtitle"></p>
+      <button class="btn-action" style="font-size: 18px; padding: 10px 28px;" onclick="resetGame()">PLAY AGAIN</button>
+    </div>
   </div>
 
   <div class="instructions">
-    [WASD] Move Stickman | Navigate seats, collect all treats, and exit through the bottom doors!
+    [WASD ONLY] Move Captain | [SPACE / E] Captain Ability | Bump into carrying enemies to STEAL candy!
   </div>
 
   <script>
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
 
-    // KEYBOARD INPUT STATE (WASD strictly)
+    // STRICT WASD CONTROLS ONLY (Arrow keys explicitly ignored for movement)
     const keys = {};
 
-    // STICKMAN PLAYER STATE
+    // GAME STATE & SCORES
+    let gameActive = false;
+    let captainPower = 'carrot'; // Default
+    let teamColor = '#00f0ff'; // Random bright team color for stickmen clothing
+    let stickmenScore = 0;
+    let foodScore = 0;
+    let timeStep = 0;
+
+    // CAPTAIN PLAYER STICKMAN
     const player = {
       x: 0,
       y: 0,
-      radius: 6,
+      vx: 0,
+      vy: 0,
+      radius: 7,
+      baseSpeed: 4.5,
       speed: 4.5,
-      facing: 1, // 1 = Right, -1 = Left
-      walkFrame: 0
+      facing: 1,
+      walkFrame: 0,
+      carrying: [], // Array of candy objects held
+      maxCarry: 1,
+      frozenTimer: 0,
+      powerCooldown: 0,
+      stealImmunityTimer: 0,
+      isCaptain: true
     };
 
-    // GAME STATE
-    let level = 1;
-    let score = { popcorn: 0, candy: 0, drink: 0 };
-    let items = [];
-    let itemsRemaining = 0;
-    let movieType = 0; // 0 to 4 procedurally generated movies
-    let timeStep = 0;
-    let seatColorTheme = { main: '#800020', cushion: '#a00028', arm: '#500014' };
-    let initialized = false;
+    // AI ALLY STICKMEN (3 Allies)
+    let allies = [];
 
-    // SEAT THEME COLOR PALETTES FOR LEVELS
-    const seatPalettes = [
-      { main: '#800020', cushion: '#a00028', arm: '#500014' }, // Maroon
-      { main: '#1a237e', cushion: '#283593', arm: '#0d47a1' }, // Royal Blue
-      { main: '#004d40', cushion: '#00695c', arm: '#00251a' }, // Emerald
-      { main: '#4a148c', cushion: '#6a1b9a', arm: '#311b92' }, // Deep Purple
-      { main: '#e65100', cushion: '#f57c00', arm: '#b23c00' }  // Amber
-    ];
+    // HEALTHY FOOD ENEMIES
+    let enemies = [];
+
+    // CANDY SNACKS ON THEATER FLOOR
+    let candyItems = [];
+
+    // FLOATING NOTIFICATION TEXTS
+    let floatingTexts = [];
+
+    // SEAT LAYOUT & THEME
+    let seatColorTheme = { main: '#800020', cushion: '#a00028', arm: '#500014' };
+    const teamColorOptions = ['#00ffcc', '#ff00aa', '#ffff00', '#00ff66', '#ff6600', '#aa00ff'];
 
     function resizeCanvas() {
       const wrapper = document.getElementById('canvas-wrapper');
       canvas.width = wrapper.clientWidth || wrapper.offsetWidth || 800;
       canvas.height = wrapper.clientHeight || wrapper.offsetHeight || 500;
-
-      if (!initialized) {
-        initialized = true;
-        initLevel();
-      }
     }
 
     window.addEventListener('resize', resizeCanvas);
 
-    // CONTROLS HANDLERS (WASD STRICTLY)
+    // STRICT WASD INPUT LISTENERS (Arrow keys completely ignored for movement)
     window.addEventListener('keydown', (e) => {
       const code = e.code;
       const key = e.key.toLowerCase();
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(code) || ['w', 'a', 's', 'd'].includes(key)) {
+
+      // Prevent default scrolling on WASD or Action keys
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyE'].includes(code) || ['w', 'a', 's', 'd', ' ', 'e'].includes(key)) {
         e.preventDefault();
       }
-      keys[code] = true;
-      keys[key] = true;
+
+      // Record key presses ONLY for WASD and Space/E
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyE'].includes(code) || ['w', 'a', 's', 'd', ' ', 'e'].includes(key)) {
+        keys[code] = true;
+        keys[key] = true;
+      }
+
+      // Trigger Captain Ability
+      if ((code === 'Space' || code === 'KeyE' || key === ' ' || key === 'e') && gameActive) {
+        useCaptainPower();
+      }
     });
 
     window.addEventListener('keyup', (e) => {
@@ -194,45 +353,57 @@
       keys[key] = false;
     });
 
-    function updateScoreUI() {
-      document.getElementById('score-popcorn').innerText = score.popcorn;
-      document.getElementById('score-candy').innerText = score.candy;
-      document.getElementById('score-drink').innerText = score.drink;
-      document.getElementById('level-display').innerText = level;
+    function selectPower(powerType) {
+      captainPower = powerType;
+      document.getElementById('startModal').classList.add('hidden');
+      initGame();
     }
 
-    // CALCULATE SEAT BOUNDING BOXES FOR DRAWING & COLLISION (6 ROWS x 12 SEATS)
+    function resetGame() {
+      document.getElementById('gameOverModal').classList.add('hidden');
+      document.getElementById('startModal').classList.remove('hidden');
+      gameActive = false;
+    }
+
+    function addFloatingText(x, y, text, color) {
+      floatingTexts.push({ x, y, text, color, life: 1.2 });
+    }
+
+    // SEAT GRID WITH 2 VERTICAL AISLES FOR PERFECT NAVIGATION
     function getSeatLayout() {
       const rows = 6;
       const cols = 12;
-      const startY = canvas.height * 0.28;
-      const endY = canvas.height * 0.80;
+      const startY = canvas.height * 0.32;
+      const endY = canvas.height * 0.76;
       const rowSpacing = (endY - startY) / (rows - 1);
-      
-      const seatWidth = Math.min(32, (canvas.width - 160) / cols);
-      const seatHeight = 20;
+      const seatWidth = 24;
+      const seatHeight = 16;
+      const aisleGap = 36; // Wide aisle gap for easy passage
 
-      const totalWidth = cols * (seatWidth + 6);
+      const totalWidth = cols * seatWidth + 9 * 4 + 2 * aisleGap;
       const startX = (canvas.width - totalWidth) / 2;
 
       const seats = [];
       for (let r = 0; r < rows; r++) {
         const sy = startY + r * rowSpacing;
+        let currentX = startX;
         for (let c = 0; c < cols; c++) {
-          const sx = startX + c * (seatWidth + 6);
           seats.push({
-            x: sx - 2,
+            x: currentX,
             y: sy,
-            width: seatWidth + 4,
-            height: seatHeight,
-            seatWidth: seatWidth
+            width: seatWidth,
+            height: seatHeight
           });
+          currentX += seatWidth + 4;
+          if (c === 3 || c === 7) {
+            currentX += aisleGap; // Insert vertical walkways after seat 4 and seat 8
+          }
         }
       }
       return seats;
     }
 
-    // CHECK CIRCLE VS RECTANGLE OVERLAP FOR OBSTACLE COLLISION
+    // CIRCLE VS RECTANGLE COLLISION DETECTOR
     function circleRectOverlap(cx, cy, r, rect) {
       const closestX = Math.max(rect.x, Math.min(cx, rect.x + rect.width));
       const closestY = Math.max(rect.y, Math.min(cy, rect.y + rect.height));
@@ -241,154 +412,538 @@
       return (distX * distX + distY * distY) < (r * r);
     }
 
-    function initLevel() {
-      movieType = (level - 1) % 5;
-      seatColorTheme = seatPalettes[Math.floor(Math.random() * seatPalettes.length)];
+    function initGame() {
+      resizeCanvas();
+      gameActive = true;
+      stickmenScore = 0;
+      foodScore = 0;
+      timeStep = 0;
+      floatingTexts = [];
 
-      // Initial Stickman Spawn at Bottom Center
+      // Pick Random Team Color for Clothes
+      teamColor = teamColorOptions[Math.floor(Math.random() * teamColorOptions.length)];
+
+      // Configure Player Stickman
       player.x = canvas.width / 2;
-      player.y = canvas.height - 90;
+      player.y = canvas.height - 80;
+      player.vx = 0;
+      player.vy = 0;
       player.facing = 1;
       player.walkFrame = 0;
+      player.carrying = [];
+      player.frozenTimer = 0;
+      player.powerCooldown = 0;
+      player.stealImmunityTimer = 0;
 
-      const seats = getSeatLayout();
-      items = [];
+      // Apply Captain Power Configs
+      if (captainPower === 'carrot') {
+        player.baseSpeed = 5.8; // +30% Speed
+        player.maxCarry = 1;
+      } else if (captainPower === 'apple') {
+        player.baseSpeed = 4.5;
+        player.maxCarry = 3; // Hold 3 candies
+      } else {
+        player.baseSpeed = 4.5;
+        player.maxCarry = 1;
+      }
+      player.speed = player.baseSpeed;
+
+      // Spawn 3 AI Ally Stickmen
+      allies = [];
+      for (let i = 0; i < 3; i++) {
+        allies.push({
+          id: i + 1,
+          x: (canvas.width / 4) * (i + 1),
+          y: canvas.height - 80,
+          vx: 0,
+          vy: 0,
+          radius: 7,
+          speed: 4.2,
+          facing: 1,
+          walkFrame: 0,
+          carrying: [],
+          maxCarry: 1,
+          frozenTimer: 0,
+          stealImmunityTimer: 0,
+          isCaptain: false
+        });
+      }
+
+      // Spawn Candy Scattered STRICTLY in Open Aisle & Walkway Space
+      candyItems = [];
       const itemTypes = ['popcorn', 'candy', 'drink'];
-      const totalItems = 10 + Math.min(level * 2, 10);
+      const totalCandy = 24;
+      const seats = getSeatLayout();
 
-      // TRAPEZOIDAL THEATER FLOOR SPAN
-      const screenW = Math.min(600, canvas.width * 0.65);
-      const screenX = (canvas.width - screenW) / 2;
-      const screenH = Math.min(110, canvas.height * 0.22);
+      const startY = canvas.height * 0.32;
+      const endY = canvas.height * 0.76;
 
-      const y1 = 25 + screenH + 10;
-      const y2 = canvas.height - 85;
-      const x1_left = Math.max(45, screenX - 20);
-      const x1_right = Math.min(canvas.width - 45, screenX + screenW + 20);
-
-      for (let i = 0; i < totalItems; i++) {
+      for (let i = 0; i < totalCandy; i++) {
         let valid = false;
         let itemX = 0, itemY = 0;
         let attempts = 0;
 
-        while (!valid && attempts < 150) {
+        while (!valid && attempts < 300) {
           attempts++;
-          itemY = Math.random() * (y2 - y1 - 20) + y1 + 10;
-          const t = (itemY - y1) / (y2 - y1);
-          
-          const minX = (x1_left + t * (50 - x1_left)) + 25;
-          const maxX = (x1_right + t * ((canvas.width - 50) - x1_right)) - 25;
+          const region = Math.random();
+          if (region < 0.4) {
+            itemY = Math.random() * (endY - startY + 40) + startY - 20;
+            const aisleChoice = Math.random();
+            if (aisleChoice < 0.33) itemX = canvas.width * 0.18 + Math.random() * 40;
+            else if (aisleChoice < 0.66) itemX = canvas.width * 0.5 + (Math.random() - 0.5) * 40;
+            else itemX = canvas.width * 0.82 - Math.random() * 40;
+          } else if (region < 0.7) {
+            itemY = Math.random() * (startY - 160) + 140;
+            itemX = Math.random() * (canvas.width - 200) + 100;
+          } else {
+            itemY = Math.random() * (canvas.height - endY - 110) + endY + 25;
+            itemX = Math.random() * (canvas.width - 180) + 90;
+          }
 
-          itemX = Math.random() * (maxX - minX) + minX;
-
-          // Ensure treats do not spawn on top of seat obstacles
-          let insideSeat = false;
-          for (let seat of seats) {
-            if (itemX >= seat.x - 12 && itemX <= seat.x + seat.width + 12 &&
-                itemY >= seat.y - 12 && itemY <= seat.y + seat.height + 12) {
-              insideSeat = true;
+          let overlap = false;
+          for (let s of seats) {
+            if (circleRectOverlap(itemX, itemY, 12, s)) {
+              overlap = true;
               break;
             }
           }
-          if (!insideSeat) valid = true;
+          if (!overlap) valid = true;
         }
 
-        items.push({
+        candyItems.push({
+          id: i,
           x: itemX,
           y: itemY,
           type: itemTypes[Math.floor(Math.random() * itemTypes.length)],
-          collected: false
+          status: 'floor' // 'floor', 'stickman', 'enemy', 'saved', 'stolen'
         });
       }
 
-      itemsRemaining = totalItems;
-      updateScoreUI();
+      // Initialize Healthy Food Enemies
+      enemies = [
+        { type: 'carrot', x: 50, y: 55, vx: 0, vy: 0, speed: 5.2, maxCarry: 1, carrying: [], restTimer: 0, treePower: false, stealImmunityTimer: 0 },
+        { type: 'broccoli', x: canvas.width - 50, y: 55, vx: 0, vy: 0, speed: 3.8, maxCarry: 1, carrying: [], restTimer: 0, treePower: true, stealImmunityTimer: 0 },
+        { type: 'cabbage', x: 50, y: 55, vx: 0, vy: 0, speed: 4.0, maxCarry: 0, carrying: [], restTimer: 0, treePower: false, stealImmunityTimer: 0 },
+        { type: 'apple', x: canvas.width - 50, y: 55, vx: 0, vy: 0, speed: 3.4, maxCarry: 3, carrying: [], restTimer: 0, treePower: false, stealImmunityTimer: 0 }
+      ];
+
+      updateScoreDisplay();
     }
 
-    function resetGame() {
-      level = 1;
-      score = { popcorn: 0, candy: 0, drink: 0 };
-      initLevel();
+    function useCaptainPower() {
+      if (player.powerCooldown > 0 || player.frozenTimer > 0) return;
+
+      if (captainPower === 'broccoli') {
+        enemies.forEach(e => {
+          if (Math.hypot(e.x - player.x, e.y - player.y) < 130) {
+            e.restTimer = 5;
+            addFloatingText(e.x, e.y - 15, "TRAPPED! 🥦", "#00ffcc");
+          }
+        });
+        player.powerCooldown = 12;
+      } else if (captainPower === 'cabbage') {
+        enemies.forEach(e => {
+          const dist = Math.hypot(e.x - player.x, e.y - player.y);
+          if (dist < 140) {
+            const angle = Math.atan2(e.y - player.y, e.x - player.x);
+            e.vx = Math.cos(angle) * 16;
+            e.vy = Math.sin(angle) * 16;
+            addFloatingText(e.x, e.y - 15, "BOUNCED! 💥", "#ff007f");
+          }
+        });
+        player.powerCooldown = 8;
+      }
+    }
+
+    function updateScoreDisplay() {
+      document.getElementById('score-stickmen').innerText = stickmenScore;
+      document.getElementById('score-foods').innerText = foodScore;
+    }
+
+    function getExits() {
+      return {
+        topExits: [
+          { x: 50, y: 55, w: 50, h: 50 },
+          { x: canvas.width - 50, y: 55, w: 50, h: 50 }
+        ],
+        bottomExits: [
+          { x: 45, y: canvas.height - 45, w: 60, h: 60 },
+          { x: canvas.width - 45, y: canvas.height - 45, w: 60, h: 60 }
+        ]
+      };
     }
 
     function updatePhysics() {
+      if (!gameActive) return;
       timeStep += 0.03;
 
-      let dx = 0;
-      let dy = 0;
-
-      if (keys['KeyW'] || keys['w']) dy -= 1;
-      if (keys['KeyS'] || keys['s']) dy += 1;
-      if (keys['KeyA'] || keys['a']) { dx -= 1; player.facing = -1; }
-      if (keys['KeyD'] || keys['d']) { dx += 1; player.facing = 1; }
-
-      if (dx !== 0 && dy !== 0) {
-        dx *= 0.7071;
-        dy *= 0.7071;
-      }
-
       const seats = getSeatLayout();
+      const exits = getExits();
 
-      // Horizontal movement & seat collision resolution
-      if (dx !== 0) {
-        player.x += dx * player.speed;
-        for (let seat of seats) {
-          if (circleRectOverlap(player.x, player.y, player.radius, seat)) {
-            if (dx > 0) player.x = seat.x - player.radius;
-            else if (dx < 0) player.x = seat.x + seat.width + player.radius;
-          }
-        }
-      }
+      if (player.powerCooldown > 0) player.powerCooldown -= 0.03;
 
-      // Vertical movement & seat collision resolution
-      if (dy !== 0) {
-        player.y += dy * player.speed;
-        for (let seat of seats) {
-          if (circleRectOverlap(player.x, player.y, player.radius, seat)) {
-            if (dy > 0) player.y = seat.y - player.radius;
-            else if (dy < 0) player.y = seat.y + seat.height + player.radius;
-          }
-        }
-      }
+      // Decrement Immunity Timers
+      if (player.stealImmunityTimer > 0) player.stealImmunityTimer -= 0.03;
+      allies.forEach(a => { if (a.stealImmunityTimer > 0) a.stealImmunityTimer -= 0.03; });
+      enemies.forEach(e => { if (e.stealImmunityTimer > 0) e.stealImmunityTimer -= 0.03; });
 
-      // Outer Canvas Walls Collision
-      const margin = 15;
-      player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
-      player.y = Math.max(margin + 15, Math.min(canvas.height - margin - 10, player.y));
-
-      if (dx !== 0 || dy !== 0) {
-        player.walkFrame += 0.25;
+      // --- 1. PLAYER STICKMAN PHYSICS ---
+      if (player.frozenTimer > 0) {
+        player.frozenTimer -= 0.03;
       } else {
-        player.walkFrame = 0;
+        let pdx = 0;
+        let pdy = 0;
+
+        if (keys['KeyW'] || keys['w']) pdy -= 1;
+        if (keys['KeyS'] || keys['s']) pdy += 1;
+        if (keys['KeyA'] || keys['a']) { pdx -= 1; player.facing = -1; }
+        if (keys['KeyD'] || keys['d']) { pdx += 1; player.facing = 1; }
+
+        if (pdx !== 0 && pdy !== 0) {
+          pdx *= 0.7071;
+          pdy *= 0.7071;
+        }
+
+        player.vx = player.vx * 0.8 + pdx * player.speed * 0.2;
+        player.vy = player.vy * 0.8 + pdy * player.speed * 0.2;
       }
 
-      // Item Pickup Detection
-      items.forEach(item => {
-        if (!item.collected) {
-          const dist = Math.hypot(player.x - item.x, player.y - item.y);
-          if (dist < 20) {
-            item.collected = true;
-            score[item.type]++;
-            itemsRemaining--;
-            updateScoreUI();
+      player.x += player.vx;
+      player.y += player.vy;
+      player.vx *= 0.88;
+      player.vy *= 0.88;
+
+      resolveSeatCollisions(player, seats);
+
+      if (Math.hypot(player.vx, player.vy) > 0.5) player.walkFrame += 0.25;
+      else player.walkFrame = 0;
+
+      // Player Score Candy at Bottom Entrances
+      if (player.carrying.length > 0) {
+        exits.bottomExits.forEach(exit => {
+          if (Math.hypot(player.x - exit.x, player.y - exit.y) < 48) {
+            stickmenScore += player.carrying.length;
+            addFloatingText(player.x, player.y - 20, `+${player.carrying.length} CANDY!`, "#00ff66");
+            player.carrying.forEach(c => c.status = 'saved');
+            player.carrying = [];
+            updateScoreDisplay();
+          }
+        });
+      }
+
+      // --- 2. AI ALLY STICKMEN PHYSICS ---
+      allies.forEach(ally => {
+        if (ally.frozenTimer > 0) {
+          ally.frozenTimer -= 0.03;
+        } else {
+          let targetX = ally.x;
+          let targetY = ally.y;
+
+          if (ally.carrying.length >= ally.maxCarry) {
+            const e1 = exits.bottomExits[0];
+            const e2 = exits.bottomExits[1];
+            const d1 = Math.hypot(ally.x - e1.x, ally.y - e1.y);
+            const d2 = Math.hypot(ally.x - e2.x, ally.y - e2.y);
+            targetX = d1 < d2 ? e1.x : e2.x;
+            targetY = d1 < d2 ? e1.y : e2.y;
+          } else {
+            let nearestCandy = null;
+            let minDist = 9999;
+            candyItems.forEach(c => {
+              if (c.status === 'floor') {
+                const dist = Math.hypot(ally.x - c.x, ally.y - c.y);
+                if (dist < minDist) {
+                  minDist = dist;
+                  nearestCandy = c;
+                }
+              }
+            });
+
+            if (nearestCandy) {
+              targetX = nearestCandy.x;
+              targetY = nearestCandy.y;
+            }
+          }
+
+          const angle = Math.atan2(targetY - ally.y, targetX - ally.x);
+          const adx = Math.cos(angle);
+          const ady = Math.sin(angle);
+
+          if (adx < 0) ally.facing = -1;
+          if (adx > 0) ally.facing = 1;
+
+          ally.vx = ally.vx * 0.8 + adx * ally.speed * 0.2;
+          ally.vy = ally.vy * 0.8 + ady * ally.speed * 0.2;
+        }
+
+        ally.x += ally.vx;
+        ally.y += ally.vy;
+        ally.vx *= 0.88;
+        ally.vy *= 0.88;
+
+        resolveSeatCollisions(ally, seats);
+
+        if (Math.hypot(ally.vx, ally.vy) > 0.5) ally.walkFrame += 0.25;
+        else ally.walkFrame = 0;
+
+        if (ally.carrying.length > 0) {
+          exits.bottomExits.forEach(exit => {
+            if (Math.hypot(ally.x - exit.x, ally.y - exit.y) < 48) {
+              stickmenScore += ally.carrying.length;
+              addFloatingText(ally.x, ally.y - 20, `+${ally.carrying.length} CANDY!`, "#00ff66");
+              ally.carrying.forEach(c => c.status = 'saved');
+              ally.carrying = [];
+              updateScoreDisplay();
+            }
+          });
+        }
+      });
+
+      // --- 3. CANDY PICKUP FROM FLOOR BY STICKMEN ---
+      const allStickmen = [player, ...allies];
+      candyItems.forEach(candy => {
+        if (candy.status === 'floor') {
+          allStickmen.forEach(s => {
+            if (s.carrying.length < s.maxCarry && Math.hypot(s.x - candy.x, s.y - candy.y) < 22) {
+              candy.status = 'stickman';
+              s.carrying.push(candy);
+            }
+          });
+        }
+      });
+
+      // --- 4. STEALING MECHANICS BETWEEN STICKMEN & HEALTHY FOODS ---
+      allStickmen.forEach(stickman => {
+        if (stickman.frozenTimer > 0) return;
+
+        enemies.forEach(enemy => {
+          if (enemy.type === 'cabbage' || enemy.restTimer > 0) return;
+
+          const dist = Math.hypot(stickman.x - enemy.x, stickman.y - enemy.y);
+          if (dist < 26) {
+            // A. Stickman Steals Candy From Healthy Food
+            if (stickman.carrying.length < stickman.maxCarry &&
+                enemy.carrying.length > 0 &&
+                stickman.stealImmunityTimer <= 0 &&
+                enemy.stealImmunityTimer <= 0) {
+
+              const stolenCandy = enemy.carrying.pop();
+              stolenCandy.status = 'stickman';
+              stickman.carrying.push(stolenCandy);
+
+              stickman.stealImmunityTimer = 2.0; // 2 SECOND STEAL IMMUNITY
+              enemy.stealImmunityTimer = 2.0;
+
+              addFloatingText(stickman.x, stickman.y - 22, "STOLE CANDY! ⚡", "#00ff66");
+            }
+            // B. Healthy Food Steals Candy From Stickman
+            else if (enemy.carrying.length < enemy.maxCarry &&
+                     stickman.carrying.length > 0 &&
+                     stickman.stealImmunityTimer <= 0 &&
+                     enemy.stealImmunityTimer <= 0) {
+
+              const stolenCandy = stickman.carrying.pop();
+              stolenCandy.status = 'enemy';
+              enemy.carrying.push(stolenCandy);
+
+              stickman.stealImmunityTimer = 2.0; // 2 SECOND STEAL IMMUNITY
+              enemy.stealImmunityTimer = 2.0;
+
+              addFloatingText(enemy.x, enemy.y - 22, "STOLE CANDY! ⚡", "#ff3366");
+            }
+          }
+        });
+      });
+
+      // --- 5. HEALTHY FOOD ENEMY AI & POWERS ---
+      enemies.forEach(enemy => {
+        if (enemy.restTimer > 0) {
+          enemy.restTimer -= 0.03;
+          return;
+        }
+
+        let targetX = enemy.x;
+        let targetY = enemy.y;
+
+        if (enemy.type === 'cabbage') {
+          let closestStickman = player;
+          let minDist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+
+          allies.forEach(a => {
+            const d = Math.hypot(a.x - enemy.x, a.y - enemy.y);
+            if (d < minDist) {
+              minDist = d;
+              closestStickman = a;
+            }
+          });
+
+          targetX = closestStickman.x;
+          targetY = closestStickman.y;
+
+          if (minDist < 22) {
+            const angle = Math.atan2(closestStickman.y - enemy.y, closestStickman.x - enemy.x);
+            closestStickman.vx += Math.cos(angle) * 14;
+            closestStickman.vy += Math.sin(angle) * 14;
+          }
+
+        } else {
+          if (enemy.carrying.length >= enemy.maxCarry) {
+            const e1 = exits.topExits[0];
+            const e2 = exits.topExits[1];
+            const d1 = Math.hypot(enemy.x - e1.x, enemy.y - e1.y);
+            const d2 = Math.hypot(enemy.x - e2.x, enemy.y - e2.y);
+            targetX = d1 < d2 ? e1.x : e2.x;
+            targetY = d1 < d2 ? e1.y : e2.y;
+
+            if (Math.hypot(enemy.x - targetX, enemy.y - targetY) < 35) {
+              foodScore += enemy.carrying.length;
+              addFloatingText(enemy.x, enemy.y - 20, `STOLE ${enemy.carrying.length}!`, "#ff3366");
+              enemy.carrying.forEach(c => c.status = 'stolen');
+              enemy.carrying = [];
+              enemy.treePower = true;
+              updateScoreDisplay();
+
+              if (enemy.type === 'carrot') {
+                enemy.restTimer = 30; // 30 SECOND MANDATORY REST AFTER FIRE EXIT RETURN
+              }
+            }
+          } else {
+            let nearestCandy = null;
+            let minDist = 9999;
+            candyItems.forEach(c => {
+              if (c.status === 'floor') {
+                const dist = Math.hypot(enemy.x - c.x, enemy.y - c.y);
+                if (dist < minDist) {
+                  minDist = dist;
+                  nearestCandy = c;
+                }
+              }
+            });
+
+            if (nearestCandy) {
+              targetX = nearestCandy.x;
+              targetY = nearestCandy.y;
+            } else {
+              targetX = exits.topExits[0].x;
+              targetY = exits.topExits[0].y;
+            }
+
+            if (enemy.type === 'broccoli' && enemy.treePower && enemy.carrying.length === 0) {
+              allStickmen.forEach(s => {
+                if (Math.hypot(s.x - enemy.x, s.y - enemy.y) < 30) {
+                  s.frozenTimer = 5; // CAUGHT FOR 5 SECONDS BY BROCCOLI!
+                  enemy.treePower = false;
+                  addFloatingText(s.x, s.y - 20, "CAUGHT! 🌳", "#00ffcc");
+                }
+              });
+            }
+
+            candyItems.forEach(c => {
+              if (c.status === 'floor' && enemy.carrying.length < enemy.maxCarry) {
+                if (Math.hypot(enemy.x - c.x, enemy.y - c.y) < 22) {
+                  c.status = 'enemy';
+                  enemy.carrying.push(c);
+                }
+              }
+            });
+          }
+        }
+
+        const angle = Math.atan2(targetY - enemy.y, targetX - enemy.x);
+        enemy.vx = enemy.vx * 0.8 + Math.cos(angle) * enemy.speed * 0.2;
+        enemy.vy = enemy.vy * 0.8 + Math.sin(angle) * enemy.speed * 0.2;
+
+        enemy.x += enemy.vx;
+        enemy.y += enemy.vy;
+        enemy.vx *= 0.88;
+        enemy.vy *= 0.88;
+
+        resolveSeatCollisions(enemy, seats);
+      });
+
+      // --- 6. CHECK GAME OVER CONDITION ---
+      // Game ends immediately when ALL candy pieces have been saved or stolen!
+      const activeCandyCount = candyItems.filter(c => c.status !== 'saved' && c.status !== 'stolen').length;
+      if (activeCandyCount === 0) {
+        endGame();
+      }
+    }
+
+    function resolveSeatCollisions(entity, seats) {
+      seats.forEach(seat => {
+        const r = entity.radius || 6;
+        if (circleRectOverlap(entity.x, entity.y, r, seat)) {
+          const closestX = Math.max(seat.x, Math.min(entity.x, seat.x + seat.width));
+          const closestY = Math.max(seat.y, Math.min(entity.y, seat.y + seat.height));
+          const distX = entity.x - closestX;
+          const distY = entity.y - closestY;
+          const dist = Math.hypot(distX, distY);
+
+          if (dist > 0) {
+            const overlap = r - dist;
+            entity.x += (distX / dist) * overlap;
+            entity.y += (distY / dist) * overlap;
+          } else {
+            entity.y = seat.y - r;
           }
         }
       });
 
-      // Exit Level Trigger
-      if (itemsRemaining === 0) {
-        const bottomExitY = canvas.height - 75;
-        const leftExitTrigger = player.x < 75 && player.y > bottomExitY;
-        const rightExitTrigger = player.x > canvas.width - 75 && player.y > bottomExitY;
+      const m = 20;
+      entity.x = Math.max(m, Math.min(canvas.width - m, entity.x));
+      entity.y = Math.max(m + 15, Math.min(canvas.height - m - 10, entity.y));
+    }
 
-        if (leftExitTrigger || rightExitTrigger) {
-          level++;
-          initLevel();
-        }
+    function endGame() {
+      gameActive = false;
+      const modal = document.getElementById('gameOverModal');
+      const winTitle = document.getElementById('winnerText');
+      const winSub = document.getElementById('winnerSubtext');
+
+      modal.classList.remove('hidden');
+
+      if (stickmenScore > foodScore) {
+        winTitle.innerText = "🎉 STICKMEN VICTORY! 🎉";
+        winTitle.style.color = "#00ff66";
+        winSub.innerHTML = `Your Stickmen Team collected <strong>${stickmenScore}</strong> pieces of candy!<br>Healthy Foods only got <strong>${foodScore}</strong> pieces.`;
+      } else if (foodScore > stickmenScore) {
+        winTitle.innerText = "🥕 HEALTHY FOOD WON! 🥦";
+        winTitle.style.color = "#ff3366";
+        winSub.innerHTML = `Healthy Foods stole <strong>${foodScore}</strong> pieces of candy!<br>Stickmen Team collected <strong>${stickmenScore}</strong> pieces.`;
+      } else {
+        winTitle.innerText = "🤝 IT'S A TIE! 🤝";
+        winTitle.style.color = "#ffea00";
+        winSub.innerHTML = `Both teams collected <strong>${stickmenScore}</strong> pieces of candy!`;
       }
     }
 
-    // RENDER MOVIE SCREEN (1 of 5 Procedural Films)
+    // RENDER THEATER & ENTITIES
+    function draw() {
+      ctx.fillStyle = '#0a0a0f';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const screenW = Math.min(600, canvas.width * 0.65);
+      const screenH = Math.min(110, canvas.height * 0.22);
+      const screenX = (canvas.width - screenW) / 2;
+
+      drawMovieScreen(screenX, 25, screenW, screenH);
+      drawTheaterSeats();
+      drawExitDoors();
+      drawCandy();
+      drawEnemies();
+
+      // Draw Allies
+      allies.forEach(ally => {
+        drawStickmanCharacter(ally.x, ally.y, ally.facing, ally.walkFrame, teamColor, false, ally.frozenTimer, ally.carrying.length, ally.stealImmunityTimer);
+      });
+
+      // Draw Captain Player
+      drawStickmanCharacter(player.x, player.y, player.facing, player.walkFrame, teamColor, true, player.frozenTimer, player.carrying.length, player.stealImmunityTimer);
+
+      drawFloatingTexts();
+      drawHUDOverlay();
+    }
+
     function drawMovieScreen(x, y, w, h) {
       ctx.fillStyle = '#000000';
       ctx.fillRect(x, y, w, h);
@@ -398,107 +953,18 @@
       ctx.rect(x, y, w, h);
       ctx.clip();
 
-      if (movieType === 0) {
-        // Starfield & Planet
-        ctx.fillStyle = '#050518';
-        ctx.fillRect(x, y, w, h);
-        for (let i = 0; i < 25; i++) {
-          const sx = x + ((i * 37 + timeStep * 12) % w);
-          const sy = y + ((i * 19) % h);
-          ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#4dabf7';
-          ctx.fillRect(sx, sy, 2, 2);
-        }
-        const px = x + w * 0.7;
-        const py = y + h * 0.5;
-        ctx.fillStyle = '#e64980';
-        ctx.beginPath();
-        ctx.arc(px, py, 16, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#ffdeeb';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.ellipse(px, py, 26, 7, Math.PI / 6, 0, Math.PI * 2);
-        ctx.stroke();
+      const oceanGrad = ctx.createLinearGradient(x, y, x, y + h);
+      oceanGrad.addColorStop(0, '#00b4d8');
+      oceanGrad.addColorStop(1, '#03045e');
+      ctx.fillStyle = oceanGrad;
+      ctx.fillRect(x, y, w, h);
 
-      } else if (movieType === 1) {
-        // Digital Rain
-        ctx.fillStyle = '#001100';
-        ctx.fillRect(x, y, w, h);
-        ctx.fillStyle = '#00ff66';
-        ctx.font = '10px monospace';
-        const cols = 16;
-        for (let c = 0; c < cols; c++) {
-          const cx = x + (c * (w / cols)) + 4;
-          const dropY = y + ((timeStep * 40 + c * 17) % h);
-          ctx.fillText(String.fromCharCode(0x30A0 + (c * 3) % 96), cx, dropY);
-          ctx.fillText(String.fromCharCode(0x30A0 + (c * 7) % 96), cx, (dropY + h / 2) % h + y);
-        }
-
-      } else if (movieType === 2) {
-        // Synthwave Sunset
-        const grad = ctx.createLinearGradient(x, y, x, y + h);
-        grad.addColorStop(0, '#ff007f');
-        grad.addColorStop(0.7, '#ffaa00');
-        grad.addColorStop(1, '#330033');
-        ctx.fillStyle = grad;
-        ctx.fillRect(x, y, w, h);
-
-        ctx.fillStyle = '#ffff00';
-        ctx.beginPath();
-        ctx.arc(x + w / 2, y + h * 0.6, 18, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#110022';
-        ctx.beginPath();
-        ctx.moveTo(x, y + h);
-        ctx.lineTo(x + w * 0.2, y + h * 0.55);
-        ctx.lineTo(x + w * 0.4, y + h);
-        ctx.lineTo(x + w * 0.7, y + h * 0.5);
-        ctx.lineTo(x + w, y + h);
-        ctx.fill();
-
-      } else if (movieType === 3) {
-        // Neon Geometry
-        ctx.fillStyle = '#080010';
-        ctx.fillRect(x, y, w, h);
-        const cx = x + w / 2;
-        const cy = y + h / 2;
-        ctx.strokeStyle = '#00ffff';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (let i = 0; i < 5; i++) {
-          const rad = ((timeStep * 20 + i * 15) % 45) + 5;
-          ctx.arc(cx, cy, rad, 0, Math.PI * 2);
-        }
-        ctx.stroke();
-
-        ctx.strokeStyle = '#ff00ff';
-        const rot = timeStep;
-        ctx.beginPath();
-        ctx.moveTo(cx + Math.cos(rot) * 35, cy + Math.sin(rot) * 35);
-        ctx.lineTo(cx - Math.cos(rot) * 35, cy - Math.sin(rot) * 35);
-        ctx.stroke();
-
-      } else if (movieType === 4) {
-        // Ocean Deep Documentary
-        const oceanGrad = ctx.createLinearGradient(x, y, x, y + h);
-        oceanGrad.addColorStop(0, '#00b4d8');
-        oceanGrad.addColorStop(1, '#03045e');
-        ctx.fillStyle = oceanGrad;
-        ctx.fillRect(x, y, w, h);
-
-        const fx = x + ((timeStep * 30) % (w + 40)) - 20;
-        const fy = y + h * 0.5 + Math.sin(timeStep * 2) * 10;
-        ctx.fillStyle = '#ff9e00';
-        ctx.beginPath();
-        ctx.ellipse(fx, fy, 10, 5, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(fx - 8, fy);
-        ctx.lineTo(fx - 15, fy - 5);
-        ctx.lineTo(fx - 15, fy + 5);
-        ctx.fill();
-      }
+      const fx = x + ((timeStep * 35) % (w + 40)) - 20;
+      const fy = y + h * 0.5 + Math.sin(timeStep * 2) * 10;
+      ctx.fillStyle = '#ff9e00';
+      ctx.beginPath();
+      ctx.ellipse(fx, fy, 12, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
 
       ctx.restore();
 
@@ -506,7 +972,6 @@
       ctx.lineWidth = 3;
       ctx.strokeRect(x, y, w, h);
 
-      // Floor Light Projection Trapezoid Beam
       ctx.fillStyle = 'rgba(255, 255, 255, 0.035)';
       ctx.beginPath();
       ctx.moveTo(x - 20, y + h);
@@ -516,90 +981,54 @@
       ctx.fill();
     }
 
-    // DRAW THEATER SEAT OBSTACLES
     function drawTheaterSeats() {
       const seats = getSeatLayout();
-
       seats.forEach(seat => {
-        // Armrests
         ctx.fillStyle = seatColorTheme.arm;
         ctx.fillRect(seat.x, seat.y, 3, seat.height);
         ctx.fillRect(seat.x + seat.width - 3, seat.y, 3, seat.height);
 
-        // Seat Backrest
         ctx.fillStyle = seatColorTheme.main;
-        ctx.fillRect(seat.x + 2, seat.y, seat.width - 4, 7);
+        ctx.fillRect(seat.x + 2, seat.y, seat.width - 4, 6);
 
-        // Cushion
         ctx.fillStyle = seatColorTheme.cushion;
-        ctx.fillRect(seat.x + 3, seat.y + 7, seat.width - 6, seat.height - 7);
+        ctx.fillRect(seat.x + 3, seat.y + 6, seat.width - 6, seat.height - 6);
       });
     }
 
-    // DRAW EXIT DOORS
     function drawExitDoors() {
-      const doorW = 50;
-      const doorH = 55;
+      const exits = getExits();
 
-      const topDoors = [
-        { x: 20, y: 30 },
-        { x: canvas.width - 70, y: 30 }
-      ];
-
-      const unlocked = itemsRemaining === 0;
-      const bottomColor = unlocked ? '#00ff66' : '#ff3333';
-
-      const bottomDoors = [
-        { x: 15, y: canvas.height - 65 },
-        { x: canvas.width - 65, y: canvas.height - 65 }
-      ];
-
-      topDoors.forEach(door => {
+      exits.topExits.forEach(door => {
         ctx.fillStyle = '#1c1c1c';
-        ctx.fillRect(door.x, door.y, doorW, doorH);
-        ctx.strokeStyle = '#555555';
+        ctx.fillRect(door.x - door.w/2, door.y - door.h/2, door.w, door.h);
+        ctx.strokeStyle = '#ff3366';
         ctx.lineWidth = 2;
-        ctx.strokeRect(door.x, door.y, doorW, doorH);
+        ctx.strokeRect(door.x - door.w/2, door.y - door.h/2, door.w, door.h);
 
-        ctx.fillStyle = '#ff3333';
-        ctx.fillRect(door.x + 5, door.y - 12, doorW - 10, 10);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 8px monospace';
+        ctx.fillStyle = '#ff3366';
+        ctx.font = 'bold 9px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('EXIT', door.x + doorW / 2, door.y - 4);
+        ctx.fillText('FIRE EXIT', door.x, door.y - 8);
       });
 
-      bottomDoors.forEach(door => {
+      exits.bottomExits.forEach(door => {
         ctx.fillStyle = '#111111';
-        ctx.fillRect(door.x, door.y, doorW, doorH);
+        ctx.fillRect(door.x - door.w/2, door.y - door.h/2, door.w, door.h);
+        ctx.strokeStyle = '#00ff66';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(door.x - door.w/2, door.y - door.h/2, door.w, door.h);
 
-        ctx.strokeStyle = bottomColor;
-        ctx.lineWidth = unlocked ? 3 : 1;
-        ctx.strokeRect(door.x, door.y, doorW, doorH);
-
-        ctx.fillStyle = bottomColor;
-        ctx.fillRect(door.x + 3, door.y - 12, doorW - 6, 10);
-        ctx.fillStyle = '#000000';
-        ctx.font = 'bold 8px monospace';
+        ctx.fillStyle = '#00ff66';
+        ctx.font = 'bold 9px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(unlocked ? 'OPEN' : 'EXIT', door.x + doorW / 2, door.y - 4);
-
-        if (unlocked) {
-          ctx.fillStyle = '#00ff66';
-          const pulse = Math.sin(timeStep * 10) * 3;
-          ctx.beginPath();
-          ctx.moveTo(door.x + doorW / 2, door.y + 15 + pulse);
-          ctx.lineTo(door.x + doorW / 2 - 8, door.y + 5 + pulse);
-          ctx.lineTo(door.x + doorW / 2 + 8, door.y + 5 + pulse);
-          ctx.fill();
-        }
+        ctx.fillText('ENTRANCE', door.x, door.y - 10);
       });
     }
 
-    // DRAW SNACKS AND DRINKS
-    function drawItems() {
-      items.forEach(item => {
-        if (item.collected) return;
+    function drawCandy() {
+      candyItems.forEach(item => {
+        if (item.status !== 'floor') return;
 
         ctx.save();
         ctx.translate(item.x, item.y);
@@ -644,86 +1073,215 @@
       });
     }
 
-    // DRAW STICKMAN PLAYER
-    function drawStickman(x, y, facing, walkFrame) {
+    function drawEnemies() {
+      enemies.forEach(e => {
+        ctx.save();
+        ctx.translate(e.x, e.y);
+
+        if (e.restTimer > 0) {
+          ctx.fillStyle = '#ffff00';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`REST: ${Math.ceil(e.restTimer)}s`, 0, -22);
+        }
+
+        // Steal Immunity Shield Ring
+        if (e.stealImmunityTimer > 0) {
+          ctx.strokeStyle = 'rgba(255, 234, 0, 0.8)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(0, 0, 16, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        if (e.type === 'carrot') {
+          ctx.fillStyle = '#ff6600';
+          ctx.beginPath();
+          ctx.moveTo(0, 12);
+          ctx.lineTo(-7, -8);
+          ctx.lineTo(7, -8);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = '#00cc44';
+          ctx.fillRect(-3, -14, 6, 6);
+
+        } else if (e.type === 'broccoli') {
+          ctx.fillStyle = '#00aa33';
+          ctx.beginPath();
+          ctx.arc(0, -8, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#88cc44';
+          ctx.fillRect(-3, -2, 6, 12);
+
+        } else if (e.type === 'cabbage') {
+          ctx.fillStyle = '#66ff33';
+          ctx.beginPath();
+          ctx.arc(0, 0, 11, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#229900';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+        } else if (e.type === 'apple') {
+          ctx.fillStyle = '#ff0033';
+          ctx.beginPath();
+          ctx.arc(0, 0, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#663300';
+          ctx.fillRect(-1, -13, 2, 4);
+        }
+
+        if (e.carrying.length > 0) {
+          ctx.fillStyle = '#ffff00';
+          ctx.font = 'bold 11px monospace';
+          ctx.fillText(`🍿x${e.carrying.length}`, 0, -18);
+        }
+
+        ctx.restore();
+      });
+    }
+
+    function drawStickmanCharacter(x, y, facing, walkFrame, color, isCaptain, frozenTimer, carryCount, stealImmunityTimer) {
+      ctx.save();
       ctx.strokeStyle = '#ffffff';
       ctx.fillStyle = '#ffffff';
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 2;
       ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
 
-      const headRadius = 5;
-      const bodyLength = 15;
-      const legLength = 11;
+      const headRadius = 6;
+      const bodyLength = 16;
+      const legLength = 12;
       const neckY = y - bodyLength;
       const headY = neckY - headRadius;
       const shoulderY = neckY + 4;
 
+      // Steal Immunity Shield Ring (2s After Steal)
+      if (stealImmunityTimer > 0) {
+        ctx.strokeStyle = 'rgba(255, 234, 0, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y - 8, 20, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Head
       ctx.beginPath();
       ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
       ctx.stroke();
 
+      // Eye
       ctx.beginPath();
-      ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+      ctx.arc(x + facing * 2, headY - 0.5, 1, 0, Math.PI * 2);
       ctx.fill();
 
+      // CAPTAIN'S HAT
+      if (isCaptain) {
+        ctx.fillStyle = '#ffea00';
+        ctx.fillRect(x - 9, headY - 9, 18, 3); // Brim
+        ctx.fillRect(x - 6, headY - 16, 12, 7); // Crown
+        ctx.fillStyle = '#ff0055';
+        ctx.fillRect(x - 6, headY - 11, 12, 2); // Ribbon
+      }
+
+      // Torso with Colored Team Shirt
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.moveTo(x, neckY);
       ctx.lineTo(x, y);
       ctx.stroke();
 
+      // Legs with Colored Pants
+      ctx.lineWidth = 2.5;
       const legSwing = Math.sin(walkFrame) * 6;
-
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x - legSwing, y + legLength);
-      ctx.stroke();
-
-      ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x + legSwing, y + legLength);
       ctx.stroke();
 
+      // Arms
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.8;
       const armSwing = Math.sin(walkFrame + Math.PI) * 4;
       ctx.beginPath();
       ctx.moveTo(x, shoulderY);
       ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
-      ctx.stroke();
-
-      ctx.beginPath();
       ctx.moveTo(x, shoulderY);
       ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
       ctx.stroke();
+
+      // Frozen Overlay
+      if (frozenTimer > 0) {
+        ctx.fillStyle = 'rgba(0, 255, 255, 0.4)';
+        ctx.beginPath();
+        ctx.arc(x, y - 10, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#00ffff';
+        ctx.font = 'bold 10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`FROZEN! ${Math.ceil(frozenTimer)}s`, x, y - 30);
+      }
+
+      // Carry Badge
+      if (carryCount > 0) {
+        ctx.fillStyle = '#00ff66';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`🍿x${carryCount}`, x, y - (isCaptain ? 26 : 20));
+      }
+
+      ctx.restore();
+    }
+
+    function drawFloatingTexts() {
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y -= 0.6;
+        ft.life -= 0.03;
+
+        ctx.save();
+        ctx.fillStyle = ft.color;
+        ctx.font = '900 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+
+        if (ft.life <= 0) floatingTexts.splice(i, 1);
+      }
     }
 
     function drawHUDOverlay() {
-      if (itemsRemaining > 0) {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-        ctx.font = '11px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(`Treats remaining in theater: ${itemsRemaining}`, canvas.width / 2, canvas.height - 15);
-      } else {
-        ctx.fillStyle = '#00ff66';
-        ctx.font = 'bold 13px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('ALL TREATS COLLECTED! EXIT THROUGH THE BOTTOM DOORS!', canvas.width / 2, canvas.height - 15);
+      if (player.powerCooldown > 0) {
+        ctx.fillStyle = '#ffea00';
+        ctx.font = 'bold 12px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(`POWER COOLDOWN: ${Math.ceil(player.powerCooldown)}s`, 20, canvas.height - 15);
       }
     }
 
     function draw() {
-      ctx.fillStyle = '#08080a';
+      ctx.fillStyle = '#0a0a0f';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const screenW = Math.min(600, canvas.width * 0.65);
       const screenH = Math.min(110, canvas.height * 0.22);
       const screenX = (canvas.width - screenW) / 2;
-      const screenY = 25;
 
-      drawMovieScreen(screenX, screenY, screenW, screenH);
+      drawMovieScreen(screenX, 25, screenW, screenH);
       drawTheaterSeats();
       drawExitDoors();
-      drawItems();
-      drawStickman(player.x, player.y, player.facing, player.walkFrame);
+      drawCandy();
+      drawEnemies();
+
+      allies.forEach(ally => {
+        drawStickmanCharacter(ally.x, ally.y, ally.facing, ally.walkFrame, teamColor, false, ally.frozenTimer, ally.carrying.length, ally.stealImmunityTimer);
+      });
+
+      drawStickmanCharacter(player.x, player.y, player.facing, player.walkFrame, teamColor, true, player.frozenTimer, player.carrying.length, player.stealImmunityTimer);
+
+      drawFloatingTexts();
       drawHUDOverlay();
     }
 
@@ -733,13 +1291,9 @@
       requestAnimationFrame(animate);
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      resizeCanvas();
-      animate();
-    });
-
     window.onload = function() {
       resizeCanvas();
+      animate();
     };
   </script>
 </body>
