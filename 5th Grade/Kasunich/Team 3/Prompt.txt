@@ -1,0 +1,20 @@
+Here is the current state of Kasunich Team 3's code.  Please update it with the following changes:
+
+1.) The deepening gloom as we go down the trench is excellent.  However, the narrowing walls make for very constrained gameplay at the bottom.  Please keep the walls parallel to each other, and just coming out from the edges of the frame in order to maximize playable sea floor area.
+2.) Have an oxygen timer, equal to the trip time to the bottom and back +50%.
+3.) Have a locked door to a cave at the bottom of the sea at one of the walls.
+4.) The key can be obtained from a vendor at the top, who rides on a speedboat once the player returns to the ship with at least one diamond.  The vendor offers to sell the key to the locked door.  The price is (Level number) of diamonds.  He will sell you a scuba tank for 2*(level number) of diamonds.  The scuba tank will give you 5 minutes of continuous air, and can be used across levels until the air runs out.
+
+Enemies:
+Jellyfish:  Can be found anywhere.  Chase you, but are bound vertically to 10% of the sea depth from their origin point.  If the player gets stung, they are paralyzed for 5 seconds, wasting oxygen.
+Blob fish:  Shoot out stink bombs, only found in the middle 3rd of the depth column.  Stink bombs cause the player to drop any diamonds they may have.
+Angler Fish:  found in the bottom 3rd of the depth column.  They have a "patrol light" coming out from their head in the shape of a cone.  If the player gets hit by the patrol light, the light dazzles them and the screen turns completely white, fading back to normal over the course of 3 seconds.
+Sharks:  Found in the top 3rd of the depth column.  Slowly patrol back and forth.  If a shark touches a player, they are bitten and must lose 5 diamonds for medical care.
+
+Game end:  If the player runs out of oxygen, or is bit by a shark and has less than 5 diamonds, the game is over.
+
+Level scaling/ number of enemies:
+Jellyfish: (Level*3)
+Angler Fish: (Level+1)
+Blob Fish: (Level-2)
+Shark: (Level-1)
