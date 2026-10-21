@@ -1,0 +1,11 @@
+Attached is the current state of Seddon's Team 1 code.  Please update with the following changes:
+
+Enemies:
+
+Falling asteroids with angry faces that can hit stickman.  At the top of the screen, they aim for stickman's current position. If stickman does not move, they will hit him.  If he moves, they land and become an obstacle that stickman must jump over.  Frequency:  Asteroids launch every (30 seconds/level number, rounded down) seconds.
+
+Alien slugs.  These come in 2 varieties:  
+
+Ground slugs, which try to chase and eat stickman.  If they eat stickman, he is stuck for 3 seconds.  After 3 seconds, he and all the parts he has collected are ejected on random ballistic trajectories away from the slug.  These slugs are slower than stickman, but their frequency is (Level # * 3)
+
+Moon Buggy slugs:  They are twice as fast as stickman, and drive back and forth across the map.  Their frequency is equal to the level number.  If stickman is hit by a moon buggy slug, he is caught in a net and loaded onto the moon buggy.  His rocket parts are taken from him, and he is transported to one extreme side of the map.  The moon buggy then drives at top speed to the opposite side of the map and deposits the rocket parts there.
