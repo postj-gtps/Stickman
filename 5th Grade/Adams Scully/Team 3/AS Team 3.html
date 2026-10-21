@@ -102,7 +102,7 @@
  }
 
  canvas {
- background-color: #051329;
+ background-color: #020509;
  border: 4px solid #00f0ff;
  border-radius: 16px;
  display: block;
@@ -128,7 +128,7 @@
  <h1>Stickman Ocean Diver</h1>
  <div class="stats-container">
  <div class="stat-item">LEVEL: <span id="level-display" style="color:#00f0ff">1</span></div>
- <div class="stat-item">DEPTH: <span id="depth-display" style="color:#70e0ff">50.0m</span></div>
+ <div class="stat-item">DEPTH: <span id="depth-display" style="color:#70e0ff">0.0m</span></div>
  <div class="stat-item">CARRIED: $<span id="carried-display" style="color:#ffcc00">0</span></div>
  <div class="stat-item">SECURED: $<span id="secured-display" style="color:#00ffcc">0</span></div>
  </div>
@@ -185,11 +185,14 @@
  height: 38
  };
 
- // GAME ENVIRONMENT & MECHANICS STATE
+ // GAME ENVIRONMENT & CAMERA STATE
  let surfaceY = 65;
  let seabedY = 0;
- let maxOxygen = 100;
- let currentOxygen = 100;
+ let worldHeight = 0;
+ let cameraY = 0;
+
+ let maxOxygen = 720; // 12 seconds starting capacity (at 60 FPS)
+ let currentOxygen = 720;
  
  let carriedTreasure = 0;
  let securedTreasure = 0;
@@ -338,19 +341,17 @@
  });
 
  function updateSeabedDepth() {
- const maxAvailableDepth = canvas.height - 35 - surfaceY;
- const baseWaterDepth = maxAvailableDepth * 0.60;
- const scaledWaterDepth = baseWaterDepth * Math.pow(1.05, currentLevel - 1);
- 
- seabedY = Math.min(canvas.height - 35, surfaceY + scaledWaterDepth);
+ // Level 1 starts at baseline height where seabed is near bottom of canvas frame.
+ // Each level compounds ocean world depth by 5%!
+ worldHeight = canvas.height * Math.pow(1.05, currentLevel - 1);
+ seabedY = worldHeight - 35;
  }
 
  function calculateOxygenCapacity() {
- const verticalDistance = seabedY - surfaceY;
- const travelTimeFrames = verticalDistance / player.speed;
- const baseCapacity = travelTimeFrames * 5.0;
- maxOxygen = baseCapacity * (1 + player.oxygenUpgradeLevel * 0.25);
- currentOxygen = maxOxygen;
+ // Fixed 12-second base tank (720 frames) + 5 seconds (+300 frames) per upgrade level
+ const baseSeconds = 12;
+ const upgradeBonusSeconds = player.oxygenUpgradeLevel * 5;
+ maxOxygen = (baseSeconds + upgradeBonusSeconds) * 60;
  }
 
  function generateSeabedFeatures() {
@@ -368,7 +369,7 @@
  corals.push({ x: cx, height: height, type: type, hue: colorHue });
  }
 
- const fishCount = 6 + Math.floor(Math.random() * 5);
+ const fishCount = 6 + Math.floor(Math.random() * 6);
  for (let i = 0; i < fishCount; i++) {
  ambientFish.push({
  x: Math.random() * canvas.width,
@@ -379,7 +380,7 @@
  });
  }
 
- if (Math.random() < 0.15) {
+ if (Math.random() < 0.20) {
  wreckedShip = {
  x: 100 + Math.random() * (canvas.width - 250),
  width: 120,
@@ -411,8 +412,8 @@
  const numOctopus = 1 * currentLevel;
  const numSharks = Math.floor(currentLevel / 3);
 
- const minY = surfaceY + 50;
- const maxY = seabedY - 50;
+ const minY = surfaceY + 60;
+ const maxY = seabedY - 60;
 
  for (let i = 0; i < numJellyfish; i++) {
  const dir = Math.random() < 0.5 ? 1 : -1;
@@ -482,6 +483,7 @@
  shopBoat.y = surfaceY;
 
  calculateOxygenCapacity();
+ currentOxygen = maxOxygen;
  generateSeabedFeatures();
  spawnEnemies();
  updateUI();
@@ -489,8 +491,10 @@
 
  function updateUI() {
  document.getElementById('level-display').innerText = currentLevel;
- const depthMeters = (50 * Math.pow(1.05, currentLevel - 1)).toFixed(1);
- document.getElementById('depth-display').innerText = `${depthMeters}m`;
+ // Calculate current diver depth in meters scaling with level ocean height
+ const maxSeabedMeters = 50 * Math.pow(1.05, currentLevel - 1);
+ const currentDepthMeters = Math.max(0, ((player.y - surfaceY) / Math.max(1, seabedY - surfaceY)) * maxSeabedMeters).toFixed(1);
+ document.getElementById('depth-display').innerText = `${currentDepthMeters}m`;
  document.getElementById('carried-display').innerText = carriedTreasure;
  document.getElementById('secured-display').innerText = securedTreasure;
  }
@@ -527,7 +531,8 @@
  securedTreasure -= 200;
  player.oxygenUpgradeLevel++;
  calculateOxygenCapacity();
- alertMessage = "🛒 BOUGHT OXYGEN TANK UPGRADE (+25%)!";
+ currentOxygen = maxOxygen;
+ alertMessage = `🛒 BOUGHT OXYGEN TANK UPGRADE (+5s AIR)!`;
  alertColor = "#00ffcc";
  alertTimer = 90;
  updateUI();
@@ -556,7 +561,7 @@
  function advanceToNextLevel() {
  gameState = 'playing';
  currentLevel++;
- alertMessage = `🎉 LEVEL ${currentLevel} CLEARED! Ocean 5% Deeper! 🎉`;
+ alertMessage = `🎉 LEVEL ${currentLevel} CLEARED! Diving Deeper! 🎉`;
  alertColor = "#00ffcc";
  alertTimer = 150;
  resetLevel();
@@ -659,6 +664,12 @@
  const margin = 16;
  player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
  player.y = Math.max(surfaceY - 10, Math.min(seabedY - 14, player.y));
+
+ // Vertical Camera Follow
+ cameraY = Math.max(0, Math.min(worldHeight - canvas.height, player.y - canvas.height / 2));
+
+ // Update real-time depth meter
+ updateUI();
 
  // Ambient Bubbles
  for (let i = bubbles.length - 1; i >= 0; i--) {
@@ -809,10 +820,8 @@
  if (allOpened && allDelivered && carriedTreasure === 0 && chests.length > 0) {
  if (currentLevel % 2 === 0) {
  if (hasVisitedShopThisLevel) {
- // Player visited shop and returned to dive boat -> next level!
  advanceToNextLevel();
  } else {
- // Player went to dive boat WITHOUT visiting shop -> trigger escape clause popup!
  gameState = 'confirm_skip_shop';
  }
  } else {
@@ -832,26 +841,31 @@
  /* --- CARTOON DRAWING FUNCTIONS --- */
 
  function drawBackground() {
- const oceanGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
- oceanGrad.addColorStop(0, '#0077be');
- oceanGrad.addColorStop(0.3, '#004f8b');
- oceanGrad.addColorStop(0.8, '#002654');
- oceanGrad.addColorStop(1, '#000c1e');
+ // Multi-stage dark gradient spanning total ocean depth
+ const oceanGrad = ctx.createLinearGradient(0, 0, 0, Math.max(canvas.height, worldHeight));
+ oceanGrad.addColorStop(0, '#0077be'); // Bright sunlit surface
+ oceanGrad.addColorStop(0.12, '#004f8b'); // Mid ocean
+ oceanGrad.addColorStop(0.30, '#002654'); // Deep navy
+ oceanGrad.addColorStop(0.55, '#001026'); // Midnight ocean
+ oceanGrad.addColorStop(0.80, '#000511'); // Twilight abyssal zone
+ oceanGrad.addColorStop(1.0, '#000205'); // Pitch black deep trench
+
  ctx.fillStyle = oceanGrad;
- ctx.fillRect(0, 0, canvas.width, canvas.height);
+ ctx.fillRect(0, 0, canvas.width, Math.max(canvas.height, worldHeight));
 
  ctx.save();
- ctx.fillStyle = 'rgba(0, 240, 255, 0.05)';
+ ctx.fillStyle = 'rgba(0, 240, 255, 0.04)';
  for (let i = 0; i < 5; i++) {
  ctx.beginPath();
  ctx.moveTo(canvas.width * (0.15 + i * 0.2), 0);
- ctx.lineTo(canvas.width * (0.05 + i * 0.2), canvas.height);
- ctx.lineTo(canvas.width * (0.18 + i * 0.2), canvas.height);
+ ctx.lineTo(canvas.width * (0.05 + i * 0.2), worldHeight);
+ ctx.lineTo(canvas.width * (0.18 + i * 0.2), worldHeight);
  ctx.closePath();
  ctx.fill();
  }
  ctx.restore();
 
+ // Surface Waves
  ctx.beginPath();
  ctx.moveTo(0, 0);
  ctx.lineTo(0, surfaceY);
@@ -868,8 +882,9 @@
  ctx.lineWidth = 4;
  ctx.stroke();
 
+ // Seabed Base
  ctx.fillStyle = '#e6be44';
- ctx.fillRect(0, seabedY, canvas.width, canvas.height - seabedY);
+ ctx.fillRect(0, seabedY, canvas.width, worldHeight - seabedY + 100);
 
  ctx.fillStyle = '#b89228';
  ctx.fillRect(0, seabedY, canvas.width, 6);
@@ -1116,9 +1131,12 @@
  ctx.lineWidth = 2;
  ctx.strokeRect(chest.x - 12, chest.y - 14, 24, 8);
  } else {
+ // High-visibility chest styling for deep waters
  ctx.fillStyle = '#ff9900';
- ctx.strokeStyle = '#663300';
+ ctx.strokeStyle = '#ffff00';
  ctx.lineWidth = 3;
+ ctx.shadowColor = '#ffcc00';
+ ctx.shadowBlur = 8;
  ctx.fillRect(chest.x - 14, chest.y - 14, 28, 18);
  ctx.strokeRect(chest.x - 14, chest.y - 14, 28, 18);
 
@@ -1143,6 +1161,8 @@
  ctx.fillStyle = grad;
  ctx.strokeStyle = '#ffffff';
  ctx.lineWidth = 2;
+ ctx.shadowColor = '#ff00aa';
+ ctx.shadowBlur = 10;
 
  ctx.beginPath();
  ctx.arc(0, 0, jelly.radius, Math.PI, 0);
@@ -1186,6 +1206,9 @@
  ctx.strokeStyle = '#ff5500';
  ctx.lineWidth = 5;
  ctx.lineCap = 'round';
+ ctx.shadowColor = '#ff5500';
+ ctx.shadowBlur = 8;
+
  for (let i = 0; i < 5; i++) {
  const angle = (i - 2) * 0.4;
  const wave = Math.sin(octo.pulse + i) * 10;
@@ -1237,6 +1260,8 @@
  ctx.fillStyle = '#0077b6';
  ctx.strokeStyle = '#00ffff';
  ctx.lineWidth = 2.5;
+ ctx.shadowColor = '#00ffff';
+ ctx.shadowBlur = 8;
 
  ctx.beginPath();
  ctx.moveTo(35, 0);
@@ -1286,6 +1311,8 @@
  ctx.lineWidth = 2.5;
  ctx.lineCap = 'round';
  ctx.lineJoin = 'round';
+ ctx.shadowColor = '#00f0ff';
+ ctx.shadowBlur = 6;
 
  const headRadius = 6;
  const bodyLength = 16;
@@ -1384,11 +1411,13 @@
  ctx.restore();
  }
 
+ /* --- FIXED HUD / SCREEN SPACE UI DRAWING FUNCTIONS --- */
+
  function drawOxygenMeter() {
  const barWidth = 220;
  const barHeight = 16;
  const x = 20;
- const y = surfaceY + 20;
+ const y = 25;
  const pct = Math.max(0, currentOxygen / maxOxygen);
 
  ctx.save();
@@ -1396,7 +1425,9 @@
  ctx.font = '900 13px Comic Sans MS, sans-serif';
  ctx.shadowColor = '#000000';
  ctx.shadowBlur = 4;
- ctx.fillText('OXYGEN TANK:', x, y - 6);
+ const currentSecs = Math.ceil(currentOxygen / 60);
+ const maxSecs = Math.ceil(maxOxygen / 60);
+ ctx.fillText(`OXYGEN TANK: ${currentSecs}s / ${maxSecs}s`, x, y - 6);
 
  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
  ctx.strokeStyle = '#00f0ff';
@@ -1441,19 +1472,16 @@
  const centerX = canvas.width / 2;
  const centerY = canvas.height / 2;
 
- // Scuba Diver NPC Avatar
  ctx.fillStyle = '#00d2ff';
  ctx.beginPath();
  ctx.arc(centerX, centerY - 110, 36, 0, Math.PI * 2);
  ctx.fill();
 
- // Goggles
  ctx.fillStyle = '#030a16';
  ctx.fillRect(centerX - 20, centerY - 120, 40, 16);
  ctx.fillStyle = '#00ffff';
  ctx.fillRect(centerX - 16, centerY - 118, 32, 12);
 
- // Title & Dialogue Box
  ctx.fillStyle = '#ffffff';
  ctx.font = '900 28px Comic Sans MS, sans-serif';
  ctx.textAlign = 'center';
@@ -1471,7 +1499,6 @@
  ctx.fillText('of the ocean, then swim back up to our Motorboat!', centerX, centerY + 30);
  ctx.fillText('Avoid sea creatures! If trapped by an Octopus, SPAM [ENTER] 15x!"', centerX, centerY + 55);
 
- // Start Button
  ctx.fillStyle = '#ff0055';
  ctx.fillRect(centerX - 160, centerY + 80, 320, 42);
  ctx.strokeStyle = '#ffffff';
@@ -1513,7 +1540,7 @@
 
  ctx.fillStyle = '#ffffff';
  ctx.font = '900 14px Comic Sans MS, sans-serif';
- ctx.fillText(`[1] Buy Oxygen Tank (+25% Capacity) - $200 (Lvl ${player.oxygenUpgradeLevel})`, centerX, centerY - 18);
+ ctx.fillText(`[1] Buy Oxygen Tank (+5s AIR) - $200 (Lvl ${player.oxygenUpgradeLevel})`, centerX, centerY - 18);
 
  // 2. Speed Fins Button ($150)
  ctx.fillStyle = securedTreasure >= 150 ? '#0077be' : '#444444';
@@ -1546,7 +1573,6 @@
  const centerX = canvas.width / 2;
  const centerY = canvas.height / 2;
 
- // Dialog Modal Box
  ctx.fillStyle = 'rgba(7, 34, 66, 0.95)';
  ctx.strokeStyle = '#ffd700';
  ctx.lineWidth = 4;
@@ -1616,6 +1642,10 @@
  }
 
  function draw() {
+ // --- 1. WORLD SPACE RENDER WITH VERTICAL CAMERA ---
+ ctx.save();
+ ctx.translate(0, -cameraY);
+
  drawBackground();
  drawMotorboat();
  if (currentLevel % 2 === 0 || gameState === 'shop') drawShopKeeperBoat();
@@ -1629,6 +1659,10 @@
  drawBubbles();
  drawZapParticles();
  drawStickman(player.x, player.y, player.facing, player.walkFrame);
+
+ ctx.restore();
+
+ // --- 2. SCREEN SPACE HUD & MODALS RENDER ---
  drawOxygenMeter();
  drawAlerts();
  drawIntroScreen();
