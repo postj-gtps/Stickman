@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stickman Engine - Widebody Aircraft</title>
+  <title>Stickman Engine - Widebody Aircraft Gauntlet</title>
   <style>
     * {
       box-sizing: border-box;
@@ -14,7 +14,7 @@
     }
 
     body {
-      background-color: #000000;
+      background-color: #0b0f19;
       color: #ffffff;
       display: flex;
       flex-direction: column;
@@ -22,7 +22,7 @@
       justify-content: flex-start;
       height: 100vh;
       overflow: hidden;
-      padding: 16px;
+      padding: 12px;
     }
 
     /* Top Header Bar */
@@ -31,73 +31,151 @@
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      max-width: 1100px;
-      margin-bottom: 8px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #ffffff;
+      max-width: 1150px;
+      margin-bottom: 6px;
+      padding-bottom: 6px;
+      border-bottom: 3px solid #38bdf8;
     }
 
     h1 {
-      font-size: 18px;
+      font-size: 19px;
       letter-spacing: 2px;
       text-transform: uppercase;
       font-weight: bold;
+      color: #fde047;
+      text-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
     }
 
     .btn-reset {
-      background: transparent;
+      background: #ef4444;
       color: #ffffff;
-      border: 1px solid #ffffff;
+      border: none;
       padding: 6px 16px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: bold;
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 1px;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
       transition: all 0.15s ease-in-out;
     }
 
     .btn-reset:hover {
-      background: #ffffff;
-      color: #000000;
+      background: #f87171;
+      transform: scale(1.05);
     }
 
-    /* Game Info Bar */
+    /* Game Info & Health Bar */
     #status-bar {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       width: 100%;
-      max-width: 1100px;
+      max-width: 1150px;
       margin-bottom: 8px;
       font-size: 13px;
-      color: #00ffcc;
+      color: #38bdf8;
       text-transform: uppercase;
+      font-weight: bold;
       letter-spacing: 1px;
+      background: #1e293b;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+    }
+
+    #hearts-container {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 16px;
     }
 
     /* Main Canvas Container */
     #canvas-wrapper {
       position: relative;
       width: 100%;
-      max-width: 1100px;
+      max-width: 1150px;
       flex-grow: 1;
       display: flex;
       justify-content: center;
       align-items: center;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.8);
     }
 
     canvas {
       background-color: #000000;
-      border: 1px solid #ffffff;
+      border: 3px solid #38bdf8;
       display: block;
       width: 100%;
       height: 100%;
     }
 
+    /* UI Overlay Prompts */
+    #trap-prompt, #freeze-prompt, #gameover-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 18px 32px;
+      border-radius: 16px;
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      display: none;
+      pointer-events: none;
+      text-align: center;
+      z-index: 20;
+    }
+
+    #trap-prompt {
+      background: rgba(239, 68, 68, 0.95);
+      color: #ffffff;
+      border: 3px solid #fde047;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.9);
+      animation: pulse 0.4s infinite alternate;
+    }
+
+    #freeze-prompt {
+      background: rgba(56, 189, 248, 0.95);
+      color: #0f172a;
+      border: 3px solid #ffffff;
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.9);
+    }
+
+    #gameover-overlay {
+      background: rgba(15, 23, 42, 0.96);
+      color: #ef4444;
+      border: 3px solid #ef4444;
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.8);
+      pointer-events: auto;
+    }
+
+    #gameover-overlay button {
+      margin-top: 15px;
+      padding: 8px 20px;
+      font-size: 15px;
+      font-weight: bold;
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    @keyframes pulse {
+      from { transform: translate(-50%, -50%) scale(1); }
+      to { transform: translate(-50%, -50%) scale(1.06); }
+    }
+
     .instructions {
-      margin-top: 8px;
-      font-size: 11px;
-      color: #888888;
+      margin-top: 6px;
+      font-size: 12px;
+      color: #fde047;
+      font-weight: bold;
       text-align: center;
     }
   </style>
@@ -112,72 +190,246 @@
 
   <!-- Game Status Bar -->
   <div id="status-bar">
+    <div>LEVEL: <span id="level-display" style="color:#fde047;">1</span></div>
+    <div>HP: <span id="hearts-container">❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️</span></div>
     <div id="zone-display">ZONE: CARGO BAY</div>
-    <div id="objective-display">GOAL: NAVIGATE TO COCKPIT (RIGHT)</div>
   </div>
 
   <!-- Canvas Container -->
   <div id="canvas-wrapper">
     <canvas id="simCanvas"></canvas>
+
+    <!-- Trap & State Prompts -->
+    <div id="trap-prompt">🚪 TRAPPED IN LINEN CABINET! 🚪<br>SPAM [SPACEBAR] TO BREAK FREE! (<span id="escape-count">6</span>)</div>
+    <div id="freeze-prompt">🥤 FROZEN IN STICKY SODA! 🥤<br>STUCK FOR <span id="freeze-time">3.0</span>s</div>
+    <div id="gameover-overlay">
+      💥 GAUNTLET OVER! 💥<br>
+      <span style="font-size:14px; color:#ffffff;">You made it to Level <span id="final-level">1</span>!</span><br>
+      <button onclick="resetSimulation()">Try Again</button>
+    </div>
   </div>
 
   <div class="instructions">
-    [WASD] Move (Arrow Keys Disabled)
+    [WASD] Move (Arrow Keys Disabled) | Persistent Health Gauntlet Mode | Reach Cockpit to Advance Level!
   </div>
 
   <script>
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
 
+    // UI ELEMENTS
+    const zoneDisplay = document.getElementById('zone-display');
+    const levelDisplay = document.getElementById('level-display');
+    const heartsContainer = document.getElementById('hearts-container');
+    const trapPrompt = document.getElementById('trap-prompt');
+    const escapeCountDisplay = document.getElementById('escape-count');
+    const freezePrompt = document.getElementById('freeze-prompt');
+    const freezeTimeDisplay = document.getElementById('freeze-time');
+    const gameoverOverlay = document.getElementById('gameover-overlay');
+    const finalLevelDisplay = document.getElementById('final-level');
+
+    // AUDIO SYNTHESIZER (Web Audio API)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
+
+      if (type === 'hit') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.2);
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      } else if (type === 'soda') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.linearRampToValueAtTime(80, now + 0.3);
+        gain.gain.setValueAtTime(0.6, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      } else if (type === 'trap') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.setValueAtTime(240, now + 0.1);
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'escape') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+    }
+
     // WORLD CONSTANTS
     const WORLD = {
-      width: 4000,   // Length of aircraft world
-      height: 600,   // Canvas internal coordinate height
-      topY: 75,      // Fuselage top bound
-      bottomY: 525   // Fuselage bottom bound
+      width: 4000,
+      height: 600,
+      topY: 75,
+      bottomY: 525
     };
 
     // KEYBOARD INPUT STATE (WASD EXCLUSIVE)
     const keys = {};
 
-    // STICKMAN PLAYER STATE (PILOT)
+    // STICKMAN PLAYER STATE (Speed reduced by 50% to 2.25)
     const player = {
-      x: 320,        // Starts inside Cargo Bay
+      x: 320,
       y: 300,
       radius: 12,
-      speed: 4.5,
-      facing: 1,     // 1 = Right (Nose), -1 = Left (Tail)
+      speed: 2.25, // Halved from 4.5
+      facing: 1,
       walkFrame: 0,
-      hasWon: false
+      hasWon: false,
+      maxHealth: 20, // 20 half-hearts = 10 full hearts
+      health: 20,
+      invulnerableTimer: 0,
+      freezeTimer: 0,
+      isTrapped: false,
+      trapDamageTick: 0,
+      escapePressesNeeded: 6,
+      trappedCabinetX: 0,
+      trappedCabinetY: 0
     };
 
-    // PROCEDURAL GENERATION OPTIONS (Strictly 5 per category)
+    let currentLevel = 1;
+    let isGameOver = false;
+
+    // AIRPLANE LEVEL COLOR PALETTES
+    const AIRPLANE_PALETTES = [
+      // Level 1: Midnight Cobalt
+      {
+        sky: ['#38bdf8', '#0284c7', '#0f172a'],
+        hull: '#f8fafc',
+        wing: '#e2e8f0',
+        wingBorder: '#334155',
+        sections: ['#1e293b', '#0f172a', '#0b1329', '#1e1b4b', '#022c22']
+      },
+      // Level 2: Sunset Ruby
+      {
+        sky: ['#f97316', '#c2410c', '#450a0a'],
+        hull: '#fef08a',
+        wing: '#fca5a5',
+        wingBorder: '#7f1d1d',
+        sections: ['#450a0a', '#3b0764', '#581c87', '#701a75', '#831843']
+      },
+      // Level 3: Emerald Jade
+      {
+        sky: ['#34d399', '#059669', '#064e3b'],
+        hull: '#a7f3d0',
+        wing: '#6ee7b7',
+        wingBorder: '#065f46',
+        sections: ['#064e3b', '#022c22', '#065f46', '#047857', '#14532d']
+      },
+      // Level 4: Neon Cyber Violet
+      {
+        sky: ['#f0abfc', '#c084fc', '#3b0764'],
+        hull: '#e9d5ff',
+        wing: '#d8b4fe',
+        wingBorder: '#581c87',
+        sections: ['#3b0764', '#2e1065', '#4c1d95', '#581c87', '#701a75']
+      },
+      // Level 5: Golden Solar
+      {
+        sky: ['#fde047', '#d97706', '#78350f'],
+        hull: '#fef08a',
+        wing: '#fde047',
+        wingBorder: '#92400e',
+        sections: ['#451a03', '#78350f', '#92400e', '#b45309', '#713f12']
+      }
+    ];
+
+    function getLevelPalette(lvl) {
+      if (lvl <= AIRPLANE_PALETTES.length) {
+        return AIRPLANE_PALETTES[lvl - 1];
+      } else {
+        const hue = ((lvl - 1) * 67) % 360;
+        return {
+          sky: [`hsl(${hue}, 85%, 65%)`, `hsl(${hue}, 80%, 40%)`, `hsl(${hue}, 90%, 12%)`],
+          hull: `hsl(${hue}, 90%, 90%)`,
+          wing: `hsl(${hue}, 70%, 80%)`,
+          wingBorder: `hsl(${hue}, 80%, 25%)`,
+          sections: [
+            `hsl(${(hue + 20) % 360}, 60%, 18%)`,
+            `hsl(${(hue + 40) % 360}, 70%, 14%)`,
+            `hsl(${(hue + 60) % 360}, 70%, 12%)`,
+            `hsl(${(hue + 80) % 360}, 65%, 16%)`,
+            `hsl(${(hue + 100) % 360}, 75%, 15%)`
+          ]
+        };
+      }
+    }
+
+    // PROCEDURAL GENERATION OPTIONS (PASSENGERS)
     const CLOTHING_BOTTOMS = ['#1e293b', '#2563eb', '#15803d', '#b45309', '#be123c'];
     const CLOTHING_TOPS    = ['#f8fafc', '#ef4444', '#06b6d4', '#eab308', '#8b5cf6'];
     const HAIR_STYLES      = ['none', 'short', 'long', 'spiky', 'afro'];
     const HAT_STYLES       = ['none', 'cap', 'beanie', 'fedora', 'visor'];
     const HAIR_COLORS      = ['#451a03', '#f59e0b', '#18181b', '#d97706', '#92400e'];
 
-    // MAP DATA & PARALLAX CLOUDS
+    // MAP & GAME OBJECTS
     let obstacles = [];
     let seats = [];
     let passengers = [];
     let clouds = [];
+    let enemies = [];
+    let enemyProjectiles = [];
 
-    // SECTIONS MAP (Tail to Nose: Cargo, Coach, Business, First Class, Cockpit)
+    // SECTIONS MAP
     const sections = [
-      { name: "Cargo Bay", startX: 70, endX: 750, color: "#1e293b" },
-      { name: "Coach Class", startX: 750, endX: 2000, color: "#0f172a" },
-      { name: "Business Class", startX: 2000, endX: 2900, color: "#0b1329" },
-      { name: "First Class", startX: 2900, endX: 3550, color: "#1e1b4b" },
-      { name: "Cockpit", startX: 3550, endX: 3950, color: "#022c22" }
+      { name: "Cargo Bay", startX: 70, endX: 750 },
+      { name: "Coach Class", startX: 750, endX: 2000 },
+      { name: "Business Class", startX: 2000, endX: 2900 },
+      { name: "First Class", startX: 2900, endX: 3550 },
+      { name: "Cockpit", startX: 3550, endX: 3950 }
     ];
 
     function getRandomItem(arr) {
       return arr[Math.floor(Math.random() * arr.length)];
     }
 
-    // INITIALIZE PARALLAX SKY CLOUDS
+    function updateHeartsUI() {
+      let fullHearts = Math.floor(player.health / 2);
+      let halfHeart = player.health % 2 === 1;
+      let heartStr = '';
+      for (let i = 0; i < fullHearts; i++) heartStr += '❤️';
+      if (halfHeart) heartStr += '💔';
+      heartsContainer.innerText = heartStr || '💀';
+    }
+
+    function applyDamage(halfHearts, ignoreIFrame = false) {
+      if ((player.invulnerableTimer > 0 && !ignoreIFrame) || isGameOver) return;
+
+      player.health -= halfHearts;
+      if (!ignoreIFrame) {
+        player.invulnerableTimer = 0.8;
+      }
+      updateHeartsUI();
+      playSound('hit');
+
+      if (player.health <= 0) {
+        player.health = 0;
+        updateHeartsUI();
+        isGameOver = true;
+        finalLevelDisplay.innerText = currentLevel;
+        gameoverOverlay.style.display = 'block';
+      }
+    }
+
+    // PARALLAX SKY CLOUDS (Parallax speed preserved at full original 1.2 - 4.0 speed)
     function initClouds() {
       clouds = [];
       for (let i = 0; i < 50; i++) {
@@ -185,7 +437,7 @@
           x: Math.random() * WORLD.width,
           y: Math.random() * WORLD.height,
           radius: 20 + Math.random() * 35,
-          speed: 1.2 + Math.random() * 2.8, // Independent drift speed
+          speed: 1.2 + Math.random() * 2.8,
           opacity: 0.2 + Math.random() * 0.4
         });
       }
@@ -201,67 +453,54 @@
       });
     }
 
-    // BUILD AIRCRAFT LAYOUT & OBSTACLES
+    // BUILD AIRCRAFT LAYOUT & ENEMIES
     function initAircraftLayout() {
       obstacles = [];
       seats = [];
       passengers = [];
+      enemies = [];
+      enemyProjectiles = [];
 
-      // 1. INVISIBLE BOUNDARY COLLISION BARRIERS (Sky bounds)
-      obstacles.push({ x: 0, y: 0, w: WORLD.width, h: WORLD.topY, type: 'boundary' }); 
-      obstacles.push({ x: 0, y: WORLD.bottomY, w: WORLD.width, h: WORLD.height - WORLD.bottomY, type: 'boundary' }); 
-
-      // Tail cone tapered collision wedges
-      obstacles.push({ x: 0, y: WORLD.topY, w: 280, h: 100, type: 'boundary' });
+      // Boundaries
+      obstacles.push({ x: 0, y: 0, w: WORLD.width, h: WORLD.topY, type: 'boundary' });
+      obstacles.push({ x: 0, y: WORLD.bottomY, w: WORLD.width, h: WORLD.height - WORLD.bottomY, type: 'boundary' });
+      obstacles.push({ x: 0, y: 0, w: 280, h: 100, type: 'boundary' });
       obstacles.push({ x: 0, y: 425, w: 280, h: 100, type: 'boundary' });
       obstacles.push({ x: 0, y: WORLD.topY, w: 70, h: WORLD.bottomY - WORLD.topY, type: 'boundary' });
-
-      // Nose cone collision
       obstacles.push({ x: 3930, y: WORLD.topY, w: 70, h: WORLD.bottomY - WORLD.topY, type: 'boundary' });
 
-      // 2. BULKHEADS WITH AISLES
+      // Bulkheads
       const bulkheads = [750, 2000, 2900, 3550];
       bulkheads.forEach((bx, idx) => {
         if (idx === 3) {
-          // Cockpit Single Center Door
           obstacles.push({ x: bx, y: WORLD.topY, w: 15, h: 185 });
           obstacles.push({ x: bx, y: 315, w: 15, h: WORLD.bottomY - 315 });
         } else {
-          // 2-Aisle Bulkheads
           obstacles.push({ x: bx, y: WORLD.topY, w: 15, h: 105 });
           obstacles.push({ x: bx, y: 220, w: 15, h: 160 });
           obstacles.push({ x: bx, y: 425, w: 15, h: WORLD.bottomY - 425 });
         }
       });
 
-      // 3. CARGO PALLETS & CRATES
+      // Crates
       obstacles.push({ x: 290, y: 120, w: 110, h: 70, type: 'crate', label: 'CARGO' });
       obstacles.push({ x: 290, y: 410, w: 110, h: 70, type: 'crate', label: 'CARGO' });
       obstacles.push({ x: 440, y: 240, w: 130, h: 120, type: 'crate', label: 'PALLET' });
-      obstacles.push({ x: 610, y: 100, w: 90, h: 75, type: 'crate', label: 'CRATE' });
-      obstacles.push({ x: 610, y: 440, w: 90, h: 70, type: 'crate', label: 'CRATE' });
 
-      // 4. COACH CLASS SEATING (2-Aisle Config)
+      // Coach Seating
       for (let x = 810; x < 1950; x += 42) {
-        if (x >= 1340 && x <= 1440) continue; // Restrooms
-
+        if (x >= 1340 && x <= 1440) continue;
         seats.push({ x: x, y: 90, w: 28, h: 28 });
         seats.push({ x: x, y: 125, w: 28, h: 28 });
-
         seats.push({ x: x, y: 235, w: 28, h: 26 });
         seats.push({ x: x, y: 268, w: 28, h: 26 });
         seats.push({ x: x, y: 308, w: 28, h: 26 });
         seats.push({ x: x, y: 341, w: 28, h: 26 });
-
         seats.push({ x: x, y: 450, w: 28, h: 28 });
         seats.push({ x: x, y: 485, w: 28, h: 28 });
       }
 
-      // Restrooms
-      obstacles.push({ x: 1350, y: WORLD.topY, w: 80, h: 105, type: 'restroom', label: 'LAV' });
-      obstacles.push({ x: 1350, y: 425, w: 80, h: WORLD.bottomY - 425, type: 'restroom', label: 'LAV' });
-
-      // 5. BUSINESS CLASS SEATING
+      // Business Class
       for (let x = 2060; x < 2850; x += 75) {
         seats.push({ x: x, y: 98, w: 38, h: 40 });
         seats.push({ x: x, y: 248, w: 38, h: 38 });
@@ -269,24 +508,21 @@
         seats.push({ x: x, y: 462, w: 38, h: 40 });
       }
 
-      // 6. FIRST CLASS SEATING
+      // First Class
       for (let x = 2960; x < 3500; x += 110) {
         seats.push({ x: x, y: 105, w: 50, h: 55 });
         seats.push({ x: x, y: 270, w: 50, h: 60 });
         seats.push({ x: x, y: 440, w: 50, h: 55 });
       }
 
-      // Seat Collision Obstacles
-      seats.forEach(s => {
-        obstacles.push({ x: s.x, y: s.y, w: s.w, h: s.h, type: 'seat' });
-      });
+      seats.forEach(s => obstacles.push({ x: s.x, y: s.y, w: s.w, h: s.h, type: 'seat' }));
 
-      // 7. COCKPIT INSTRUMENTS & CONTROL PANEL
+      // Cockpit Controls
       obstacles.push({ x: 3820, y: 200, w: 45, h: 40, type: 'pilot-seat' });
       obstacles.push({ x: 3820, y: 360, w: 45, h: 40, type: 'pilot-seat' });
       obstacles.push({ x: 3890, y: 140, w: 40, h: 320, type: 'controls', label: 'PANEL' });
 
-      // 8. PROCEDURAL PASSENGERS
+      // Passengers
       seats.forEach(s => {
         if (Math.random() < 0.85) {
           passengers.push({
@@ -300,6 +536,71 @@
           });
         }
       });
+
+      // -----------------------------------------------------------------
+      // SPAWN ENEMIES (WITH HALVED SPEEDS & N = LEVEL FORMULAS)
+      // -----------------------------------------------------------------
+
+      // 1. EVIL SUITCASES (N = Level * 2)
+      const numSuitcases = currentLevel * 2;
+      for (let i = 0; i < numSuitcases; i++) {
+        const spawnX = 850 + Math.random() * 2600;
+        const spawnY = 180 + Math.random() * 240;
+        enemies.push({
+          type: 'suitcase',
+          x: spawnX,
+          y: spawnY,
+          speed: 0.6 + Math.random() * 0.4, // Halved from 1.2..2.0
+          shootTimer: 1.5 + Math.random() * 2.0,
+          w: 24,
+          h: 22
+        });
+      }
+
+      // 2. EVIL FOOD CARTS (N = Level)
+      const numFoodCarts = currentLevel;
+      for (let i = 0; i < numFoodCarts; i++) {
+        const spawnX = 1100 + (i * (2200 / Math.max(1, numFoodCarts))) + (Math.random() * 100 - 50);
+        const spawnY = 180 + (i % 2) * 160;
+        enemies.push({
+          type: 'foodcart',
+          x: Math.min(3400, Math.max(850, spawnX)),
+          y: spawnY,
+          vy: (i % 2 === 0 ? 1 : -1) * (0.55 + Math.random() * 0.2), // Halved from 1.1..1.5
+          shootTimer: 2.0 + Math.random() * 3.0,
+          w: 32,
+          h: 40
+        });
+      }
+
+      // 3. EVIL LINEN CABINETS (N = Level)
+      const numCabinets = currentLevel;
+      const availableBulkheads = [750, 2000, 2900, 3550];
+      for (let i = 0; i < numCabinets; i++) {
+        const bx = availableBulkheads[i % availableBulkheads.length];
+        const by = (i % 2 === 0) ? 140 : 400;
+        enemies.push({
+          type: 'linencabinet',
+          x: bx - 18,
+          y: by,
+          w: 36,
+          h: 48,
+          shootTimer: 1.5 + Math.random() * 2.0
+        });
+      }
+
+      // 4. EVIL NECK PILLOWS (N = 3 + Level)
+      const numNeckPillows = 3 + currentLevel;
+      for (let i = 0; i < numNeckPillows; i++) {
+        enemies.push({
+          type: 'neckpillow',
+          x: 900 + Math.random() * 2500,
+          y: 180 + Math.random() * 220,
+          vx: (Math.random() - 0.5) * 1.0, // Halved from 2.0
+          vy: (Math.random() - 0.5) * 1.0, // Halved from 2.0
+          radius: 12
+        });
+      }
     }
 
     function resizeCanvas() {
@@ -310,12 +611,25 @@
 
     window.addEventListener('resize', resizeCanvas);
 
-    // CONTROLS HANDLERS (WASD EXCLUSIVE - ARROW KEYS DIRECTLY BLOCKED)
+    // WASD EXCLUSIVE CONTROLS ENFORCEMENT
     window.addEventListener('keydown', (e) => {
-      // Disallow Arrow Keys from triggering any movement
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
         e.preventDefault();
         return;
+      }
+
+      if (e.code === 'Space') {
+        if (player.isTrapped) {
+          player.escapePressesNeeded--;
+          escapeCountDisplay.innerText = player.escapePressesNeeded;
+          playSound('escape');
+          if (player.escapePressesNeeded <= 0) {
+            player.isTrapped = false;
+            player.trapDamageTick = 0;
+            trapPrompt.style.display = 'none';
+            player.x = player.trappedCabinetX + 45;
+          }
+        }
       }
 
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
@@ -331,16 +645,29 @@
     });
 
     function resetSimulation() {
+      currentLevel = 1;
       player.x = 320;
       player.y = 300;
       player.facing = 1;
       player.walkFrame = 0;
       player.hasWon = false;
+      player.health = 20;
+      player.invulnerableTimer = 0;
+      player.freezeTimer = 0;
+      player.isTrapped = false;
+      player.trapDamageTick = 0;
+      isGameOver = false;
+
+      gameoverOverlay.style.display = 'none';
+      trapPrompt.style.display = 'none';
+      freezePrompt.style.display = 'none';
+
+      levelDisplay.innerText = currentLevel;
+      updateHeartsUI();
       initClouds();
       initAircraftLayout();
     }
 
-    // CIRCLE TO BOX COLLISION DETECTION
     function checkCollision(px, py, radius) {
       for (let obs of obstacles) {
         let closestX = Math.max(obs.x, Math.min(px, obs.x + obs.w));
@@ -357,64 +684,197 @@
       return false;
     }
 
-    function updatePhysics() {
+    // PHYSICS & ENEMY UPDATES
+    function updatePhysics(dt) {
       updateClouds();
+      if (player.hasWon || isGameOver) return;
 
-      if (player.hasWon) return;
+      if (player.invulnerableTimer > 0) player.invulnerableTimer -= dt;
 
-      let dx = 0;
-      let dy = 0;
-
-      // WASD exclusive movement evaluation
-      if (keys['KeyW'] || keys['Keyw']) dy -= 1;
-      if (keys['KeyS'] || keys['Keys']) dy += 1;
-      if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
-      if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
-
-      // Diagonal Speed Normalization
-      if (dx !== 0 && dy !== 0) {
-        dx *= 0.7071;
-        dy *= 0.7071;
-      }
-
-      // Position update with collision checks
-      let nextX = player.x + dx * player.speed;
-      if (!checkCollision(nextX, player.y, player.radius)) {
-        player.x = nextX;
-      }
-
-      let nextY = player.y + dy * player.speed;
-      if (!checkCollision(player.x, nextY, player.radius)) {
-        player.y = nextY;
-      }
-
-      if (dx !== 0 || dy !== 0) {
-        player.walkFrame += 0.25;
+      // 1. LINEN CABINET TRAP DoT LOGIC (1 Heart/sec = 1 Half-Heart per 0.5s)
+      if (player.isTrapped) {
+        trapPrompt.style.display = 'block';
+        player.trapDamageTick = (player.trapDamageTick || 0) + dt;
+        if (player.trapDamageTick >= 0.5) {
+          applyDamage(1, true); // Lose 0.5 heart every 0.5 seconds
+          player.trapDamageTick -= 0.5;
+        }
       } else {
-        player.walkFrame = 0;
+        trapPrompt.style.display = 'none';
+        player.trapDamageTick = 0;
       }
 
-      // Zone Banner Update
+      // 2. SODA CAN FREEZE TIMER (Movement restricted, but stickman CAN still take hits!)
+      if (player.freezeTimer > 0) {
+        player.freezeTimer -= dt;
+        freezePrompt.style.display = 'block';
+        freezeTimeDisplay.innerText = Math.max(0, player.freezeTimer).toFixed(1);
+      } else {
+        freezePrompt.style.display = 'none';
+      }
+
+      // 3. PLAYER WASD MOVEMENT (Only evaluated if not frozen and not trapped)
+      if (!player.isTrapped && player.freezeTimer <= 0) {
+        let dx = 0;
+        let dy = 0;
+
+        if (keys['KeyW'] || keys['Keyw']) dy -= 1;
+        if (keys['KeyS'] || keys['Keys']) dy += 1;
+        if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
+        if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+
+        if (dx !== 0 && dy !== 0) {
+          dx *= 0.7071;
+          dy *= 0.7071;
+        }
+
+        let currentSpeed = player.speed;
+
+        let nextX = player.x + dx * currentSpeed;
+        if (!checkCollision(nextX, player.y, player.radius)) {
+          player.x = nextX;
+        }
+
+        let nextY = player.y + dy * currentSpeed;
+        if (!checkCollision(player.x, nextY, player.radius)) {
+          player.y = nextY;
+        }
+
+        if (dx !== 0 || dy !== 0) {
+          player.walkFrame += 0.125;
+        } else {
+          player.walkFrame = 0;
+        }
+      }
+
       const currentZone = sections.find(s => player.x >= s.startX && player.x <= s.endX);
       if (currentZone) {
-        document.getElementById('zone-display').innerText = `ZONE: ${currentZone.name.toUpperCase()}`;
+        zoneDisplay.innerText = `ZONE: ${currentZone.name.toUpperCase()}`;
       }
 
+      // ADVANCE LEVEL (PERSISTENT HEALTH GAUNTLET RUN)
       if (player.x > 3800) {
-        player.hasWon = true;
+        currentLevel++;
+        levelDisplay.innerText = currentLevel;
+        player.x = 320;
+        player.y = 300;
+        updateHeartsUI();
+        initAircraftLayout();
+      }
+
+      // ENEMY UPDATES & COLLISIONS (CONTINUES EVEN WHEN FROZEN)
+      enemies.forEach(e => {
+        if (e.type === 'suitcase') {
+          if (player.x > e.x) e.x += e.speed * 0.6;
+          if (player.x < e.x) e.x -= e.speed * 0.6;
+          if (player.y > e.y) e.y += e.speed * 0.4;
+          if (player.y < e.y) e.y -= e.speed * 0.4;
+
+          e.shootTimer -= dt;
+          if (e.shootTimer <= 0) {
+            e.shootTimer = 2.5 + Math.random() * 1.5;
+            const angle = Math.atan2(player.y - e.y, player.x - e.x);
+            enemyProjectiles.push({
+              type: 'pretzel',
+              x: e.x,
+              y: e.y,
+              vx: Math.cos(angle) * 2.25, // Halved from 4.5
+              vy: Math.sin(angle) * 2.25, // Halved from 4.5
+              radius: 6,
+              life: 4.0
+            });
+          }
+        } else if (e.type === 'foodcart') {
+          e.y += e.vy;
+          if (e.y < 160 || e.y > 420) e.vy *= -1;
+
+          e.shootTimer -= dt;
+          if (e.shootTimer <= 0) {
+            e.shootTimer = 4.0 + Math.random() * 2.0;
+            const angle = Math.atan2(player.y - e.y, player.x - e.x);
+            enemyProjectiles.push({
+              type: 'soda',
+              x: e.x,
+              y: e.y,
+              vx: Math.cos(angle) * 2.5, // Halved from 5.0
+              vy: Math.sin(angle) * 2.5, // Halved from 5.0
+              radius: 8,
+              life: 3.5
+            });
+          }
+        } else if (e.type === 'linencabinet') {
+          e.shootTimer -= dt;
+          if (e.shootTimer <= 0) {
+            e.shootTimer = 2.5 + Math.random() * 1.5;
+            const angle = Math.atan2(player.y - e.y, player.x - e.x);
+            enemyProjectiles.push({
+              type: 'pillow',
+              x: e.x,
+              y: e.y,
+              vx: Math.cos(angle) * 2.0, // Halved from 4.0
+              vy: Math.sin(angle) * 2.0, // Halved from 4.0
+              radius: 10,
+              cabinetX: e.x,
+              cabinetY: e.y,
+              life: 4.0
+            });
+          }
+        } else if (e.type === 'neckpillow') {
+          e.x += e.vx;
+          e.y += e.vy;
+          if (e.x < 750 || e.x > 3550) e.vx *= -1;
+          if (e.y < 120 || e.y > 480) e.vy *= -1;
+
+          const dist = Math.hypot(player.x - e.x, player.y - e.y);
+          if (dist < player.radius + e.radius) {
+            applyDamage(1);
+          }
+        }
+      });
+
+      // Enemy Projectiles
+      for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
+        let p = enemyProjectiles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= dt;
+
+        const dist = Math.hypot(player.x - p.x, player.y - p.y);
+        if (dist < player.radius + p.radius) {
+          if (p.type === 'pretzel') {
+            applyDamage(1); // 0.5 heart damage
+          } else if (p.type === 'soda') {
+            applyDamage(1); // Soda can impact loses 0.5 heart
+            player.freezeTimer = 3.0; // Freezes movement
+            playSound('soda');
+          } else if (p.type === 'pillow') {
+            player.isTrapped = true;
+            player.trapDamageTick = 0;
+            player.escapePressesNeeded = 6;
+            player.trappedCabinetX = p.cabinetX;
+            player.trappedCabinetY = p.cabinetY;
+            player.x = p.cabinetX;
+            player.y = p.cabinetY;
+            playSound('trap');
+          }
+          enemyProjectiles.splice(i, 1);
+          continue;
+        }
+
+        if (p.life <= 0) {
+          enemyProjectiles.splice(i, 1);
+        }
       }
     }
 
-    // DRAW PROCEDURAL PASSENGER
+    // RENDERING FUNCTIONS
     function drawPassenger(p) {
       const x = p.x;
       const y = p.y;
 
-      // Bottom Clothing
       ctx.fillStyle = p.bottomColor;
       ctx.fillRect(x - 5, y + 2, 10, 8);
 
-      // Top Clothing & Arms
       ctx.fillStyle = p.topColor;
       ctx.fillRect(x - 6, y - 5, 12, 9);
       ctx.strokeStyle = p.topColor;
@@ -426,13 +886,11 @@
       ctx.lineTo(x + 9, y + 3);
       ctx.stroke();
 
-      // Head
       ctx.fillStyle = '#fce7f3';
       ctx.beginPath();
       ctx.arc(x, y - 8, 5, 0, Math.PI * 2);
       ctx.fill();
 
-      // Hair Styles
       if (p.hairStyle !== 'none') {
         ctx.fillStyle = p.hairColor;
         ctx.strokeStyle = p.hairColor;
@@ -462,7 +920,6 @@
         }
       }
 
-      // Hat Styles
       if (p.hatStyle !== 'none') {
         if (p.hatStyle === 'cap') {
           ctx.fillStyle = '#1e293b';
@@ -492,10 +949,13 @@
       }
     }
 
-    // DRAW PILOT STICKMAN PLAYER
     function drawPilot(x, y, facing, walkFrame) {
       ctx.save();
       ctx.translate(x, y);
+
+      if (player.invulnerableTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
+        ctx.globalAlpha = 0.4;
+      }
 
       const armSwing = Math.sin(walkFrame) * 4;
       const legSwing = Math.sin(walkFrame) * 5;
@@ -531,18 +991,19 @@
       ctx.lineTo(8, 0 - armSwing);
       ctx.stroke();
 
-      // Head & Eye
+      // Head
       ctx.fillStyle = '#fde047';
       ctx.beginPath();
       ctx.arc(0, -15, 6, 0, Math.PI * 2);
       ctx.fill();
 
+      // Eye
       ctx.fillStyle = '#000000';
       ctx.beginPath();
       ctx.arc(facing * 3, -15, 1, 0, Math.PI * 2);
       ctx.fill();
 
-      // Pilot Cap
+      // Cap
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(-6, -20, 12, 4);
       ctx.fillStyle = '#eab308';
@@ -553,20 +1014,141 @@
       ctx.restore();
     }
 
+    function drawEnemiesAndProjectiles() {
+      enemies.forEach(e => {
+        ctx.save();
+        ctx.translate(e.x, e.y);
+
+        if (e.type === 'suitcase') {
+          ctx.fillStyle = '#7e22ce';
+          ctx.fillRect(-12, -10, 24, 20);
+          ctx.strokeStyle = '#eab308';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(-12, -10, 24, 20);
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.moveTo(-4, -10);
+          ctx.lineTo(-4, -14);
+          ctx.lineTo(4, -14);
+          ctx.lineTo(4, -10);
+          ctx.stroke();
+
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(-6, -4, 4, 4);
+          ctx.fillRect(2, -4, 4, 4);
+
+          ctx.fillStyle = '#000000';
+          ctx.beginPath();
+          ctx.arc(-8, 11, 3, 0, Math.PI * 2);
+          ctx.arc(8, 11, 3, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (e.type === 'foodcart') {
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect(-16, -20, 32, 40);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(-16, -20, 32, 40);
+
+          ctx.fillStyle = '#cbd5e1';
+          ctx.beginPath();
+          ctx.arc(-7, -8, 4, 0, Math.PI * 2);
+          ctx.arc(7, -8, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#f97316';
+          ctx.beginPath();
+          ctx.arc(0, 4, 8, 0, Math.PI);
+          ctx.fill();
+
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(-12, -24, 6, 8);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(6, -24, 6, 8);
+        } else if (e.type === 'linencabinet') {
+          ctx.fillStyle = '#854d0e';
+          ctx.fillRect(-18, -24, 36, 48);
+          ctx.strokeStyle = '#fde047';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(-18, -24, 36, 48);
+
+          ctx.strokeStyle = '#a16207';
+          ctx.beginPath();
+          ctx.moveTo(0, -24);
+          ctx.lineTo(0, 24);
+          ctx.stroke();
+
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(-5, -6, 3, 3);
+          ctx.fillRect(2, -6, 3, 3);
+        } else if (e.type === 'neckpillow') {
+          ctx.fillStyle = '#a855f7';
+          ctx.beginPath();
+          ctx.arc(0, 0, 12, Math.PI, 0);
+          ctx.lineTo(12, 8);
+          ctx.arc(8, 8, 4, 0, Math.PI);
+          ctx.lineTo(4, 0);
+          ctx.arc(0, 0, 4, 0, Math.PI, true);
+          ctx.lineTo(-4, 8);
+          ctx.arc(-8, 8, 4, 0, Math.PI);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(-4, -4, 2, 0, Math.PI * 2);
+          ctx.arc(4, -4, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      });
+
+      enemyProjectiles.forEach(p => {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+
+        if (p.type === 'pretzel') {
+          ctx.fillStyle = '#b45309';
+          ctx.beginPath();
+          ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(-2, -2, 2, 2);
+          ctx.fillRect(1, 1, 2, 2);
+        } else if (p.type === 'soda') {
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(-5, -7, 10, 14);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(-5, -2, 10, 4);
+        } else if (p.type === 'pillow') {
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.roundRect(-10, -7, 20, 14, 4);
+          ctx.fill();
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      });
+    }
+
     // MAIN RENDER ROUTINE
     function draw() {
-      // 1. SKY BLUE RADIAL GRADIENT BACKGROUND
+      const palette = getLevelPalette(currentLevel);
+
       const skyGradient = ctx.createRadialGradient(
         canvas.width / 2, canvas.height / 2, 100,
         canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height)
       );
-      skyGradient.addColorStop(0, '#38bdf8');
-      skyGradient.addColorStop(0.5, '#0284c7');
-      skyGradient.addColorStop(1, '#0f172a');
+      skyGradient.addColorStop(0, palette.sky[0]);
+      skyGradient.addColorStop(0.5, palette.sky[1]);
+      skyGradient.addColorStop(1, palette.sky[2]);
       ctx.fillStyle = skyGradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // CAMERA SETUP (Horizontal Free Scrolling)
       const scale = canvas.height / WORLD.height;
       let cameraX = player.x - (canvas.width / scale) / 2;
       cameraX = Math.max(0, Math.min(WORLD.width - canvas.width / scale, cameraX));
@@ -575,7 +1157,6 @@
       ctx.scale(scale, scale);
       ctx.translate(-cameraX, 0);
 
-      // 2. PARALLAX SKY CLOUDS
       clouds.forEach(cloud => {
         ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity})`;
         ctx.beginPath();
@@ -585,57 +1166,30 @@
         ctx.fill();
       });
 
-      // 3. HORIZONTAL STABILIZERS (TAIL WINGS - MATCHING OVERLAY SHAPE)
-      ctx.fillStyle = '#e2e8f0';
-      ctx.strokeStyle = '#334155';
+      // Tail Wings
+      ctx.fillStyle = palette.wing;
+      ctx.strokeStyle = palette.wingBorder;
       ctx.lineWidth = 4;
 
-      // Top Horizontal Stabilizer (Root extends forward along top wall to X:520, tip flares left past screen)
       ctx.beginPath();
       ctx.moveTo(520, WORLD.topY);
-      ctx.lineTo(-100, -180);           // Outer tip extends far up & left past screen
+      ctx.lineTo(-100, -180);
       ctx.lineTo(-100, 160);
-      ctx.lineTo(70, WORLD.height / 2);  // Tail cone apex connection
+      ctx.lineTo(70, WORLD.height / 2);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
-
-      // Top Stabilizer Panel Line
-      ctx.strokeStyle = '#94a3b8';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(320, WORLD.topY);
-      ctx.lineTo(-100, -10);
-      ctx.stroke();
-
-      // Bottom Horizontal Stabilizer (Symmetric reflection)
-      ctx.fillStyle = '#e2e8f0';
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 4;
 
       ctx.beginPath();
       ctx.moveTo(520, WORLD.bottomY);
-      ctx.lineTo(-100, WORLD.height + 180); // Outer tip extends far down & left past screen
+      ctx.lineTo(-100, WORLD.height + 180);
       ctx.lineTo(-100, WORLD.height - 160);
-      ctx.lineTo(70, WORLD.height / 2);     // Tail cone apex connection
+      ctx.lineTo(70, WORLD.height / 2);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
-      // Bottom Stabilizer Panel Line
-      ctx.strokeStyle = '#94a3b8';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(320, WORLD.bottomY);
-      ctx.lineTo(-100, WORLD.height + 10);
-      ctx.stroke();
-
-      // 4. MAIN WINGS IN COACH SECTION
-      ctx.fillStyle = '#e2e8f0';
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 4;
-
-      // Top Main Wing (Root at X:1350..1700, tip extends past screen)
+      // Main Wings
       ctx.beginPath();
       ctx.moveTo(1700, WORLD.topY);
       ctx.lineTo(1250, -180);
@@ -644,19 +1198,6 @@
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
-
-      // Top Main Wing Panel Lines
-      ctx.strokeStyle = '#94a3b8';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(1525, WORLD.topY);
-      ctx.lineTo(1125, -180);
-      ctx.stroke();
-
-      // Bottom Main Wing
-      ctx.fillStyle = '#e2e8f0';
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 4;
 
       ctx.beginPath();
       ctx.moveTo(1700, WORLD.bottomY);
@@ -667,25 +1208,15 @@
       ctx.fill();
       ctx.stroke();
 
-      // Bottom Main Wing Panel Lines
-      ctx.strokeStyle = '#94a3b8';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(1525, WORLD.bottomY);
-      ctx.lineTo(1125, WORLD.height + 180);
-      ctx.stroke();
-
-      // 5. AIRCRAFT INTERIOR FLOORS WITH TAPERED TAIL
-      sections.forEach(sec => {
-        ctx.fillStyle = sec.color;
-
+      // Floors
+      sections.forEach((sec, idx) => {
+        ctx.fillStyle = palette.sections[idx];
         if (sec.name === "Cargo Bay") {
-          // Draw Cargo Bay with Tapered Rear Point at X=70, Y=300
           ctx.beginPath();
           ctx.moveTo(sec.endX, WORLD.topY);
           ctx.lineTo(sec.endX, WORLD.bottomY);
           ctx.lineTo(280, WORLD.bottomY);
-          ctx.lineTo(70, WORLD.height / 2); // Tail Cone Apex
+          ctx.lineTo(70, WORLD.height / 2);
           ctx.lineTo(280, WORLD.topY);
           ctx.closePath();
           ctx.fill();
@@ -699,8 +1230,8 @@
       ctx.fillRect(280, 185, 3270, 35);
       ctx.fillRect(280, 385, 3270, 35);
 
-      // Section Text Labels
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      // Section Labels
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
       ctx.font = 'bold 28px monospace';
       ctx.textAlign = 'center';
       ctx.fillText("CARGO BAY", 480, 310);
@@ -709,36 +1240,31 @@
       ctx.fillText("FIRST CLASS", 3225, 310);
       ctx.fillText("COCKPIT", 3750, 310);
 
-      // 6. FUSELAGE HULL STRUCTURAL OUTLINE
-      ctx.strokeStyle = '#f8fafc';
+      // Fuselage Hull
+      ctx.strokeStyle = palette.hull;
       ctx.lineWidth = 5;
-
-      // Top Fuselage Wall
       ctx.beginPath();
       ctx.moveTo(280, WORLD.topY);
       ctx.lineTo(3830, WORLD.topY);
       ctx.stroke();
 
-      // Bottom Fuselage Wall
       ctx.beginPath();
       ctx.moveTo(280, WORLD.bottomY);
       ctx.lineTo(3830, WORLD.bottomY);
       ctx.stroke();
 
-      // Tapered Tail Cone Hull Contour (Point at X=70, Y=300)
       ctx.beginPath();
       ctx.moveTo(280, WORLD.topY);
       ctx.lineTo(70, WORLD.height / 2);
       ctx.lineTo(280, WORLD.bottomY);
       ctx.stroke();
 
-      // Cockpit Nose Cone Curve
       ctx.beginPath();
       ctx.moveTo(3830, WORLD.topY);
       ctx.quadraticCurveTo(4000, WORLD.height / 2, 3830, WORLD.bottomY);
       ctx.stroke();
 
-      // 7. DRAW OBSTACLES
+      // Obstacles
       obstacles.forEach(obs => {
         if (obs.type === 'boundary') return;
 
@@ -758,66 +1284,39 @@
           ctx.strokeStyle = '#64748b';
           ctx.lineWidth = 1;
           ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
-        } else if (obs.type === 'restroom') {
-          ctx.fillStyle = '#0284c7';
-          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 12px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText(obs.label, obs.x + obs.w / 2, obs.y + obs.h / 2 + 4);
         } else if (obs.type === 'controls') {
           ctx.fillStyle = '#065f46';
           ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
           ctx.strokeStyle = '#10b981';
           ctx.lineWidth = 2;
           ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
-          ctx.fillStyle = '#10b981';
-          ctx.font = 'bold 11px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText("FLIGHT", obs.x + obs.w / 2, obs.y + obs.h / 2 - 6);
-          ctx.fillText("PANEL", obs.x + obs.w / 2, obs.y + obs.h / 2 + 10);
         } else if (obs.type === 'pilot-seat') {
           ctx.fillStyle = '#991b1b';
           ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
-          ctx.strokeStyle = '#ef4444';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
         } else {
           ctx.fillStyle = '#94a3b8';
           ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
         }
       });
 
-      // 8. DRAW SEATED PASSENGERS
+      // Seated Passengers
       passengers.forEach(p => drawPassenger(p));
 
-      // 9. DRAW PILOT PLAYER
+      // Enemies & Projectiles
+      drawEnemiesAndProjectiles();
+
+      // Pilot Player
       drawPilot(player.x, player.y, player.facing, player.walkFrame);
-
-      // 10. WIN OVERLAY
-      if (player.hasWon) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        ctx.fillRect(cameraX, 0, canvas.width / scale, WORLD.height);
-
-        ctx.fillStyle = '#4ade80';
-        ctx.font = 'bold 32px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText("MISSION ACCOMPLISHED!", cameraX + (canvas.width / scale) / 2, 270);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '16px monospace';
-        ctx.fillText("Pilot reached cockpit controls.", cameraX + (canvas.width / scale) / 2, 310);
-        ctx.fillText("Click 'RESET' to play again.", cameraX + (canvas.width / scale) / 2, 340);
-      }
 
       ctx.restore();
     }
 
-    function animate() {
-      updatePhysics();
+    let lastTime = performance.now();
+    function animate(now) {
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      updatePhysics(dt);
       draw();
       requestAnimationFrame(animate);
     }
@@ -825,7 +1324,7 @@
     window.onload = function() {
       resizeCanvas();
       resetSimulation();
-      animate();
+      requestAnimationFrame(animate);
     };
   </script>
 </body>

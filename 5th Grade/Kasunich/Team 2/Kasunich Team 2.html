@@ -58,7 +58,7 @@
       font-weight: bold;
       letter-spacing: 1px;
       display: flex;
-      gap: 20px;
+      gap: 18px;
     }
 
     .btn-reset {
@@ -123,6 +123,7 @@
       <div class="hud-info">
         <span id="level-display" style="color: #ff00ea;">PLANET: 1</span>
         <span id="parts-display" style="color: #ffd600;">BANKED: 0/5 | CARRIED: 0</span>
+        <span id="shield-display" style="color: #00f0ff;">SHIELD: READY [SPACE]</span>
         <span id="status-warning" style="color: #ff1744; display: none;">⚠️ ABSORBED! 3.0s</span>
       </div>
     </div>
@@ -135,7 +136,7 @@
   </div>
 
   <div class="instructions" id="status-text">
-    [WASD MOVEMENT ONLY] Jetpack to floating parts, then drop them off at the floating rocket!
+    [WASD MOVEMENT ONLY] Jetpack to floating parts, drop them off at the rocket! Press [SPACE] for Shock Shield!
   </div>
 
   <script>
@@ -173,11 +174,18 @@
       facing: 1,
       walkFrame: 0,
       radius: 14,
-      restitution: 0.44, // 50% Less energetic bounce (was 0.88)
+      restitution: 0.44, // 50% Less energetic bounce
       absorbed: false,
       absorbedAmoeba: null,
       absorbedTimer: 0,
-      invulnerableTimer: 0
+      invulnerableTimer: 0,
+
+      // SHOCK SHIELD STATE
+      height: 45, // Stickman height from top of helmet to bottom of feet
+      shieldRadius: 28.125, // Diameter = 45 * 1.25 = 56.25px (Radius = 28.125px)
+      shieldActive: false,
+      shieldTimer: 0, // Max 120 frames (2 seconds)
+      shieldCooldown: 0 // 300 frames (5 seconds)
     };
 
     // SPACESHIP ROCKET OBJECT WITH PHYSICS
@@ -266,6 +274,9 @@
       player.absorbedAmoeba = null;
       player.absorbedTimer = 0;
       player.invulnerableTimer = 0;
+      player.shieldActive = false;
+      player.shieldTimer = 0;
+      player.shieldCooldown = 0;
 
       // 1. RANDOM ROCKET SPAWN & INITIAL DRIFT PHYSICS
       let shipX, shipY, shipOverlap;
@@ -357,7 +368,7 @@
             radius: radius,
             mass: 250,
             color: slimeColors[i % slimeColors.length],
-            face: FACES[Math.floor(Math.random() * FACES.length)], // Random facial feature assignment
+            face: FACES[Math.floor(Math.random() * FACES.length)],
             phase: Math.random() * Math.PI * 2,
             wobbleSpeed: Math.random() * 0.04 + 0.03
           };
@@ -392,7 +403,7 @@
             mass: 1,
             angle: Math.random() * Math.PI * 2,
             rotSpeed: (Math.random() - 0.5) * 0.05,
-            restitution: 0.46, // 50% Less energetic bounce (was 0.92)
+            restitution: 0.46,
             status: 'FLOATING'
           };
 
@@ -418,6 +429,24 @@
       const carried = parts.filter(p => p.status === 'CARRIED').length;
       document.getElementById('parts-display').innerText = `BANKED: ${banked}/${parts.length} | CARRIED: ${carried}`;
 
+      // Update Shield Display
+      const shieldEl = document.getElementById('shield-display');
+      if (player.shieldActive) {
+        const secLeft = ((120 - player.shieldTimer) / 60).toFixed(1);
+        shieldEl.innerText = `SHIELD: ACTIVE (${secLeft}s)`;
+        shieldEl.style.color = '#00f0ff';
+        shieldEl.style.textShadow = '0 0 10px #00f0ff';
+      } else if (player.shieldCooldown > 0) {
+        const secLeft = (player.shieldCooldown / 60).toFixed(1);
+        shieldEl.innerText = `SHIELD: COOLDOWN (${secLeft}s)`;
+        shieldEl.style.color = '#ff9800';
+        shieldEl.style.textShadow = 'none';
+      } else {
+        shieldEl.innerText = `SHIELD: READY [SPACE]`;
+        shieldEl.style.color = '#76ff03';
+        shieldEl.style.textShadow = '0 0 8px #76ff03';
+      }
+
       const warnEl = document.getElementById('status-warning');
       const statusEl = document.getElementById('status-text');
 
@@ -435,7 +464,7 @@
               statusEl.innerText = `YOU ARE CARRYING ${carried} PART(S)! Catch the moving rocket to drop them off!`;
               statusEl.style.color = '#ffd600';
             } else {
-              statusEl.innerText = "[WASD MOVEMENT ONLY] Collect floating parts and fly to the moving rocket to bank them!";
+              statusEl.innerText = "[WASD MOVEMENT ONLY] Collect floating parts and fly to the moving rocket to bank them! [SPACE] Shield!";
               statusEl.style.color = '#00f0ff';
             }
           } else {
@@ -455,16 +484,16 @@
 
     window.addEventListener('resize', resizeCanvas);
 
-    // STRICT WASD CONTROLS ONLY (Arrow keys explicitly ignored!)
+    // STRICT WASD CONTROLS + SPACEBAR FOR SHOCK SHIELD (Arrow keys explicitly ignored!)
     window.addEventListener('keydown', (e) => {
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd', 'Space'].includes(e.code) || e.code === 'Space') {
         e.preventDefault();
         keys[e.code] = true;
       }
     });
 
     window.addEventListener('keyup', (e) => {
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd', 'Space'].includes(e.code) || e.code === 'Space') {
         keys[e.code] = false;
       }
     });
@@ -529,7 +558,7 @@
         const velAlongNormal = rvx * nx + rvy * ny;
 
         if (velAlongNormal > 0) {
-          const e = 0.45; // Restitution reduced by 50%
+          const e = 0.45;
           const impulseScalar = (-(1 + e) * velAlongNormal) / totalInverseMass;
 
           obj1.vx += (impulseScalar / obj1.mass) * nx;
@@ -584,7 +613,78 @@
         player.invulnerableTimer--;
       }
 
-      // --- ROCKET DRIFT PHYSICS & WALL BOUNCES (50% Less Energetic) ---
+      // --- SHOCK SHIELD ACTIVATION & COOLDOWN CONTROLLER ---
+      if (player.shieldCooldown > 0) {
+        player.shieldCooldown--;
+        player.shieldActive = false;
+        player.shieldTimer = 0;
+      } else if (!player.absorbed) {
+        if (keys['Space'] || keys['space'] || keys[' ']) {
+          player.shieldActive = true;
+          player.shieldTimer++;
+
+          if (player.shieldTimer >= 120) { // Max 2 seconds (120 frames at 60fps)
+            player.shieldActive = false;
+            player.shieldTimer = 0;
+            player.shieldCooldown = 300; // 5 seconds cooldown (300 frames)
+          }
+        } else if (player.shieldActive) {
+          // Space key released before 2s expired -> turn off & enter 5s cooldown
+          player.shieldActive = false;
+          player.shieldTimer = 0;
+          player.shieldCooldown = 300;
+        }
+      } else {
+        player.shieldActive = false;
+        player.shieldTimer = 0;
+      }
+
+      // --- SHOCK SHIELD REPULSION OF AMOEBAS ---
+      if (player.shieldActive && !player.absorbed) {
+        const shieldCx = player.x;
+        const shieldCy = player.y - 8;
+
+        amoebas.forEach(amb => {
+          const dx = amb.x - shieldCx;
+          const dy = amb.y - shieldCy;
+          const dist = Math.hypot(dx, dy);
+          const minDist = player.shieldRadius + amb.radius;
+
+          if (dist < minDist) {
+            let nx = 1, ny = 0;
+            if (dist > 0.0001) {
+              nx = dx / dist;
+              ny = dy / dist;
+            }
+
+            const pushOverlap = minDist - dist;
+            // Push amoeba outside the shock shield boundary immediately
+            amb.x += nx * (pushOverlap + 4);
+            amb.y += ny * (pushOverlap + 4);
+
+            // Repel amoeba velocity away from Stickman
+            const repelSpeed = 10;
+            amb.vx = nx * repelSpeed;
+            amb.vy = ny * repelSpeed;
+
+            // Electric sparks discharge on contact
+            const sparkX = shieldCx + nx * player.shieldRadius;
+            const sparkY = shieldCy + ny * player.shieldRadius;
+            createParticles(sparkX, sparkY, '#00f0ff', 4, 8, 8);
+            createParticles(sparkX, sparkY, '#ffffff', 2, 6, 6);
+          }
+        });
+
+        // Ambient spark particles around shield perimeter
+        if (Math.random() < 0.6) {
+          const sparkAngle = Math.random() * Math.PI * 2;
+          const px = shieldCx + Math.cos(sparkAngle) * player.shieldRadius;
+          const py = shieldCy + Math.sin(sparkAngle) * player.shieldRadius;
+          createParticles(px, py, '#00f0ff', 1, 3, 3);
+        }
+      }
+
+      // --- ROCKET DRIFT PHYSICS & WALL BOUNCES ---
       ship.x += ship.vx;
       ship.y += ship.vy;
 
@@ -675,7 +775,7 @@
           player.walkFrame = 0;
         }
 
-        // STICKMAN SCREEN BOUNDARY BOUNCE (50% Less Energetic)
+        // STICKMAN SCREEN BOUNDARY BOUNCE
         if (player.x - player.radius < 0) {
           player.x = player.radius;
           player.vx = -player.vx * player.restitution;
@@ -697,7 +797,7 @@
         }
       }
 
-      // --- AMOEBA SLIME MOVEMENT & WALL BOUNCE (50% Less Energetic) ---
+      // --- AMOEBA SLIME MOVEMENT & WALL BOUNCE ---
       amoebas.forEach(amb => {
         amb.x += amb.vx;
         amb.y += amb.vy;
@@ -720,7 +820,7 @@
         }
       });
 
-      // --- DRIFTING ASTEROIDS & WALL BOUNCE (50% Less Energetic) ---
+      // --- DRIFTING ASTEROIDS & WALL BOUNCE ---
       asteroids.forEach(ast => {
         ast.x += ast.vx;
         ast.y += ast.vy;
@@ -784,39 +884,33 @@
         }
       });
 
-      // --- ENTITY ELASTIC COLLISIONS (50% Bounce Energy) ---
-      // Asteroid vs Asteroid
+      // --- ENTITY ELASTIC COLLISIONS ---
       for (let i = 0; i < asteroids.length; i++) {
         for (let j = i + 1; j < asteroids.length; j++) {
           resolveElasticCollision(asteroids[i], asteroids[j]);
         }
       }
 
-      // Amoeba vs Asteroid
       amoebas.forEach(amb => {
         asteroids.forEach(ast => {
           resolveElasticCollision(amb, ast);
         });
       });
 
-      // Amoeba vs Amoeba
       for (let i = 0; i < amoebas.length; i++) {
         for (let j = i + 1; j < amoebas.length; j++) {
           resolveElasticCollision(amoebas[i], amoebas[j]);
         }
       }
 
-      // Rocket vs Asteroid
       asteroids.forEach(ast => {
         resolveElasticCollision(shipBody, ast);
       });
 
-      // Rocket vs Amoeba (PHYSICAL BOUNCE ONLY - ROCKET CANNOT BE ABSORBED!)
       amoebas.forEach(amb => {
         resolveElasticCollision(shipBody, amb);
       });
 
-      // Asteroid & Amoeba vs Parts
       asteroids.forEach(ast => {
         parts.forEach(part => {
           if (part.status === 'FLOATING') resolveElasticCollision(ast, part);
@@ -829,12 +923,10 @@
         });
       });
 
-      // Rocket vs Parts
       parts.forEach(part => {
         if (part.status === 'FLOATING') resolveElasticCollision(shipBody, part);
       });
 
-      // Part vs Part
       for (let i = 0; i < parts.length; i++) {
         for (let j = i + 1; j < parts.length; j++) {
           if (parts[i].status === 'FLOATING' && parts[j].status === 'FLOATING') {
@@ -843,17 +935,15 @@
         }
       }
 
-      // Player vs Asteroid / Rocket Collisions
       if (!player.absorbed) {
         asteroids.forEach(ast => resolveElasticCollision(player, ast));
-        // Only bounce off rocket while it is still damaged/locked
         if (ship.state !== 'REPAIRED') {
           resolveElasticCollision(player, shipBody);
         }
       }
 
-      // --- STICKMAN VS AMOEBA ABSORPTION CHECK ---
-      if (!player.absorbed && player.invulnerableTimer <= 0) {
+      // --- STICKMAN VS AMOEBA ABSORPTION CHECK (DISABLED WHEN SHIELD IS ACTIVE) ---
+      if (!player.absorbed && player.invulnerableTimer <= 0 && !player.shieldActive) {
         amoebas.forEach(amb => {
           const dist = Math.hypot(player.x - amb.x, player.y - amb.y);
           if (dist < player.radius + amb.radius) {
@@ -936,6 +1026,62 @@
         p.life -= p.decay;
         if (p.life <= 0) particles.splice(i, 1);
       }
+
+      updateHUD();
+    }
+
+    // DRAW SHOCK SHIELD AROUND STICKMAN
+    function drawShockShield(x, y, radius) {
+      ctx.save();
+      const cy = y - 8;
+      const pulse = Math.sin(Date.now() * 0.02) * 2;
+      const currentRadius = radius + pulse;
+
+      // Outer glowing aura
+      ctx.fillStyle = 'rgba(0, 240, 255, 0.18)';
+      ctx.beginPath();
+      ctx.arc(x, cy, currentRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Electric outer ring
+      ctx.strokeStyle = '#00f0ff';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(x, cy, currentRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Inner bright energy ring
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(x, cy, currentRadius - 3, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Electrical lightning arcs around shield boundary
+      const numArcs = 6;
+      const time = Date.now() * 0.01;
+      ctx.strokeStyle = '#76ff03';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < numArcs; i++) {
+        const angle = (i / numArcs) * Math.PI * 2 + time;
+        const x1 = x + Math.cos(angle) * (currentRadius - 4);
+        const y1 = cy + Math.sin(angle) * (currentRadius - 4);
+        const midAngle = angle + 0.15;
+        const xMid = x + Math.cos(midAngle) * (currentRadius + 4);
+        const yMid = cy + Math.sin(midAngle) * (currentRadius + 4);
+        const x2 = x + Math.cos(angle + 0.3) * (currentRadius - 4);
+        const y2 = cy + Math.sin(angle + 0.3) * (currentRadius - 4);
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(xMid, yMid);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+
+      ctx.restore();
     }
 
     // DRAW AMOEBA SLIME ENEMIES WITH 5 DISTINCT EXPRESSIVE FACES
@@ -977,7 +1123,6 @@
         ctx.fillStyle = '#ffffff';
 
         if (amb.face === 'Happy Face') {
-          // Big Shining Eyes
           ctx.beginPath();
           ctx.arc(-8, -4, 5, 0, Math.PI * 2);
           ctx.arc(8, -4, 5, 0, Math.PI * 2);
@@ -990,46 +1135,40 @@
           ctx.arc(9, -4, 2.5, 0, Math.PI * 2);
           ctx.fill();
 
-          // Rosy Cheeks
           ctx.fillStyle = 'rgba(255, 105, 180, 0.6)';
           ctx.beginPath();
           ctx.arc(-11, 2, 3.5, 0, Math.PI * 2);
           ctx.arc(11, 2, 3.5, 0, Math.PI * 2);
           ctx.fill();
 
-          // Arc Smile
           ctx.beginPath();
           ctx.arc(0, 2, 7, 0.1 * Math.PI, 0.9 * Math.PI);
           ctx.stroke();
         } 
         else if (amb.face === 'Angry Face') {
-          // Narrow Glaring Eyes
           ctx.beginPath();
           ctx.arc(-8, -2, 4.5, 0, Math.PI * 2);
           ctx.arc(8, -2, 4.5, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
 
-          ctx.fillStyle = '#ff1744'; // Glowing red pupils
+          ctx.fillStyle = '#ff1744';
           ctx.beginPath();
           ctx.arc(-8, -2, 2.2, 0, Math.PI * 2);
           ctx.arc(8, -2, 2.2, 0, Math.PI * 2);
           ctx.fill();
 
-          // Sharp Angled Eyebrows
           ctx.lineWidth = 2.5;
           ctx.beginPath();
           ctx.moveTo(-13, -10); ctx.lineTo(-4, -5);
           ctx.moveTo(13, -10); ctx.lineTo(4, -5);
           ctx.stroke();
 
-          // Jagged Frown
           ctx.beginPath();
           ctx.moveTo(-7, 8); ctx.lineTo(-3, 5); ctx.lineTo(0, 8); ctx.lineTo(3, 5); ctx.lineTo(7, 8);
           ctx.stroke();
         } 
         else if (amb.face === 'Sad Face') {
-          // Teary Big Glossy Eyes
           ctx.beginPath();
           ctx.arc(-8, -4, 6, 0, Math.PI * 2);
           ctx.arc(8, -4, 6, 0, Math.PI * 2);
@@ -1048,38 +1187,32 @@
           ctx.arc(7, -5, 1.2, 0, Math.PI * 2);
           ctx.fill();
 
-          // Downturned Sad Eyebrows
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(-13, -7); ctx.lineTo(-4, -11);
           ctx.moveTo(13, -7); ctx.lineTo(4, -11);
           ctx.stroke();
 
-          // Frown Arc
           ctx.beginPath();
           ctx.arc(0, 11, 6, 1.1 * Math.PI, 1.9 * Math.PI);
           ctx.stroke();
 
-          // Teardrop
           ctx.fillStyle = '#00f0ff';
           ctx.beginPath();
           ctx.arc(10, 4, 2, 0, Math.PI * 2);
           ctx.fill();
         } 
         else if (amb.face === 'Sleepy Face') {
-          // Closed Sleeping Eyes (u u)
           ctx.lineWidth = 2.2;
           ctx.beginPath();
           ctx.arc(-8, -4, 4.5, 0.2 * Math.PI, 0.8 * Math.PI);
           ctx.arc(8, -4, 4.5, 0.2 * Math.PI, 0.8 * Math.PI);
           ctx.stroke();
 
-          // Small O Mouth (snoring)
           ctx.beginPath();
           ctx.arc(0, 5, 2.8, 0, Math.PI * 2);
           ctx.stroke();
 
-          // Animated Zzz's floating above blob
           ctx.fillStyle = '#ffffff';
           ctx.font = 'bold 10px sans-serif';
           const zOffset = Math.sin(amb.phase * 2) * 3;
@@ -1088,10 +1221,9 @@
           ctx.fillText('z', 18, -19 + zOffset);
         } 
         else if (amb.face === 'Dopey Face') {
-          // Asymmetric Wacky Eyes
           ctx.beginPath();
-          ctx.arc(-8, -5, 7, 0, Math.PI * 2); // Big Eye
-          ctx.arc(8, -3, 3.5, 0, Math.PI * 2); // Small Eye
+          ctx.arc(-8, -5, 7, 0, Math.PI * 2);
+          ctx.arc(8, -3, 3.5, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
 
@@ -1101,13 +1233,11 @@
           ctx.arc(8, -3, 1.5, 0, Math.PI * 2);
           ctx.fill();
 
-          // Silly Goofy Smile
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.arc(0, 2, 6, 0, Math.PI);
           ctx.stroke();
 
-          // Pink Tongue sticking out
           ctx.fillStyle = '#ff4081';
           ctx.beginPath();
           ctx.arc(3, 8, 3, 0, Math.PI);
@@ -1290,7 +1420,6 @@
           createParticles(s.x + 18, s.y + s.height * 0.5, '#555555', 1);
         }
       } else if (s.state === 'REPAIRED') {
-        // Unlocked hatch & glowing entry beacon aura
         ctx.fillStyle = 'rgba(118, 255, 3, 0.25)';
         ctx.beginPath();
         ctx.arc(s.width / 2, s.height / 2, s.radius + 10 + Math.sin(Date.now() * 0.008) * 4, 0, Math.PI * 2);
@@ -1300,7 +1429,6 @@
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Unlocked green hatch door
         ctx.fillStyle = '#76ff03';
         ctx.beginPath();
         ctx.arc(s.width / 2, s.height * 0.7, 6, 0, Math.PI * 2);
@@ -1398,6 +1526,9 @@
       });
 
       if (gameState === 'PLAYING' || gameState === 'CRASHING') {
+        if (player.shieldActive && !player.absorbed) {
+          drawShockShield(player.x, player.y, player.shieldRadius);
+        }
         drawStickman(player.x, player.y, player.facing, player.walkFrame);
       }
     }
