@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stickman Lunar Rescue - Seddon Team 1</title>
+    <title>Stickman Moon Rescue - Seddon Team 1</title>
     <style>
         * {
             box-sizing: border-box;
@@ -69,7 +69,7 @@
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .level-selector {
@@ -105,13 +105,33 @@
             letter-spacing: 1px;
         }
 
+        .btn-action {
+            background: #3388ff;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.15s ease-in-out;
+            box-shadow: 0 0 8px rgba(51, 136, 255, 0.4);
+        }
+
+        .btn-action:hover {
+            background: #55aaff;
+            transform: scale(1.04);
+        }
+
         .btn-reset {
             background: #cc3333;
             color: #ffffff;
             border: none;
             border-radius: 6px;
             padding: 6px 14px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             cursor: pointer;
             text-transform: uppercase;
@@ -181,6 +201,31 @@
             opacity: 1;
             transform: translateX(-50%) translateY(4px);
         }
+
+        /* Skip Cutscene Button */
+        #btn-skip-intro {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            background: #ffaa00;
+            color: #000000;
+            font-weight: bold;
+            border: 2px solid #ffffff;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 1px;
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.8);
+            z-index: 20;
+            display: none;
+            transition: transform 0.15s ease;
+        }
+
+        #btn-skip-intro:hover {
+            transform: scale(1.08);
+            background: #ffcc00;
+        }
     </style>
 </head>
 <body>
@@ -192,6 +237,7 @@
         </div>
         
         <div class="header-actions">
+            <button class="btn-action" onclick="startIntro()">Watch Intro</button>
             <div class="level-selector">
                 <button class="level-btn" onclick="changeLevel(-1)">-</button>
                 <div class="level-display" id="levelText">LEVEL 1</div>
@@ -204,16 +250,18 @@
     <div id="canvas-wrapper">
         <canvas id="simCanvas"></canvas>
         <div id="toast" class="toast-banner">Warning: Alien Activity Detected!</div>
+        <button id="btn-skip-intro" onclick="skipIntro()">[ SKIP INTRO ⏩ ]</button>
     </div>
 
     <div class="instructions">
-        Movement: [WASD] Keys | W: Moon Jump | A: Move Left | S: Fast Drop | D: Move Right
+        Movement: [WASD] Keys | W: Moon Jump | A: Left | S: FLY SWATTER 🧹 / Drop | D: Right
     </div>
 
     <script>
         const canvas = document.getElementById('simCanvas');
         const ctx = canvas.getContext('2d');
         const toastEl = document.getElementById('toast');
+        const skipBtn = document.getElementById('btn-skip-intro');
 
         // WEB AUDIO SYNTHESIZER FOR SOUND EFFECTS
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -239,6 +287,22 @@
                     gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
                     osc.start(now);
                     osc.stop(now + 0.15);
+                } else if (type === 'swat') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(120, now + 0.12);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'splat') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.linearRampToValueAtTime(80, now + 0.2);
+                    gain.gain.setValueAtTime(0.5, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
                 } else if (type === 'pickup') {
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(523.25, now);
@@ -280,6 +344,14 @@
                     gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
                     osc.start(now);
                     osc.stop(now + 0.2);
+                } else if (type === 'warp') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.linearRampToValueAtTime(1200, now + 0.8);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.8);
+                    osc.start(now);
+                    osc.stop(now + 0.8);
                 } else if (type === 'launch') {
                     osc.type = 'sawtooth';
                     osc.frequency.setValueAtTime(100, now);
@@ -293,6 +365,9 @@
                 // Audio context blocked or unsupported
             }
         }
+
+        // GAME STATES: 'INTRO' | 'PLAYING'
+        let gameState = 'INTRO';
 
         // WORLD CONSTANTS
         const WORLD_WIDTH = 8000;
@@ -308,6 +383,18 @@
 
         // SCREEN SHAKE STATE
         let shakeTimer = 0;
+
+        // INTRO CUTSCENE STATE
+        const intro = {
+            phase: 0, // 0: Cruise with burger, 1: Burger falls on button, 2: Warp dimensions, 3: Moon crash
+            timer: 0,
+            shipX: 0,
+            shipY: 0,
+            burgerX: 0,
+            burgerY: 0,
+            burgerAngle: 0,
+            warpHue: 0
+        };
 
         // PLAYER STATE
         const player = {
@@ -325,7 +412,11 @@
             insideRocket: false,
             eatenState: null, // { timer: 3.0, slug: obj }
             netState: null, // { buggy: obj }
-            invulnerableTimer: 0
+            invulnerableTimer: 0,
+            // FLY SWATTER MECHANIC
+            swatterCooldown: 0,
+            swatterAnimTimer: 0,
+            isSwatting: false
         };
 
         // ROCKET STATE
@@ -349,6 +440,7 @@
         let moonRocks = [];
         let parts = [];
         let particles = [];
+        let comicTexts = [];
 
         // ENEMIES DATA
         let groundSlugs = [];
@@ -373,6 +465,27 @@
             document.getElementById('levelText').innerText = `LEVEL ${currentLevel}`;
             showToast(`Switched to Level ${currentLevel}`);
             resetSimulation();
+        }
+
+        function startIntro() {
+            gameState = 'INTRO';
+            intro.phase = 0;
+            intro.timer = 0;
+            intro.shipX = -100;
+            intro.shipY = canvas.height * 0.4;
+            intro.burgerX = 0;
+            intro.burgerY = -35;
+            intro.burgerAngle = 0;
+            intro.warpHue = 0;
+            skipBtn.style.display = 'block';
+            playSound('warp');
+        }
+
+        function skipIntro() {
+            gameState = 'PLAYING';
+            skipBtn.style.display = 'none';
+            resetSimulation();
+            showToast("GET ALL ROCKET PARTS & FLY HOME!", 3000);
         }
 
         function initWorldData() {
@@ -477,11 +590,13 @@
                     pulse: Math.random() * Math.PI * 2,
                     color: colors[i % colors.length],
                     isEating: false,
-                    eatCooldown: 0
+                    eatCooldown: 0,
+                    respawnTimer: 0
                 });
             }
 
             // Moon Buggy Slugs: Frequency = Level * 1
+            // REVISION: Buggies now go 25% SLOWER (reduced speed from 9.8 to 7.35)
             const buggyCount = currentLevel;
             for (let i = 0; i < buggyCount; i++) {
                 const spawnX = 1200 + i * 2200;
@@ -489,7 +604,7 @@
                     id: i,
                     x: spawnX,
                     y: GROUND_Y,
-                    speed: 9.8,
+                    speed: 7.35, // 25% Slower!
                     facing: i % 2 === 0 ? 1 : -1,
                     width: 65,
                     height: 35,
@@ -549,6 +664,9 @@
             player.eatenState = null;
             player.netState = null;
             player.invulnerableTimer = 0;
+            player.swatterCooldown = 0;
+            player.swatterAnimTimer = 0;
+            player.isSwatting = false;
 
             rocket.x = 4000;
             rocket.y = GROUND_Y;
@@ -558,18 +676,112 @@
             rocket.launchVy = 0;
 
             particles = [];
+            comicTexts = [];
             shakeTimer = 0;
+        }
+
+        function updateIntro(dt) {
+            intro.timer += dt;
+
+            if (intro.phase === 0) {
+                // Flying peacefully in spaceship
+                intro.shipX += 3.5;
+                intro.shipY = canvas.height * 0.35 + Math.sin(intro.timer * 3) * 15;
+
+                if (intro.shipX > canvas.width * 0.4) {
+                    intro.phase = 1;
+                    intro.timer = 0;
+                }
+            } 
+            else if (intro.phase === 1) {
+                // Turbulence! Burger slides and drops on controller button!
+                intro.shipX += 1.2;
+                intro.shipY = canvas.height * 0.35 + (Math.random() - 0.5) * 12;
+
+                intro.burgerY += 2.5;
+                intro.burgerX += 1.5;
+                intro.burgerAngle += 0.15;
+
+                if (intro.timer > 2.0) {
+                    intro.phase = 2;
+                    intro.timer = 0;
+                    playSound('warp');
+                }
+            } 
+            else if (intro.phase === 2) {
+                // Warp dimensions!
+                intro.warpHue = (intro.warpHue + 8) % 360;
+                shakeTimer = 0.2;
+
+                if (intro.timer > 3.0) {
+                    intro.phase = 3;
+                    intro.timer = 0;
+                    intro.shipX = canvas.width * 0.5;
+                    intro.shipY = -80;
+                }
+            } 
+            else if (intro.phase === 3) {
+                // Crash Landing on Moon!
+                intro.shipY += 12.0;
+
+                if (intro.shipY >= GROUND_Y - 40) {
+                    intro.shipY = GROUND_Y - 40;
+                    shakeTimer = 0.6;
+                    playSound('hit');
+
+                    // Scatter crash particles & comic text
+                    for (let i = 0; i < 40; i++) {
+                        particles.push({
+                            x: intro.shipX + (Math.random() * 60 - 30),
+                            y: GROUND_Y,
+                            vx: (Math.random() - 0.5) * 16,
+                            vy: -Math.random() * 12 - 2,
+                            life: 45,
+                            size: Math.random() * 8 + 3,
+                            color: Math.random() > 0.5 ? '#ffaa00' : '#ff3300'
+                        });
+                    }
+
+                    comicTexts.push({
+                        text: "CRASH!!",
+                        x: intro.shipX,
+                        y: GROUND_Y - 80,
+                        life: 60,
+                        color: '#ff3300'
+                    });
+
+                    // Start Game after short delay
+                    setTimeout(() => {
+                        skipIntro();
+                    }, 1200);
+
+                    intro.phase = 4; // Done
+                }
+            }
         }
 
         function updatePhysics() {
             const dt = 0.016; // 60 FPS delta
             const now = Date.now();
 
+            if (gameState === 'INTRO') {
+                updateIntro(dt);
+                updateParticles();
+                return;
+            }
+
             // Screen Shake decay
             if (shakeTimer > 0) shakeTimer -= dt;
 
             // Invulnerability Timer
             if (player.invulnerableTimer > 0) player.invulnerableTimer -= dt;
+
+            // Swatter Cooldown & Animation
+            if (player.swatterCooldown > 0) player.swatterCooldown -= dt;
+            if (player.swatterAnimTimer > 0) {
+                player.swatterAnimTimer -= dt;
+                if (player.swatterAnimTimer <= 0) player.isSwatting = false;
+            }
 
             // ROCKET TAKEOFF SEQUENCE
             if (player.insideRocket) {
@@ -605,19 +817,19 @@
                 return;
             }
 
-            // 1. ASTEROID LAUNCHING MECHANIC
-            const asteroidInterval = Math.max(3, Math.floor(30 / currentLevel)) * 1000;
+            // 1. ASTEROID LAUNCHING MECHANIC - REVISION: SPAWN MUCH MORE FREQUENTLY (Every 2.5 to 6s)
+            const asteroidInterval = Math.max(2500, (7000 - currentLevel * 900));
             if (now - lastAsteroidTime > asteroidInterval) {
                 lastAsteroidTime = now;
                 fallingAsteroids.push({
-                    x: player.x, // Aim directly at player's position
+                    x: player.x + (Math.random() * 160 - 80), // Target near player
                     y: -60,
-                    vy: 6.8 + Math.min(4, currentLevel * 0.5),
-                    vx: (Math.random() - 0.5) * 0.8,
+                    vy: 6.8 + Math.min(4, currentLevel * 0.6),
+                    vx: (Math.random() - 0.5) * 1.2,
                     size: 26,
                     rotation: 0
                 });
-                showToast("INCOMING ANGRY ASTEROID!", 1600);
+                showToast("INCOMING METEOR!", 1200);
             }
 
             // UPDATE FALLING ASTEROIDS
@@ -663,7 +875,7 @@
                                 color: '#ff3300'
                             });
                         }
-                        showToast("HIT BY FALLING ASTEROID!", 2000);
+                        showToast("HIT BY FALLING METEOR!", 2000);
                     } else {
                         // Missed: Becomes permanent obstacle rock on moon floor
                         groundedAsteroids.push({
@@ -715,18 +927,13 @@
                     player.eatenState = null;
                     player.invulnerableTimer = 2.0; // Post-ejection grace period
 
-                    // --- EJECT TRAJECTORY MATH ---
-                    // 1. Pick a random angle pointing ABOVEGROUND between 30° (PI/6) and 150° (5*PI/6)
                     const minAngleRad = Math.PI / 6;       // 30 degrees
                     const maxAngleRad = (5 * Math.PI) / 6; // 150 degrees
                     const angle = minAngleRad + Math.random() * (maxAngleRad - minAngleRad);
 
-                    // 2. Calculate launch velocity ensuring horizontal range R <= 4000 (1/2 map width = WORLD_WIDTH / 2)
-                    // Trajectory formula: R = (v^2 * sin(2 * angle)) / g  ==>  max_v = sqrt( (R_max * g) / sin(2 * angle) )
                     const sin2Theta = Math.abs(Math.sin(2 * angle));
                     const maxRange = WORLD_WIDTH / 2; // 4000 pixels
                     
-                    // Cap velocity near 90° (where sin(2*90°) approaches 0):
                     const maxVelocity = sin2Theta > 0.05 
                         ? Math.min(29.5, Math.sqrt((maxRange * player.gravity) / sin2Theta)) 
                         : 29.5;
@@ -734,7 +941,6 @@
                     const minVelocity = 10.0;
                     const launchSpeed = minVelocity + Math.random() * Math.max(0, maxVelocity - minVelocity);
 
-                    // 3. Set velocity components (angle measured from ground rightward; negative Y is upward)
                     player.vx = launchSpeed * Math.cos(angle);
                     player.vy = -launchSpeed * Math.sin(angle);
                     player.isGrounded = false;
@@ -807,7 +1013,6 @@
             } else if (player.isGrounded) {
                 player.vx = 0;
             } else {
-                // In air (e.g. during ejection fly), preserve launch momentum with gentle air friction
                 player.vx *= 0.985;
             }
 
@@ -818,9 +1023,65 @@
                 playSound('jump');
             }
 
-            // Fast drop / descend (S Key)
-            if ((keys['KEYS'] || keys['KeyS']) && !player.isGrounded) {
-                player.vy += 0.42;
+            // FLY SWATTER MECHANIC & FAST DROP (S Key)
+            if (keys['KEYS'] || keys['KeyS']) {
+                // If airborne, S provides fast descent
+                if (!player.isGrounded) {
+                    player.vy += 0.42;
+                }
+
+                // USE FLY SWATTER ATTACK (Key "S")
+                if (player.swatterCooldown <= 0) {
+                    player.swatterCooldown = 0.35;
+                    player.swatterAnimTimer = 0.22;
+                    player.isSwatting = true;
+                    playSound('swat');
+
+                    // Check hitting Alien Slime Monsters
+                    const swatBox = {
+                        x: player.facing === 1 ? player.x + 10 : player.x - 70,
+                        y: GROUND_Y - 50,
+                        w: 60,
+                        h: 50
+                    };
+
+                    groundSlugs.forEach(slug => {
+                        if (slug.respawnTimer <= 0) {
+                            if (
+                                slug.x > swatBox.x &&
+                                slug.x < swatBox.x + swatBox.w &&
+                                !slug.isEating
+                            ) {
+                                // DEFEAT SLIME MONSTER!
+                                slug.respawnTimer = 7.0; // Defeated! Respawns after 7s
+                                playSound('splat');
+
+                                // Slime Splat Burst
+                                for (let p = 0; p < 25; p++) {
+                                    particles.push({
+                                        x: slug.x,
+                                        y: GROUND_Y - 10,
+                                        vx: (Math.random() - 0.5) * 12,
+                                        vy: -Math.random() * 8 - 2,
+                                        life: 30,
+                                        size: Math.random() * 6 + 3,
+                                        color: slug.color
+                                    });
+                                }
+
+                                comicTexts.push({
+                                    text: "SPLATT!!",
+                                    x: slug.x,
+                                    y: GROUND_Y - 45,
+                                    life: 40,
+                                    color: '#00ffcc'
+                                });
+
+                                showToast("SLIME SPLATTED WITH FLY SWATTER!", 1500);
+                            }
+                        }
+                    });
+                }
             }
 
             // Apply Physics
@@ -901,7 +1162,6 @@
                     showToast("ROCKET REPAIRED! LIFTOFF IN PROGRESS!", 3000);
                 }
             } else {
-                // Crash site smoke particles
                 if (Math.random() < 0.25) {
                     particles.push({
                         x: rocket.x + (Math.random() * 20 - 10),
@@ -916,11 +1176,17 @@
             }
 
             updateParticles();
+            updateComicTexts();
         }
 
         function updateEnemies(dt) {
             // 1. GROUND SLUGS AI
             groundSlugs.forEach(slug => {
+                if (slug.respawnTimer > 0) {
+                    slug.respawnTimer -= dt;
+                    return; // Defeated/Splatted slug is inactive until timer expires
+                }
+
                 if (slug.eatCooldown > 0) slug.eatCooldown -= dt;
                 slug.pulse += 0.08;
 
@@ -934,7 +1200,6 @@
 
                 slug.x += slug.vx;
 
-                // Map Bounds
                 if (slug.x < 150) { slug.x = 150; slug.vx *= -1; }
                 if (slug.x > WORLD_WIDTH - 150) { slug.x = WORLD_WIDTH - 150; slug.vx *= -1; }
 
@@ -948,7 +1213,6 @@
                     !player.netState &&
                     !player.insideRocket
                 ) {
-                    // SWALLOW STICKMAN!
                     slug.isEating = true;
                     player.eatenState = { slug: slug, timer: 3.0 };
                     playSound('eat');
@@ -956,7 +1220,7 @@
                 }
             });
 
-            // 2. MOON BUGGY SLUGS AI
+            // 2. MOON BUGGY SLUGS AI (Going 25% Slower!)
             buggySlugs.forEach(buggy => {
                 if (buggy.cooldown > 0) buggy.cooldown -= dt;
 
@@ -966,7 +1230,6 @@
                     if (buggy.x < 300) { buggy.x = 300; buggy.facing = 1; }
                     if (buggy.x > WORLD_WIDTH - 300) { buggy.x = WORLD_WIDTH - 300; buggy.facing = -1; }
 
-                    // Net hit check on Stickman
                     const distToPlayer = Math.hypot(player.x - buggy.x, player.y - (GROUND_Y - 10));
                     if (
                         distToPlayer < 42 &&
@@ -976,11 +1239,9 @@
                         !player.netState &&
                         !player.insideRocket
                     ) {
-                        // CAUGHT IN NET!
                         buggy.state = 'TRANSPORT_PLAYER';
                         player.netState = { buggy: buggy };
 
-                        // Steal all collected parts
                         buggy.stolenParts = [];
                         parts.forEach(part => {
                             if (part.collected) {
@@ -990,7 +1251,6 @@
                         });
                         player.partsCollected = 0;
 
-                        // Determine drop off target location (nearest or extreme side)
                         if (player.x < 4000) {
                             buggy.targetDropX = 150;
                             buggy.targetPartsX = 7850;
@@ -1019,17 +1279,15 @@
                     if (reachedDrop) {
                         buggy.x = buggy.targetDropX;
 
-                        // RELEASE PLAYER IMMEDIATELY
                         player.netState = null;
                         player.x = buggy.targetDropX;
-                        player.invulnerableTimer = 2.0; // Grace period
+                        player.invulnerableTimer = 2.0;
 
-                        // Switch state to transporting stolen parts to opposite side
                         buggy.state = 'TRANSPORT_PARTS';
                         buggy.facing = buggy.targetPartsX > buggy.x ? 1 : -1;
 
                         if (buggy.stolenParts.length > 0) {
-                            showToast("RELEASED! BUGGY IS TAKING YOUR PARTS TO THE OTHER SIDE OF THE MOON!", 3500);
+                            showToast("RELEASED! BUGGY TAKING PARTS TO OPPOSITE SIDE!", 3500);
                         } else {
                             showToast("RELEASED BY MOON BUGGY!", 2000);
                         }
@@ -1045,7 +1303,6 @@
                     if (reachedParts) {
                         buggy.x = buggy.targetPartsX;
 
-                        // Deposit stolen parts on opposite side lunar floor
                         buggy.stolenParts.forEach(part => {
                             part.x = buggy.targetPartsX + (Math.random() * 80 - 40);
                             part.y = GROUND_Y - 20;
@@ -1055,8 +1312,6 @@
                         });
 
                         buggy.stolenParts = [];
-                        
-                        // RESET BUGGY STATE BACK TO PATROL
                         buggy.state = 'PATROL';
                         buggy.cooldown = 1.0;
                         buggy.facing = Math.random() > 0.5 ? 1 : -1;
@@ -1070,8 +1325,8 @@
                 if (part.isFlying) {
                     part.x += part.vx;
                     part.y += part.vy;
-                    part.vy += 0.25; // gravity
-                    part.vx *= 0.98; // friction
+                    part.vy += 0.25;
+                    part.vx *= 0.98;
 
                     if (part.y >= GROUND_Y - 10) {
                         part.y = GROUND_Y - 10;
@@ -1093,6 +1348,126 @@
                 p.y += p.vy;
                 p.life--;
                 if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function updateComicTexts() {
+            for (let i = comicTexts.length - 1; i >= 0; i--) {
+                const c = comicTexts[i];
+                c.y -= 0.8;
+                c.life--;
+                if (c.life <= 0) comicTexts.splice(i, 1);
+            }
+        }
+
+        // RENDER INTRO SCENE
+        function drawIntroScene() {
+            ctx.fillStyle = '#020208';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (intro.phase === 2) {
+                // Swirling Rainbow Dimensional Wormhole Effect!
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                for (let r = 350; r > 10; r -= 20) {
+                    ctx.strokeStyle = `hsl(${(intro.warpHue + r) % 360}, 100%, 50%)`;
+                    ctx.lineWidth = 12;
+                    ctx.beginPath();
+                    ctx.arc(cx + Math.sin(intro.timer * 5 + r) * 15, cy + Math.cos(intro.timer * 5 + r) * 15, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 28px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText("DIMENSIONAL WARP!!", cx, 80);
+                return;
+            }
+
+            // Draw Space Starfield Background
+            ctx.fillStyle = '#ffffff';
+            stars.forEach(star => {
+                ctx.fillRect((star.x) % canvas.width, star.y * canvas.height, star.size, star.size);
+            });
+
+            if (intro.phase === 0 || intro.phase === 1) {
+                // Draw Flying Cockpit Spaceship & Stickman with Burger
+                const shipX = intro.shipX;
+                const shipY = intro.shipY;
+
+                // Cockpit Hull
+                ctx.fillStyle = '#334466';
+                ctx.beginPath();
+                ctx.ellipse(shipX, shipY, 70, 35, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#00ffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Glass Dome
+                ctx.fillStyle = 'rgba(0, 225, 255, 0.4)';
+                ctx.beginPath();
+                ctx.arc(shipX, shipY - 10, 32, Math.PI, 0);
+                ctx.fill();
+                ctx.stroke();
+
+                // Stickman Pilot
+                drawStickman(shipX - 10, shipY - 5, 1, 0);
+
+                // Dashboard Controller Box
+                ctx.fillStyle = '#ff2255';
+                ctx.fillRect(shipX + 15, shipY - 12, 18, 14);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px Courier New';
+                ctx.fillText("GO", shipX + 24, shipY - 2);
+
+                // Giant Delicious Burger on Dashboard / Falling
+                ctx.save();
+                ctx.translate(shipX + 20 + intro.burgerX, shipY - 28 + intro.burgerY);
+                ctx.rotate(intro.burgerAngle);
+
+                // Bun Top
+                ctx.fillStyle = '#e69933';
+                ctx.beginPath(); ctx.arc(0, -6, 12, Math.PI, 0); ctx.fill();
+                // Lettuce & Cheese
+                ctx.fillStyle = '#33cc33'; ctx.fillRect(-12, -6, 24, 3);
+                ctx.fillStyle = '#ffcc00'; ctx.fillRect(-10, -3, 20, 3);
+                // Patty
+                ctx.fillStyle = '#663300'; ctx.fillRect(-12, 0, 24, 4);
+                // Bun Bottom
+                ctx.fillStyle = '#e69933'; ctx.fillRect(-11, 4, 22, 4);
+                ctx.restore();
+
+                // Caption Text
+                ctx.fillStyle = '#ffff00';
+                ctx.font = 'bold 20px Courier New';
+                ctx.textAlign = 'center';
+
+                if (intro.phase === 0) {
+                    ctx.fillText("STICKMAN WAS ENJOYING A BURGER IN HIS SPACESHIP...", canvas.width / 2, canvas.height - 50);
+                } else {
+                    ctx.fillStyle = '#ff3333';
+                    ctx.fillText("OH NO! BURGER FELL ON THE HYPERDRIVE CONTROLLER!!", canvas.width / 2, canvas.height - 50);
+                }
+            }
+            else if (intro.phase === 3) {
+                // Falling crashing ship onto moon
+                drawMoonForeground(0);
+
+                ctx.save();
+                ctx.translate(intro.shipX, intro.shipY);
+                ctx.rotate(0.3);
+
+                ctx.fillStyle = '#8899aa';
+                ctx.fillRect(-25, -40, 50, 70);
+                ctx.fillStyle = '#ff3333';
+                ctx.beginPath(); ctx.moveTo(-25, -40); ctx.lineTo(0, -70); ctx.lineTo(25, -40); ctx.fill();
+                ctx.restore();
+
+                ctx.fillStyle = '#ffaa00';
+                ctx.font = 'bold 24px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText("CRASH LANDING ON THE MOON!!", canvas.width / 2, 70);
             }
         }
 
@@ -1191,11 +1566,9 @@
         }
 
         function drawMoonForeground(camX) {
-            // Bright Daylight Lunar Surface
             ctx.fillStyle = '#c5cbda';
             ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
 
-            // Sunlit top highlight line
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 3.5;
             ctx.beginPath();
@@ -1393,6 +1766,8 @@
 
             // 2. GROUND ALIEN SLUGS
             groundSlugs.forEach(slug => {
+                if (slug.respawnTimer > 0) return; // Defeated slug hidden
+
                 const renderX = slug.x - camX;
                 if (renderX < -60 || renderX > canvas.width + 60) return;
 
@@ -1411,7 +1786,7 @@
                 ctx.lineWidth = 2;
                 ctx.stroke();
 
-                // Wiggling Eyestalks
+                // Eyestalks
                 const stalkDir = slug.vx > 0 ? 1 : -1;
                 ctx.strokeStyle = slug.color;
                 ctx.lineWidth = 3;
@@ -1429,11 +1804,10 @@
                 ctx.arc(renderX + stalkDir * 15, renderY - 10, 2, 0, Math.PI * 2);
                 ctx.fill();
 
-                // DRAW STICKMAN TRAPPED INSIDE SLUG BELLY WHEN EATEN
+                // TRAPPED STICKMAN IN BELLY
                 if (slug.isEating && player.eatenState) {
                     drawStickman(renderX, renderY + 18, 1, 0, true);
 
-                    // Countdown Timer Badge
                     ctx.fillStyle = '#ff0055';
                     ctx.strokeStyle = '#ffffff';
                     ctx.lineWidth = 2;
@@ -1558,6 +1932,30 @@
             ctx.moveTo(x, shoulderY); ctx.lineTo(x + facing * 5 + armSwing, shoulderY + 7);
             ctx.stroke();
 
+            // FLY SWATTER SWING GRAPHIC
+            if (player.isSwatting && !insideSlug) {
+                ctx.save();
+                ctx.translate(x + facing * 8, shoulderY);
+                const swatAngle = (player.swatterAnimTimer / 0.22) * Math.PI * 0.8;
+                ctx.rotate(facing * (Math.PI / 2 - swatAngle));
+
+                // Handle
+                ctx.strokeStyle = '#ffaa00';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(0, 0); ctx.lineTo(0, -38);
+                ctx.stroke();
+
+                // Swatter Mesh Head
+                ctx.fillStyle = '#ff2255';
+                ctx.fillRect(-12, -58, 24, 20);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(-12, -58, 24, 20);
+
+                ctx.restore();
+            }
+
             ctx.restore();
         }
 
@@ -1570,29 +1968,78 @@
             });
         }
 
+        function drawComicTexts(camX) {
+            comicTexts.forEach(c => {
+                ctx.fillStyle = c.color;
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 3;
+                ctx.font = '900 22px Courier New';
+                ctx.textAlign = 'center';
+                ctx.strokeText(c.text, c.x - camX, c.y);
+                ctx.fillText(c.text, c.x - camX, c.y);
+            });
+        }
+
         function drawHUD() {
-            // Top Left Status Box
-            ctx.fillStyle = 'rgba(5, 10, 25, 0.85)';
+            // Top Left Parts Box
+            ctx.fillStyle = 'rgba(5, 10, 25, 0.88)';
             ctx.strokeStyle = '#00ffff';
             ctx.lineWidth = 1.5;
-            ctx.fillRect(15, 15, 280, 58);
-            ctx.strokeRect(15, 15, 280, 58);
+            ctx.fillRect(15, 15, 270, 58);
+            ctx.strokeRect(15, 15, 270, 58);
 
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 13px Courier New';
+            ctx.font = 'bold 12px Courier New';
             ctx.textAlign = 'left';
-            ctx.fillText(`PARTS COLLECTED: ${player.partsCollected} / ${ROCKET_PARTS_TOTAL}`, 25, 34);
+            ctx.fillText(`PARTS: ${player.partsCollected} / ${ROCKET_PARTS_TOTAL}`, 25, 34);
 
-            ctx.font = '11px Courier New';
+            ctx.font = '10px Courier New';
             if (player.partsCollected < ROCKET_PARTS_TOTAL) {
                 ctx.fillStyle = '#ffaa00';
-                ctx.fillText(`STATUS: Collect parts & dodge slimes`, 25, 52);
+                ctx.fillText(`STATUS: Collect 5 Parts`, 25, 52);
             } else if (!player.insideRocket) {
                 ctx.fillStyle = '#00ff00';
-                ctx.fillText(`STATUS: Return to Rocket for Takeoff!`, 25, 52);
+                ctx.fillText(`STATUS: Board Rocket Now!`, 25, 52);
             } else {
                 ctx.fillStyle = '#00ffff';
-                ctx.fillText(`STATUS: LIFT OFF SUCCESSFUL!`, 25, 52);
+                ctx.fillText(`STATUS: TAKEOFF SUCCESS!`, 25, 52);
+            }
+
+            // ITEM BAR HUD (Bottom Center)
+            const barW = 220;
+            const barH = 50;
+            const barX = (canvas.width - barW) / 2;
+            const barY = canvas.height - 65;
+
+            ctx.fillStyle = 'rgba(10, 15, 30, 0.9)';
+            ctx.strokeStyle = '#ffaa00';
+            ctx.lineWidth = 2;
+            ctx.fillRect(barX, barY, barW, barH);
+            ctx.strokeRect(barX, barY, barW, barH);
+
+            // Item Slot
+            ctx.fillStyle = '#1e2838';
+            ctx.fillRect(barX + 8, barY + 6, 38, 38);
+            ctx.strokeStyle = '#00ffff';
+            ctx.strokeRect(barX + 8, barY + 6, 38, 38);
+
+            // Swatter Icon 🧹
+            ctx.font = '22px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('🧹', barX + 27, barY + 33);
+
+            // Text Description
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 11px Courier New';
+            ctx.textAlign = 'left';
+            ctx.fillText("FLY SWATTER", barX + 54, barY + 22);
+
+            if (player.swatterCooldown <= 0) {
+                ctx.fillStyle = '#00ffcc';
+                ctx.fillText("READY [KEY: S]", barX + 54, barY + 38);
+            } else {
+                ctx.fillStyle = '#ff5555';
+                ctx.fillText("RECHARGING...", barX + 54, barY + 38);
             }
 
             // Off-screen Rocket Compass Arrow
@@ -1602,10 +2049,10 @@
                 ctx.fillStyle = '#ff3333';
                 ctx.font = 'bold 12px Courier New';
                 if (rocketScreenX < 0) {
-                    ctx.fillText('◄ ROCKET BASE', 20, 92);
+                    ctx.fillText('◄ ROCKET BASE', 20, 95);
                 } else {
                     ctx.textAlign = 'right';
-                    ctx.fillText('ROCKET BASE ►', canvas.width - 20, 92);
+                    ctx.fillText('ROCKET BASE ►', canvas.width - 20, 95);
                 }
             }
         }
@@ -1618,6 +2065,14 @@
                 ctx.translate(shakeX, shakeY);
             }
 
+            if (gameState === 'INTRO') {
+                drawIntroScene();
+                drawParticles(0);
+                drawComicTexts(0);
+                ctx.restore();
+                return;
+            }
+
             const cameraX = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, player.x - canvas.width / 2));
 
             drawBackground(cameraX);
@@ -1626,6 +2081,7 @@
             drawRocket(cameraX);
             drawEnemies(cameraX);
             drawParticles(cameraX);
+            drawComicTexts(cameraX);
 
             if (!player.eatenState) {
                 drawStickman(player.x - cameraX, player.y, player.facing, player.walkFrame);
@@ -1643,6 +2099,7 @@
 
         window.onload = function() {
             resizeCanvas();
+            startIntro();
             animate();
         };
     </script>
