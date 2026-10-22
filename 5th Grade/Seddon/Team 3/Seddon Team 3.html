@@ -4,17 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Seddon Team 3 - Cinema Candy Clash</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * {
       box-sizing: border-box;
       user-select: none;
       margin: 0;
       padding: 0;
-      font-family: 'Fredoka', 'Comic Sans MS', 'Courier New', Courier, monospace, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
     body {
-      background-color: #0b0c10;
+      background-color: #0b0e17;
       color: #ffffff;
       display: flex;
       flex-direction: column;
@@ -22,7 +23,7 @@
       justify-content: flex-start;
       height: 100vh;
       overflow: hidden;
-      padding: 10px;
+      padding: 12px;
     }
 
     /* Top Header Bar */
@@ -33,1218 +34,1077 @@
       width: 100%;
       max-width: 1100px;
       margin-bottom: 8px;
-      padding: 8px 16px;
-      background: #1f2833;
-      border: 3px solid #66fcf1;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, #151928, #1f263e);
+      border: 2px solid #00f3ff;
       border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(102, 252, 241, 0.2);
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
     }
 
-    h1 {
+    .title-box h1 {
       font-size: 20px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
       font-weight: 900;
-      color: #ff007f;
-      text-shadow: 2px 2px #000000;
+      letter-spacing: 1.5px;
+      background: linear-gradient(90deg, #ff007f, #00f3ff, #ffea00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-transform: uppercase;
     }
 
     .scoreboard {
       display: flex;
-      gap: 20px;
-      font-size: 15px;
-      font-weight: bold;
+      gap: 16px;
+      align-items: center;
     }
 
-    .score-box {
+    .score-badge {
+      background: #090c15;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 14px;
       display: flex;
       align-items: center;
       gap: 6px;
-      background: #0b0c10;
-      padding: 6px 14px;
-      border-radius: 20px;
-      border: 2px solid #45f3ff;
+      border: 1px solid #333;
     }
 
-    .score-stickmen { color: #00ff66; border-color: #00ff66; }
-    .score-foods { color: #ff3366; border-color: #ff3366; }
+    .score-stickmen { border-color: #00f3ff; color: #00f3ff; }
+    .score-enemies { border-color: #ff3366; color: #ff3366; }
+    .score-floor { border-color: #ffea00; color: #ffea00; }
 
     .btn-action {
-      background: #ff007f;
+      background: linear-gradient(135deg, #ff007f, #7928ca);
       color: #ffffff;
-      border: 2px solid #ffffff;
-      padding: 6px 16px;
-      font-size: 14px;
-      font-weight: 900;
+      border: none;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 800;
       border-radius: 8px;
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 1px;
-      transition: all 0.15s ease-in-out;
-      box-shadow: 0 4px 0 #b30059;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 10px rgba(255, 0, 127, 0.4);
     }
 
     .btn-action:hover {
-      background: #ff3399;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 0 #b30059;
+      transform: scale(1.05);
+      box-shadow: 0 0 18px rgba(255, 0, 127, 0.7);
     }
 
-    .btn-action:active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 0 #b30059;
-    }
-
-    /* Main Canvas Container */
+    /* Main Canvas Wrapper */
     #canvas-wrapper {
       position: relative;
       width: 100%;
       max-width: 1100px;
-      height: 72vh;
-      min-height: 420px;
       flex-grow: 1;
       display: flex;
       justify-content: center;
       align-items: center;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid #22293e;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
     }
 
     canvas {
-      background-color: #0f0f15;
-      border: 4px solid #ffffff;
-      border-radius: 12px;
+      background-color: #0a0d14;
       display: block;
       width: 100%;
       height: 100%;
-      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
     }
 
-    .instructions {
+    /* Instructions & HUD Footer */
+    .hud-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1100px;
       margin-top: 6px;
+      padding: 4px 8px;
       font-size: 12px;
-      color: #00ffcc;
-      font-weight: bold;
-      text-align: center;
-      background: rgba(0,0,0,0.6);
-      padding: 4px 16px;
-      border-radius: 10px;
+      color: #aaaaaa;
+      font-weight: 600;
     }
 
-    /* Modal Dialogs */
+    .ability-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #151928;
+      padding: 4px 12px;
+      border-radius: 16px;
+      border: 1px solid #00f3ff;
+      color: #00f3ff;
+    }
+
+    /* Toothbrush Storm Alert Banner */
+    #storm-banner {
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: linear-gradient(90deg, #ff0055, #ffaa00);
+      color: #ffffff;
+      padding: 10px 24px;
+      border-radius: 30px;
+      font-weight: 900;
+      font-size: 16px;
+      letter-spacing: 1px;
+      box-shadow: 0 0 20px #ff0055;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    #storm-banner.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Modal Overlay Styling */
     .modal-overlay {
       position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.88);
+      inset: 0;
+      background: rgba(5, 7, 12, 0.88);
+      backdrop-filter: blur(8px);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 100;
-      border-radius: 12px;
+      z-index: 50;
       padding: 20px;
+    }
+
+    .modal-card {
+      background: linear-gradient(145deg, #121624, #1a2035);
+      border: 2px solid #00f3ff;
+      border-radius: 16px;
+      padding: 28px;
+      max-width: 650px;
+      width: 90%;
       text-align: center;
+      box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
     }
 
-    .modal-title {
-      font-size: 28px;
-      color: #ffea00;
-      margin-bottom: 12px;
-      text-shadow: 3px 3px #ff0055;
-      font-weight: 900;
-    }
-
-    .modal-subtitle {
-      font-size: 14px;
-      color: #ffffff;
-      margin-bottom: 18px;
-      max-width: 620px;
-      line-height: 1.4;
-    }
-
-    .power-grid {
+    .ability-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 14px;
-      max-width: 700px;
-      width: 100%;
-      margin-bottom: 18px;
+      margin: 20px 0;
     }
 
-    .power-card {
-      background: #1f2833;
-      border: 3px solid #45f3ff;
+    .ability-card {
+      background: #0e121d;
+      border: 2px solid #28324e;
       border-radius: 12px;
-      padding: 12px;
+      padding: 14px;
       cursor: pointer;
-      transition: all 0.2s ease-in-out;
+      transition: all 0.2s ease;
       display: flex;
       flex-direction: column;
       align-items: center;
+      text-align: center;
     }
 
-    .power-card:hover {
-      background: #00ffcc;
-      color: #000;
-      border-color: #ffffff;
-      transform: scale(1.04);
+    .ability-card:hover {
+      border-color: #ffea00;
+      transform: translateY(-4px);
+      box-shadow: 0 6px 16px rgba(255, 234, 0, 0.25);
     }
 
-    .power-card h3 {
-      font-size: 17px;
+    .ability-card.selected {
+      border-color: #00f3ff;
+      background: rgba(0, 243, 255, 0.1);
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+    }
+
+    .ability-icon {
+      font-size: 32px;
+      margin-bottom: 6px;
+    }
+
+    .ability-title {
+      font-weight: 800;
+      color: #ffffff;
+      font-size: 15px;
       margin-bottom: 4px;
     }
 
-    .power-card p {
-      font-size: 12px;
-      opacity: 0.9;
-    }
-
-    .hidden {
-      display: none !important;
+    .ability-desc {
+      font-size: 11px;
+      color: #a0aec0;
+      line-height: 1.3;
     }
   </style>
 </head>
 <body>
 
-  <!-- Header Section -->
+  <!-- Header Bar -->
   <div id="header">
-    <h1>Seddon Team 3 - Cinema Candy Clash</h1>
+    <div class="title-box">
+      <h1>Seddon Team 3 - Cinema Candy Clash</h1>
+    </div>
     <div class="scoreboard">
-      <div class="score-box score-stickmen">
+      <div class="score-badge score-stickmen">
         <span>🍿 Stickmen Candy:</span>
-        <span id="score-stickmen">0</span>
+        <span id="score-stickmen-val">0</span>
       </div>
-      <div class="score-box score-foods">
+      <div class="score-badge score-enemies">
         <span>🥦 Healthy Food Candy:</span>
-        <span id="score-foods">0</span>
+        <span id="score-enemies-val">0</span>
+      </div>
+      <div class="score-badge score-floor">
+        <span>🍬 Floor:</span>
+        <span id="score-floor-val">24</span>
       </div>
     </div>
-    <button class="btn-action" onclick="resetGame()">Restart</button>
+    <button class="btn-action" onclick="openAbilityModal()">Restart</button>
   </div>
 
-  <!-- Canvas Container -->
+  <!-- Main Canvas Container -->
   <div id="canvas-wrapper">
     <canvas id="simCanvas"></canvas>
+    
+    <!-- Toothbrush Storm Banner -->
+    <div id="storm-banner">⚠️ TOOTHBRUSH STORM INCOMING! BRUSH YOUR TEETH! 🪥</div>
 
-    <!-- Start / Captain Power Selection Modal -->
-    <div id="startModal" class="modal-overlay">
-      <h2 class="modal-title">CAPTAIN'S POWER SELECTION!</h2>
-      <p class="modal-subtitle">
-        Healthy Foods spawn at <strong>FRONT FIRE EXITS</strong> to steal theater candy!<br>
-        Lead your Stickmen Team, grab candy, and return it to <strong>BACK ENTRANCES</strong>.<br>
-        <strong>⚡ STEALING UNLOCKED:</strong> Run into opponents to steal candy! (2-sec immunity after a steal).<br>
-        <strong>🪥 TOOTHBRUSH STORM (50% CHANCE):</strong> Toothbrushes can rain down and clear candy!<br>
-        Choose your Captain Hat ability:
-      </p>
-      <div class="power-grid">
-        <div class="power-card" onclick="selectPower('carrot')">
-          <h3>🥕 CARROT DASH</h3>
-          <p>Gain a permanent +30% Speed Boost for high mobility!</p>
+    <!-- Ability Selection Modal -->
+    <div id="ability-modal" class="modal-overlay">
+      <div class="modal-card">
+        <h2 style="font-size: 24px; font-weight: 900; color: #ffea00; margin-bottom: 6px;">SELECT CAPTAIN POWER!</h2>
+        <p style="font-size: 13px; color: #cbd5e0;">Choose your Stickman Captain ability for this round. (All character speeds reduced by 50%!)</p>
+        
+        <div class="ability-grid">
+          <div class="ability-card selected" onclick="selectAbility('carrot')">
+            <div class="ability-icon">🥕</div>
+            <div class="ability-title">Carrot Dash</div>
+            <div class="ability-desc">+30% Speed (2.9 units). Active: Trigger a super speed burst!</div>
+          </div>
+          <div class="ability-card" onclick="selectAbility('tree_trap')">
+            <div class="ability-icon">🌳</div>
+            <div class="ability-title">Tree Trap</div>
+            <div class="ability-desc">Active [SPACE/E]: Roots freeze nearby Healthy Food enemies for 5 seconds!</div>
+          </div>
+          <div class="ability-card" onclick="selectAbility('bounce_blast')">
+            <div class="ability-icon">💥</div>
+            <div class="ability-title">Bounce Blast</div>
+            <div class="ability-desc">Active [SPACE/E]: Shockwave bounces enemies away and stuns them!</div>
+          </div>
+          <div class="ability-card" onclick="selectAbility('multi_bagger')">
+            <div class="ability-icon">🎒</div>
+            <div class="ability-title">Multi-Bagger</div>
+            <div class="ability-desc">Carry up to 3 candies! Active: Candy Magnet pulls nearby floor candies.</div>
+          </div>
         </div>
-        <div class="power-card" onclick="selectPower('broccoli')">
-          <h3>🥦 TREE TRAP</h3>
-          <p>Press [SPACE] or [E] to freeze nearby Healthy Foods for 5 seconds!</p>
-        </div>
-        <div class="power-card" onclick="selectPower('cabbage')">
-          <h3>🥬 BOUNCE BLAST</h3>
-          <p>Press [SPACE] or [E] to trigger a shockwave that bounces enemies away!</p>
-        </div>
-        <div class="power-card" onclick="selectPower('apple')">
-          <h3>🍎 MULTI-BAGGER</h3>
-          <p>Carry up to 3 pieces of candy at the same time!</p>
-        </div>
+
+        <button class="btn-action" style="padding: 12px 32px; font-size: 15px;" onclick="startRoundWithSelectedAbility()">START MOVIE CLASH 🎬</button>
       </div>
     </div>
 
     <!-- Game Over Modal -->
-    <div id="gameOverModal" class="modal-overlay hidden">
-      <h2 id="winnerText" class="modal-title">GAME OVER!</h2>
-      <p id="winnerSubtext" class="modal-subtitle"></p>
-      <button class="btn-action" style="font-size: 18px; padding: 10px 28px;" onclick="resetGame()">PLAY AGAIN</button>
+    <div id="game-over-modal" class="modal-overlay" style="display: none;">
+      <div class="modal-card" style="border-color: #ffea00;">
+        <h2 id="win-title" style="font-size: 28px; font-weight: 900; margin-bottom: 8px;">GAME OVER!</h2>
+        <p id="win-subtitle" style="font-size: 15px; color: #cbd5e0; margin-bottom: 16px;">All candies have been claimed or brushed away!</p>
+        
+        <div style="background: #0a0d14; padding: 16px; border-radius: 12px; margin-bottom: 20px; text-align: left;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #00f3ff; font-weight: bold;">
+            <span>🍿 Stickmen Saved:</span>
+            <span id="final-stickmen-score">0</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #ff3366; font-weight: bold;">
+            <span>🥦 Healthy Food Stolen:</span>
+            <span id="final-enemies-score">0</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; color: #ffea00; font-weight: bold;">
+            <span>🪥 Brushed Away:</span>
+            <span id="final-brushed-score">0</span>
+          </div>
+        </div>
+
+        <button class="btn-action" style="padding: 12px 32px; font-size: 15px;" onclick="openAbilityModal()">PLAY AGAIN 🔄</button>
+      </div>
     </div>
   </div>
 
-  <div class="instructions">
-    [WASD ONLY] Move Captain | [SPACE / E] Captain Ability | Bump into carrying enemies to STEAL candy!
+  <!-- HUD Footer -->
+  <div class="hud-footer">
+    <div><strong>CONTROLS:</strong> [WASD] Move Stickman Captain | [SPACE] or [E] Captain Ability</div>
+    <div class="ability-indicator">
+      <span id="hud-ability-name">Power: None</span>
+      <span id="hud-ability-cd" style="font-weight: bold;">[READY]</span>
+    </div>
   </div>
 
   <script>
+    // Canvas & Scaling setup
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
 
-    // STRICT WASD CONTROLS ONLY (Arrow keys explicitly ignored for movement)
-    const keys = {};
+    const LOGICAL_WIDTH = 1100;
+    const LOGICAL_HEIGHT = 700;
 
-    // GAME STATE & SCORES
-    let gameActive = false;
-    let captainPower = 'carrot'; // Default
-    let teamColor = '#00f0ff'; // Random bright team color for stickmen clothing
-    let stickmenScore = 0;
-    let foodScore = 0;
-    let timeStep = 0;
-
-    // TOOTHBRUSH STORM STATE
-    let stormTriggered = false;
-    let stormScheduledTime = 0;
-    let stormState = 'idle'; // 'idle', 'tube_entering', 'spewing_cloud', 'raining', 'finished'
-    let stormPhaseTimer = 0;
-    let toothpasteTube = { x: 0, y: 0, targetX: 0, speed: 6 };
-    let toothpasteClouds = [];
-    let toothbrushes = [];
-
-    // CAPTAIN PLAYER STICKMAN
-    const player = {
-      x: 0,
-      y: 0,
-      vx: 0,
-      vy: 0,
-      radius: 7,
-      baseSpeed: 4.5,
-      speed: 4.5,
-      facing: 1,
-      walkFrame: 0,
-      carrying: [], // Array of candy objects held
-      maxCarry: 1,
-      frozenTimer: 0,
-      powerCooldown: 0,
-      stealImmunityTimer: 0,
-      isCaptain: true
-    };
-
-    // AI ALLY STICKMEN (3 Allies)
-    let allies = [];
-
-    // HEALTHY FOOD ENEMIES
-    let enemies = [];
-
-    // CANDY SNACKS ON THEATER FLOOR
-    let candyItems = [];
-
-    // FLOATING NOTIFICATION TEXTS
-    let floatingTexts = [];
-
-    // SEAT LAYOUT & THEME
-    let seatColorTheme = { main: '#800020', cushion: '#a00028', arm: '#500014' };
-    const teamColorOptions = ['#00ffcc', '#ff00aa', '#ffff00', '#00ff66', '#ff6600', '#aa00ff'];
-
-    function resizeCanvas() {
-      const wrapper = document.getElementById('canvas-wrapper');
-      canvas.width = wrapper.clientWidth || wrapper.offsetWidth || 800;
-      canvas.height = wrapper.clientHeight || wrapper.offsetHeight || 500;
+    // Web Audio Synthesizer for SFX
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      }
+      playPickup() {
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(520, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.1);
+          gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.1);
+        } catch (e) {}
+      }
+      playSteal() {
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(650, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(250, this.ctx.currentTime + 0.18);
+          gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.18);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.18);
+        } catch (e) {}
+      }
+      playScore() {
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+            gain.gain.setValueAtTime(0.1, now + idx * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.05 + 0.12);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.05);
+            osc.stop(now + idx * 0.05 + 0.12);
+          });
+        } catch (e) {}
+      }
+      playAbility() {
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.25);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.25);
+        } catch (e) {}
+      }
+      playStorm() {
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(160, this.ctx.currentTime + 0.35);
+          gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.35);
+        } catch (e) {}
+      }
     }
 
-    window.addEventListener('resize', resizeCanvas);
+    const audio = new SoundFX();
 
-    // STRICT WASD INPUT LISTENERS (Arrow keys completely ignored for movement)
+    // Game state variables
+    let gameRunning = false;
+    let selectedAbilityType = 'carrot';
+    let abilityCooldownTimer = 0;
+    let dashActiveTimer = 0;
+
+    let scoreStickmen = 0;
+    let scoreEnemies = 0;
+    let scoreBrushed = 0;
+
+    let matchSeconds = 0;
+    let stormEnabled = false;
+    let stormTriggerTime = 0;
+    let stormTriggered = false;
+    let stormActive = false;
+    let stormDurationTimer = 0;
+
+    // Entities Arrays
+    let player = null;
+    let allies = [];
+    let enemies = [];
+    let candies = [];
+    let toothbrushes = [];
+    let particles = [];
+    let floatingTexts = [];
+
+    // Keyboard state - STRICTLY WASD ONLY for movement
+    const keys = {};
+
     window.addEventListener('keydown', (e) => {
+      audio.init();
       const code = e.code;
-      const key = e.key.toLowerCase();
-
-      // Prevent default scrolling on WASD or Action keys
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyE'].includes(code) || ['w', 'a', 's', 'd', ' ', 'e'].includes(key)) {
-        e.preventDefault();
-      }
-
-      // Record key presses ONLY for WASD and Space/E
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyE'].includes(code) || ['w', 'a', 's', 'd', ' ', 'e'].includes(key)) {
+      // WASD and Ability keys only
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyE'].includes(code)) {
         keys[code] = true;
-        keys[key] = true;
       }
-
-      // Trigger Captain Ability
-      if ((code === 'Space' || code === 'KeyE' || key === ' ' || key === 'e') && gameActive) {
-        useCaptainPower();
+      if (code === 'Space' || code === 'KeyE') {
+        useCaptainAbility();
       }
     });
 
     window.addEventListener('keyup', (e) => {
       const code = e.code;
-      const key = e.key.toLowerCase();
-      keys[code] = false;
-      keys[key] = false;
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyE'].includes(code)) {
+        keys[code] = false;
+      }
     });
 
-    function selectPower(powerType) {
-      captainPower = powerType;
-      document.getElementById('startModal').classList.add('hidden');
+    function selectAbility(type) {
+      selectedAbilityType = type;
+      document.querySelectorAll('.ability-card').forEach(card => card.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+    }
+
+    function openAbilityModal() {
+      gameRunning = false;
+      document.getElementById('ability-modal').style.display = 'flex';
+      document.getElementById('game-over-modal').style.display = 'none';
+    }
+
+    function startRoundWithSelectedAbility() {
+      document.getElementById('ability-modal').style.display = 'none';
+      document.getElementById('game-over-modal').style.display = 'none';
       initGame();
     }
 
-    function resetGame() {
-      document.getElementById('gameOverModal').classList.add('hidden');
-      document.getElementById('startModal').classList.remove('hidden');
-      gameActive = false;
-    }
-
-    function addFloatingText(x, y, text, color) {
-      floatingTexts.push({ x, y, text, color, life: 1.2 });
-    }
-
-    // SEAT GRID WITH 2 VERTICAL AISLES FOR PERFECT NAVIGATION
-    function getSeatLayout() {
-      const rows = 6;
-      const cols = 12;
-      const startY = canvas.height * 0.32;
-      const endY = canvas.height * 0.76;
-      const rowSpacing = (endY - startY) / (rows - 1);
-      const seatWidth = 24;
-      const seatHeight = 16;
-      const aisleGap = 36; // Wide aisle gap for easy passage
-
-      const totalWidth = cols * seatWidth + 9 * 4 + 2 * aisleGap;
-      const startX = (canvas.width - totalWidth) / 2;
-
-      const seats = [];
-      for (let r = 0; r < rows; r++) {
-        const sy = startY + r * rowSpacing;
-        let currentX = startX;
-        for (let c = 0; c < cols; c++) {
-          seats.push({
-            x: currentX,
-            y: sy,
-            width: seatWidth,
-            height: seatHeight
-          });
-          currentX += seatWidth + 4;
-          if (c === 3 || c === 7) {
-            currentX += aisleGap; // Insert vertical walkways after seat 4 and seat 8
-          }
-        }
-      }
-      return seats;
-    }
-
-    // CIRCLE VS RECTANGLE COLLISION DETECTOR
-    function circleRectOverlap(cx, cy, r, rect) {
-      const closestX = Math.max(rect.x, Math.min(cx, rect.x + rect.width));
-      const closestY = Math.max(rect.y, Math.min(cy, rect.y + rect.height));
-      const distX = cx - closestX;
-      const distY = cy - closestY;
-      return (distX * distX + distY * distY) < (r * r);
-    }
-
+    // Initialize / Reset Game
     function initGame() {
-      resizeCanvas();
-      gameActive = true;
-      stickmenScore = 0;
-      foodScore = 0;
-      timeStep = 0;
+      scoreStickmen = 0;
+      scoreEnemies = 0;
+      scoreBrushed = 0;
+      matchSeconds = 0;
+      abilityCooldownTimer = 0;
+      dashActiveTimer = 0;
+      particles = [];
       floatingTexts = [];
-
-      // TOOTHBRUSH STORM CALCULATION:
-      // Raised to 50% chance of happening on any given round (calculated after power selection)
-      stormTriggered = Math.random() < 0.50;
-      stormScheduledTime = Math.floor(Math.random() * 30) + 1; // randbetween 1, 30 seconds
-      stormState = 'idle';
-      stormPhaseTimer = 0;
-      toothpasteClouds = [];
       toothbrushes = [];
 
-      // Pick Random Team Color for Clothes
-      teamColor = teamColorOptions[Math.floor(Math.random() * teamColorOptions.length)];
+      // 1. Player setup (Halved base speed: 2.25, Carrot Dash: 2.9)
+      const playerSpeed = selectedAbilityType === 'carrot' ? 2.9 : 2.25;
+      const maxCarryCap = selectedAbilityType === 'multi_bagger' ? 3 : 1;
 
-      // Configure Player Stickman
-      player.x = canvas.width / 2;
-      player.y = canvas.height - 80;
-      player.vx = 0;
-      player.vy = 0;
-      player.facing = 1;
-      player.walkFrame = 0;
-      player.carrying = [];
-      player.frozenTimer = 0;
-      player.powerCooldown = 0;
-      player.stealImmunityTimer = 0;
+      player = {
+        x: 550,
+        y: 620,
+        speed: playerSpeed,
+        facing: 1,
+        walkFrame: 0,
+        carrying: [],
+        maxCarry: maxCarryCap,
+        immunityTimer: 0,
+        team: 'stickman',
+        isPlayer: true
+      };
 
-      // Apply Captain Power Configs
-      if (captainPower === 'carrot') {
-        player.baseSpeed = 5.8; // +30% Speed
-        player.maxCarry = 1;
-      } else if (captainPower === 'apple') {
-        player.baseSpeed = 4.5;
-        player.maxCarry = 3; // Hold 3 candies
-      } else {
-        player.baseSpeed = 4.5;
-        player.maxCarry = 1;
-      }
-      player.speed = player.baseSpeed;
-
-      // Spawn 3 AI Ally Stickmen
-      allies = [];
-      for (let i = 0; i < 3; i++) {
-        allies.push({
-          id: i + 1,
-          x: (canvas.width / 4) * (i + 1),
-          y: canvas.height - 80,
-          vx: 0,
-          vy: 0,
-          radius: 7,
-          speed: 4.2,
-          facing: 1,
-          walkFrame: 0,
-          carrying: [],
-          maxCarry: 1,
-          frozenTimer: 0,
-          stealImmunityTimer: 0,
-          isCaptain: false
-        });
-      }
-
-      // Spawn Candy Scattered: 60% WEIGHTED TOWARDS TOP HALF NEAR FIRE EXITS
-      candyItems = [];
-      const itemTypes = ['popcorn', 'candy', 'drink'];
-      const totalCandy = 24;
-      const seats = getSeatLayout();
-
-      for (let i = 0; i < totalCandy; i++) {
-        let valid = false;
-        let itemX = 0, itemY = 0;
-        let attempts = 0;
-
-        while (!valid && attempts < 300) {
-          attempts++;
-          const region = Math.random();
-          if (region < 0.60) {
-            // 60% WEIGHTED: Top Half / Front Floor / Upper Aisles near Fire Exits
-            itemY = Math.random() * (canvas.height * 0.38) + 95;
-            itemX = Math.random() * (canvas.width - 180) + 90;
-          } else {
-            // 40% WEIGHTED: Bottom Half / Lower Aisles & Back Floor
-            itemY = Math.random() * (canvas.height * 0.38) + canvas.height * 0.48;
-            itemX = Math.random() * (canvas.width - 180) + 90;
-          }
-
-          let overlap = false;
-          for (let s of seats) {
-            if (circleRectOverlap(itemX, itemY, 14, s)) {
-              overlap = true;
-              break;
-            }
-          }
-          if (!overlap) valid = true;
-        }
-
-        candyItems.push({
-          id: i,
-          x: itemX,
-          y: itemY,
-          type: itemTypes[Math.floor(Math.random() * itemTypes.length)],
-          status: 'floor' // 'floor', 'stickman', 'enemy', 'saved', 'stolen', 'destroyed'
-        });
-      }
-
-      // Initialize Healthy Food Enemies
-      enemies = [
-        { type: 'carrot', x: 50, y: 55, vx: 0, vy: 0, speed: 5.2, maxCarry: 1, carrying: [], restTimer: 0, treePower: false, stealImmunityTimer: 0 },
-        { type: 'broccoli', x: canvas.width - 50, y: 55, vx: 0, vy: 0, speed: 3.8, maxCarry: 1, carrying: [], restTimer: 0, treePower: true, stealImmunityTimer: 0 },
-        { type: 'cabbage', x: 50, y: 55, vx: 0, vy: 0, speed: 4.0, maxCarry: 0, carrying: [], restTimer: 0, treePower: false, stealImmunityTimer: 0 },
-        { type: 'apple', x: canvas.width - 50, y: 55, vx: 0, vy: 0, speed: 3.4, maxCarry: 3, carrying: [], restTimer: 0, treePower: false, stealImmunityTimer: 0 }
+      // 2. AI Allies setup (Halved speed: 2.1)
+      allies = [
+        { x: 300, y: 630, speed: 2.1, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'stickman', isPlayer: false, name: 'Ally 1' },
+        { x: 800, y: 630, speed: 2.1, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'stickman', isPlayer: false, name: 'Ally 2' }
       ];
 
-      updateScoreDisplay();
+      // 3. Healthy Food Enemies setup (Halved speeds)
+      // Carrot: 2.6 | Broccoli: 1.9 | Cabbage: 2.0 | Apple: 1.7
+      enemies = [
+        { x: 100, y: 50, speed: 2.6, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Carrot', color: '#ff7700', emoji: '🥕', frozenTimer: 0, stunTimer: 0 },
+        { x: 300, y: 50, speed: 1.9, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Broccoli', color: '#22cc44', emoji: '🥦', frozenTimer: 0, stunTimer: 0 },
+        { x: 800, y: 50, speed: 2.0, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Cabbage', color: '#88e034', emoji: '🥬', frozenTimer: 0, stunTimer: 0 },
+        { x: 1000, y: 50, speed: 1.7, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Apple', color: '#ff3344', emoji: '🍎', frozenTimer: 0, stunTimer: 0 }
+      ];
+
+      // 4. Midline Candy Spawns (24 Candies distributed within +/- 10% of vertical midline: y = 280 to 420)
+      candies = [];
+      const candyTypes = ['🍿', '🍫', '🍭', '🥤', '🍬', '🍩'];
+
+      for (let i = 0; i < 24; i++) {
+        candies.push({
+          id: i,
+          x: 120 + Math.random() * 860,
+          y: 280 + Math.random() * 140, // 350 +/- 70 px
+          type: candyTypes[Math.floor(Math.random() * candyTypes.length)]
+        });
+      }
+
+      // 5. Toothbrush Storm calculation (50% chance, 1 - 30 seconds trigger)
+      stormEnabled = Math.random() < 0.5;
+      stormTriggerTime = 1.0 + Math.random() * 29.0;
+      stormTriggered = false;
+      stormActive = false;
+      stormDurationTimer = 0;
+
+      updateHUD();
+      gameRunning = true;
     }
 
-    function useCaptainPower() {
-      if (player.powerCooldown > 0 || player.frozenTimer > 0) return;
+    // Ability Trigger
+    function useCaptainAbility() {
+      if (!gameRunning || abilityCooldownTimer > 0) return;
 
-      if (captainPower === 'broccoli') {
-        enemies.forEach(e => {
-          if (Math.hypot(e.x - player.x, e.y - player.y) < 130) {
-            e.restTimer = 5;
-            addFloatingText(e.x, e.y - 15, "TRAPPED! 🥦", "#00ffcc");
-          }
-        });
-        player.powerCooldown = 12;
-      } else if (captainPower === 'cabbage') {
+      audio.playAbility();
+
+      if (selectedAbilityType === 'carrot') {
+        dashActiveTimer = 2.0; // 2s speed burst
+        abilityCooldownTimer = 7.0;
+        spawnParticles(player.x, player.y, '#ff7700', 15);
+        addFloatingText(player.x, player.y - 30, 'CARROT DASH! ⚡', '#ff7700');
+      } else if (selectedAbilityType === 'tree_trap') {
+        abilityCooldownTimer = 11.0;
         enemies.forEach(e => {
           const dist = Math.hypot(e.x - player.x, e.y - player.y);
-          if (dist < 140) {
+          if (dist < 240) {
+            e.frozenTimer = 5.0; // Freeze for 5s
+            spawnParticles(e.x, e.y, '#22cc44', 12);
+            addFloatingText(e.x, e.y - 20, 'TRAPPED! 🌳', '#22cc44');
+          }
+        });
+        addFloatingText(player.x, player.y - 30, 'TREE TRAP WAVE! 🌳', '#22cc44');
+      } else if (selectedAbilityType === 'bounce_blast') {
+        abilityCooldownTimer = 8.0;
+        enemies.forEach(e => {
+          const dist = Math.hypot(e.x - player.x, e.y - player.y);
+          if (dist < 220) {
             const angle = Math.atan2(e.y - player.y, e.x - player.x);
-            e.vx = Math.cos(angle) * 16;
-            e.vy = Math.sin(angle) * 16;
-            addFloatingText(e.x, e.y - 15, "BOUNCED! 💥", "#ff007f");
+            e.x = Math.max(50, Math.min(1050, e.x + Math.cos(angle) * 160));
+            e.y = Math.max(50, Math.min(650, e.y + Math.sin(angle) * 160));
+            e.stunTimer = 1.8;
+            spawnParticles(e.x, e.y, '#ff007f', 15);
+            addFloatingText(e.x, e.y - 20, 'BOUNCED! 💥', '#ff007f');
           }
         });
-        player.powerCooldown = 8;
+        spawnParticles(player.x, player.y, '#00f3ff', 25);
+        addFloatingText(player.x, player.y - 30, 'BOUNCE BLAST! 💥', '#00f3ff');
+      } else if (selectedAbilityType === 'multi_bagger') {
+        abilityCooldownTimer = 8.0;
+        // Magnet vacuum pull
+        let pulled = 0;
+        candies.forEach(c => {
+          const dist = Math.hypot(c.x - player.x, c.y - player.y);
+          if (dist < 280) {
+            c.x = player.x + (Math.random() * 20 - 10);
+            c.y = player.y + (Math.random() * 20 - 10);
+            pulled++;
+          }
+        });
+        addFloatingText(player.x, player.y - 30, `CANDY MAGNET! (${pulled}) 🎒`, '#ffea00');
+        spawnParticles(player.x, player.y, '#ffea00', 20);
       }
     }
 
-    function updateScoreDisplay() {
-      document.getElementById('score-stickmen').innerText = stickmenScore;
-      document.getElementById('score-foods').innerText = foodScore;
+    // Floating text helper
+    function addFloatingText(x, y, text, color) {
+      floatingTexts.push({ x, y, text, color, alpha: 1.0, dy: -1.2 });
     }
 
-    function getExits() {
-      return {
-        topExits: [
-          { x: 50, y: 55, w: 50, h: 50 },
-          { x: canvas.width - 50, y: 55, w: 50, h: 50 }
-        ],
-        bottomExits: [
-          { x: 45, y: canvas.height - 45, w: 60, h: 60 },
-          { x: canvas.width - 45, y: canvas.height - 45, w: 60, h: 60 }
-        ]
-      };
+    // Particle FX helper
+    function spawnParticles(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = 1 + Math.random() * 4;
+        particles.push({
+          x, y,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          life: 1.0,
+          color
+        });
+      }
     }
 
-    // UPDATE TOOTHBRUSH STORM LOGIC
-    function updateToothbrushStorm() {
-      if (!stormTriggered) return;
+    // Main Physics & Logic Update
+    function updatePhysics(dt) {
+      if (!gameRunning) return;
 
-      // Check if scheduled time reached
-      if (stormState === 'idle' && timeStep >= stormScheduledTime) {
-        stormState = 'tube_entering';
-        toothpasteTube = {
-          x: canvas.width + 80,
-          y: 65,
-          targetX: canvas.width - 160,
-          speed: 7
-        };
-        addFloatingText(canvas.width / 2, 80, "🪥 TOOTHBRUSH STORM INCOMING! 🪥", "#45f3ff");
-      }
+      matchSeconds += dt;
 
-      // Phase 1: Tube enters from right
-      if (stormState === 'tube_entering') {
-        if (toothpasteTube.x > toothpasteTube.targetX) {
-          toothpasteTube.x -= toothpasteTube.speed;
-        } else {
-          stormState = 'spewing_cloud';
-          stormPhaseTimer = 1.8; // Spew for 1.8 seconds
-        }
-      }
+      // Update cooldowns & timers
+      if (abilityCooldownTimer > 0) abilityCooldownTimer = Math.max(0, abilityCooldownTimer - dt);
+      if (dashActiveTimer > 0) dashActiveTimer = Math.max(0, dashActiveTimer - dt);
 
-      // Phase 2: Spew Toothpaste Cloud
-      if (stormState === 'spewing_cloud') {
-        stormPhaseTimer -= 0.03;
+      // Toothbrush Storm Trigger check
+      if (stormEnabled && !stormTriggered && matchSeconds >= stormTriggerTime) {
+        stormTriggered = true;
+        stormActive = true;
+        stormDurationTimer = 5.0;
+        audio.playStorm();
 
-        if (Math.random() < 0.6) {
-          toothpasteClouds.push({
-            x: toothpasteTube.x - Math.random() * (canvas.width * 0.75),
-            y: 50 + Math.random() * 35,
-            radius: 18 + Math.random() * 16,
-            color: Math.random() < 0.5 ? '#66fcf1' : '#ffffff'
-          });
-        }
+        const banner = document.getElementById('storm-banner');
+        banner.classList.add('show');
+        setTimeout(() => banner.classList.remove('show'), 3500);
 
-        if (stormPhaseTimer <= 0) {
-          stormState = 'raining';
-          stormPhaseTimer = 5.0; // Toothbrushes rain for 5 seconds
-        }
-      }
-
-      // Phase 3: Toothbrushes Rain Down for 5 seconds
-      if (stormState === 'raining') {
-        stormPhaseTimer -= 0.03;
-
-        if (Math.random() < 0.45) {
+        // Spawn falling toothbrushes
+        for (let i = 0; i < 16; i++) {
           toothbrushes.push({
-            x: Math.random() * (canvas.width - 120) + 60,
-            y: 80,
-            vy: 6 + Math.random() * 3,
-            length: 24,
-            color: ['#ff007f', '#00ff66', '#ffea00', '#00e5ff'][Math.floor(Math.random() * 4)],
-            angle: (Math.random() - 0.5) * 0.4
+            x: 80 + Math.random() * 940,
+            y: -20 - Math.random() * 300,
+            vy: 160 + Math.random() * 100,
+            angle: Math.random() * Math.PI
           });
         }
-
-        if (stormPhaseTimer <= 0) {
-          stormState = 'finished';
-        }
       }
 
-      // Move falling toothbrushes and check hit on candy
-      for (let i = toothbrushes.length - 1; i >= 0; i--) {
-        const tb = toothbrushes[i];
-        tb.y += tb.vy;
+      if (stormActive) {
+        stormDurationTimer -= dt;
+        if (stormDurationTimer <= 0) stormActive = false;
 
-        candyItems.forEach(candy => {
-          if (candy.status === 'floor') {
-            const dist = Math.hypot(tb.x - candy.x, tb.y - candy.y);
-            if (dist < 22) {
-              candy.status = 'destroyed';
-              addFloatingText(candy.x, candy.y, "BRUSHED AWAY! 🪥", "#ffffff");
+        // Move toothbrushes & check collision with floor candies
+        for (let i = toothbrushes.length - 1; i >= 0; i--) {
+          const tb = toothbrushes[i];
+          tb.y += tb.vy * dt;
+          tb.angle += 0.05;
+
+          // Check collision with floor candies
+          for (let j = candies.length - 1; j >= 0; j--) {
+            const c = candies[j];
+            if (Math.hypot(tb.x - c.x, tb.y - c.y) < 22) {
+              // Destroy candy!
+              scoreBrushed++;
+              spawnParticles(c.x, c.y, '#33ffaa', 15);
+              addFloatingText(c.x, c.y, 'BRUSHED AWAY! 🪥', '#33ffaa');
+              audio.playSteal();
+              candies.splice(j, 1);
             }
           }
-        });
 
-        if (tb.y > canvas.height + 40) {
-          toothbrushes.splice(i, 1);
+          if (tb.y > LOGICAL_HEIGHT + 40) toothbrushes.splice(i, 1);
         }
       }
 
-      if (stormState === 'raining' || stormState === 'finished') {
-        if (toothpasteTube.x < canvas.width + 120) {
-          toothpasteTube.x += 4;
-        }
-      }
-    }
+      // --- 1. PLAYER MOVEMENT (STRICT WASD ONLY) ---
+      let dx = 0;
+      let dy = 0;
 
-    function updatePhysics() {
-      if (!gameActive) return;
-      timeStep += 0.03;
+      if (keys['KeyW']) dy -= 1;
+      if (keys['KeyS']) dy += 1;
+      if (keys['KeyA']) { dx -= 1; player.facing = -1; }
+      if (keys['KeyD']) { dx += 1; player.facing = 1; }
 
-      updateToothbrushStorm();
-
-      const seats = getSeatLayout();
-      const exits = getExits();
-
-      if (player.powerCooldown > 0) player.powerCooldown -= 0.03;
-
-      if (player.stealImmunityTimer > 0) player.stealImmunityTimer -= 0.03;
-      allies.forEach(a => { if (a.stealImmunityTimer > 0) a.stealImmunityTimer -= 0.03; });
-      enemies.forEach(e => { if (e.stealImmunityTimer > 0) e.stealImmunityTimer -= 0.03; });
-
-      // --- 1. PLAYER STICKMAN PHYSICS ---
-      if (player.frozenTimer > 0) {
-        player.frozenTimer -= 0.03;
-      } else {
-        let pdx = 0;
-        let pdy = 0;
-
-        if (keys['KeyW'] || keys['w']) pdy -= 1;
-        if (keys['KeyS'] || keys['s']) pdy += 1;
-        if (keys['KeyA'] || keys['a']) { pdx -= 1; player.facing = -1; }
-        if (keys['KeyD'] || keys['d']) { pdx += 1; player.facing = 1; }
-
-        if (pdx !== 0 && pdy !== 0) {
-          pdx *= 0.7071;
-          pdy *= 0.7071;
-        }
-
-        player.vx = player.vx * 0.8 + pdx * player.speed * 0.2;
-        player.vy = player.vy * 0.8 + pdy * player.speed * 0.2;
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.7071;
+        dy *= 0.7071;
       }
 
-      player.x += player.vx;
-      player.y += player.vy;
-      player.vx *= 0.88;
-      player.vy *= 0.88;
+      let currentSpd = player.speed;
+      if (dashActiveTimer > 0) currentSpd += 1.5; // Active dash boost
 
-      resolveSeatCollisions(player, seats);
+      player.x += dx * currentSpd;
+      player.y += dy * currentSpd;
 
-      if (Math.hypot(player.vx, player.vy) > 0.5) player.walkFrame += 0.25;
-      else player.walkFrame = 0;
+      // Keep inside bounds
+      player.x = Math.max(25, Math.min(LOGICAL_WIDTH - 25, player.x));
+      player.y = Math.max(100, Math.min(LOGICAL_HEIGHT - 25, player.y));
 
-      // Player Score Candy at Bottom Entrances
-      if (player.carrying.length > 0) {
-        exits.bottomExits.forEach(exit => {
-          if (Math.hypot(player.x - exit.x, player.y - exit.y) < 48) {
-            stickmenScore += player.carrying.length;
-            addFloatingText(player.x, player.y - 20, `+${player.carrying.length} CANDY!`, "#00ff66");
-            player.carrying.forEach(c => c.status = 'saved');
-            player.carrying = [];
-            updateScoreDisplay();
-          }
-        });
-      }
+      if (dx !== 0 || dy !== 0) player.walkFrame += 0.2;
+      if (player.immunityTimer > 0) player.immunityTimer = Math.max(0, player.immunityTimer - dt);
 
-      // --- 2. AI ALLY STICKMEN PHYSICS ---
+      // --- 2. AI ALLIES MOVEMENT ---
       allies.forEach(ally => {
-        if (ally.frozenTimer > 0) {
-          ally.frozenTimer -= 0.03;
+        if (ally.immunityTimer > 0) ally.immunityTimer = Math.max(0, ally.immunityTimer - dt);
+
+        if (ally.carrying.length < ally.maxCarry) {
+          // Hunt floor candy or target enemy carrying candy
+          let target = findNearestCandy(ally.x, ally.y);
+          if (!target) target = findNearestEnemyWithCandy(ally.x, ally.y);
+
+          if (target) {
+            moveTowards(ally, target.x, target.y, ally.speed);
+          }
         } else {
-          let targetX = ally.x;
-          let targetY = ally.y;
+          // Carry candy down to Back Entrances
+          const targetExit = ally.x < LOGICAL_WIDTH / 2 ? { x: 90, y: 670 } : { x: 1010, y: 670 };
+          moveTowards(ally, targetExit.x, targetExit.y, ally.speed);
 
-          if (ally.carrying.length >= ally.maxCarry) {
-            const e1 = exits.bottomExits[0];
-            const e2 = exits.bottomExits[1];
-            const d1 = Math.hypot(ally.x - e1.x, ally.y - e1.y);
-            const d2 = Math.hypot(ally.x - e2.x, ally.y - e2.y);
-            targetX = d1 < d2 ? e1.x : e2.x;
-            targetY = d1 < d2 ? e1.y : e2.y;
-          } else {
-            let nearestCandy = null;
-            let minDist = 9999;
-            candyItems.forEach(c => {
-              if (c.status === 'floor') {
-                const dist = Math.hypot(ally.x - c.x, ally.y - c.y);
-                if (dist < minDist) {
-                  minDist = dist;
-                  nearestCandy = c;
-                }
-              }
-            });
-
-            if (nearestCandy) {
-              targetX = nearestCandy.x;
-              targetY = nearestCandy.y;
-            }
+          // Deliver candy
+          if (Math.hypot(ally.x - targetExit.x, ally.y - targetExit.y) < 30) {
+            scoreStickmen += ally.carrying.length;
+            audio.playScore();
+            addFloatingText(ally.x, ally.y - 20, `+${ally.carrying.length} SAVED! 🍿`, '#00f3ff');
+            ally.carrying = [];
           }
-
-          const angle = Math.atan2(targetY - ally.y, targetX - ally.x);
-          const adx = Math.cos(angle);
-          const ady = Math.sin(angle);
-
-          if (adx < 0) ally.facing = -1;
-          if (adx > 0) ally.facing = 1;
-
-          ally.vx = ally.vx * 0.8 + adx * ally.speed * 0.2;
-          ally.vy = ally.vy * 0.8 + ady * ally.speed * 0.2;
-        }
-
-        ally.x += ally.vx;
-        ally.y += ally.vy;
-        ally.vx *= 0.88;
-        ally.vy *= 0.88;
-
-        resolveSeatCollisions(ally, seats);
-
-        if (Math.hypot(ally.vx, ally.vy) > 0.5) ally.walkFrame += 0.25;
-        else ally.walkFrame = 0;
-
-        if (ally.carrying.length > 0) {
-          exits.bottomExits.forEach(exit => {
-            if (Math.hypot(ally.x - exit.x, ally.y - exit.y) < 48) {
-              stickmenScore += ally.carrying.length;
-              addFloatingText(ally.x, ally.y - 20, `+${ally.carrying.length} CANDY!`, "#00ff66");
-              ally.carrying.forEach(c => c.status = 'saved');
-              ally.carrying = [];
-              updateScoreDisplay();
-            }
-          });
         }
       });
 
-      // --- 3. CANDY PICKUP FROM FLOOR BY STICKMEN ---
-      const allStickmen = [player, ...allies];
-      candyItems.forEach(candy => {
-        if (candy.status === 'floor') {
-          allStickmen.forEach(s => {
-            if (s.carrying.length < s.maxCarry && Math.hypot(s.x - candy.x, s.y - candy.y) < 22) {
-              candy.status = 'stickman';
-              s.carrying.push(candy);
-            }
-          });
-        }
-      });
-
-      // --- 4. STEALING MECHANICS BETWEEN STICKMEN & HEALTHY FOODS ---
-      allStickmen.forEach(stickman => {
-        if (stickman.frozenTimer > 0) return;
-
-        enemies.forEach(enemy => {
-          if (enemy.type === 'cabbage' || enemy.restTimer > 0) return;
-
-          const dist = Math.hypot(stickman.x - enemy.x, stickman.y - enemy.y);
-          if (dist < 26) {
-            if (stickman.carrying.length < stickman.maxCarry &&
-                enemy.carrying.length > 0 &&
-                stickman.stealImmunityTimer <= 0 &&
-                enemy.stealImmunityTimer <= 0) {
-
-              const stolenCandy = enemy.carrying.pop();
-              stolenCandy.status = 'stickman';
-              stickman.carrying.push(stolenCandy);
-
-              stickman.stealImmunityTimer = 2.0;
-              enemy.stealImmunityTimer = 2.0;
-
-              addFloatingText(stickman.x, stickman.y - 22, "STOLE CANDY! ⚡", "#00ff66");
-            }
-            else if (enemy.carrying.length < enemy.maxCarry &&
-                     stickman.carrying.length > 0 &&
-                     stickman.stealImmunityTimer <= 0 &&
-                     enemy.stealImmunityTimer <= 0) {
-
-              const stolenCandy = stickman.carrying.pop();
-              stolenCandy.status = 'enemy';
-              enemy.carrying.push(stolenCandy);
-
-              stickman.stealImmunityTimer = 2.0;
-              enemy.stealImmunityTimer = 2.0;
-
-              addFloatingText(enemy.x, enemy.y - 22, "STOLE CANDY! ⚡", "#ff3366");
-            }
-          }
-        });
-      });
-
-      // --- 5. HEALTHY FOOD ENEMY AI & POWERS ---
+      // --- 3. HEALTHY FOOD ENEMIES MOVEMENT ---
       enemies.forEach(enemy => {
-        if (enemy.restTimer > 0) {
-          enemy.restTimer -= 0.03;
+        if (enemy.immunityTimer > 0) enemy.immunityTimer = Math.max(0, enemy.immunityTimer - dt);
+        if (enemy.frozenTimer > 0) {
+          enemy.frozenTimer = Math.max(0, enemy.frozenTimer - dt);
+          return; // Frozen!
+        }
+        if (enemy.stunTimer > 0) {
+          enemy.stunTimer = Math.max(0, enemy.stunTimer - dt);
           return;
         }
 
-        let targetX = enemy.x;
-        let targetY = enemy.y;
+        if (enemy.carrying.length < enemy.maxCarry) {
+          // Hunt floor candy or target stickman carrying candy
+          let target = findNearestCandy(enemy.x, enemy.y);
+          if (!target) target = findNearestStickmanWithCandy(enemy.x, enemy.y);
 
-        if (enemy.type === 'cabbage') {
-          let closestStickman = player;
-          let minDist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
-
-          allies.forEach(a => {
-            const d = Math.hypot(a.x - enemy.x, a.y - enemy.y);
-            if (d < minDist) {
-              minDist = d;
-              closestStickman = a;
-            }
-          });
-
-          targetX = closestStickman.x;
-          targetY = closestStickman.y;
-
-          if (minDist < 22) {
-            const angle = Math.atan2(closestStickman.y - enemy.y, closestStickman.x - enemy.x);
-            closestStickman.vx += Math.cos(angle) * 14;
-            closestStickman.vy += Math.sin(angle) * 14;
+          if (target) {
+            moveTowards(enemy, target.x, target.y, enemy.speed);
           }
-
         } else {
-          if (enemy.carrying.length >= enemy.maxCarry) {
-            const e1 = exits.topExits[0];
-            const e2 = exits.topExits[1];
-            const d1 = Math.hypot(enemy.x - e1.x, enemy.y - e1.y);
-            const d2 = Math.hypot(enemy.x - e2.x, enemy.y - e2.y);
-            targetX = d1 < d2 ? e1.x : e2.x;
-            targetY = d1 < d2 ? e1.y : e2.y;
+          // Carry candy up to Front Fire Exits
+          const targetExit = enemy.x < LOGICAL_WIDTH / 2 ? { x: 90, y: 25 } : { x: 1010, y: 25 };
+          moveTowards(enemy, targetExit.x, targetExit.y, enemy.speed);
 
-            if (Math.hypot(enemy.x - targetX, enemy.y - targetY) < 35) {
-              foodScore += enemy.carrying.length;
-              addFloatingText(enemy.x, enemy.y - 20, `STOLE ${enemy.carrying.length}!`, "#ff3366");
-              enemy.carrying.forEach(c => c.status = 'stolen');
-              enemy.carrying = [];
-              enemy.treePower = true;
-              updateScoreDisplay();
-
-              if (enemy.type === 'carrot') {
-                enemy.restTimer = 30;
-              }
-            }
-          } else {
-            let nearestCandy = null;
-            let minDist = 9999;
-            candyItems.forEach(c => {
-              if (c.status === 'floor') {
-                const dist = Math.hypot(enemy.x - c.x, enemy.y - c.y);
-                if (dist < minDist) {
-                  minDist = dist;
-                  nearestCandy = c;
-                }
-              }
-            });
-
-            if (nearestCandy) {
-              targetX = nearestCandy.x;
-              targetY = nearestCandy.y;
-            } else {
-              targetX = exits.topExits[0].x;
-              targetY = exits.topExits[0].y;
-            }
-
-            if (enemy.type === 'broccoli' && enemy.treePower && enemy.carrying.length === 0) {
-              allStickmen.forEach(s => {
-                if (Math.hypot(s.x - enemy.x, s.y - enemy.y) < 30) {
-                  s.frozenTimer = 5;
-                  enemy.treePower = false;
-                  addFloatingText(s.x, s.y - 20, "CAUGHT! 🌳", "#00ffcc");
-                }
-              });
-            }
-
-            candyItems.forEach(c => {
-              if (c.status === 'floor' && enemy.carrying.length < enemy.maxCarry) {
-                if (Math.hypot(enemy.x - c.x, enemy.y - c.y) < 22) {
-                  c.status = 'enemy';
-                  enemy.carrying.push(c);
-                }
-              }
-            });
+          // Deliver candy
+          if (Math.hypot(enemy.x - targetExit.x, enemy.y - targetExit.y) < 30) {
+            scoreEnemies += enemy.carrying.length;
+            audio.playScore();
+            addFloatingText(enemy.x, enemy.y + 20, `+${enemy.carrying.length} STOLEN! 🥦`, '#ff3366');
+            enemy.carrying = [];
           }
         }
-
-        const angle = Math.atan2(targetY - enemy.y, targetX - enemy.x);
-        enemy.vx = enemy.vx * 0.8 + Math.cos(angle) * enemy.speed * 0.2;
-        enemy.vy = enemy.vy * 0.8 + Math.sin(angle) * enemy.speed * 0.2;
-
-        enemy.x += enemy.vx;
-        enemy.y += enemy.vy;
-        enemy.vx *= 0.88;
-        enemy.vy *= 0.88;
-
-        resolveSeatCollisions(enemy, seats);
       });
 
-      // --- 6. CHECK GAME OVER CONDITION ---
-      const activeCandyCount = candyItems.filter(c => c.status !== 'saved' && c.status !== 'stolen' && c.status !== 'destroyed').length;
-      if (activeCandyCount === 0) {
-        endGame();
+      // --- 4. PLAYER CANDY PICKUP & DELIVERY ---
+      // Player delivery at Back Entrances
+      if (player.carrying.length > 0) {
+        if (player.y > 640 && (player.x < 150 || player.x > 950)) {
+          scoreStickmen += player.carrying.length;
+          audio.playScore();
+          addFloatingText(player.x, player.y - 20, `+${player.carrying.length} SAVED! 🍿`, '#00f3ff');
+          player.carrying = [];
+        }
+      }
+
+      // Pickup floor candies
+      const allStickmen = [player, ...allies];
+      const allCharacters = [...allStickmen, ...enemies];
+
+      candies.forEach((c, idx) => {
+        allCharacters.forEach(char => {
+          if (char.carrying.length < char.maxCarry) {
+            if (Math.hypot(char.x - c.x, char.y - c.y) < 22) {
+              char.carrying.push(c.type);
+              audio.playPickup();
+              addFloatingText(char.x, char.y - 15, `GOT ${c.type}!`, char.team === 'stickman' ? '#00f3ff' : '#ffea00');
+              candies.splice(idx, 1);
+            }
+          }
+        });
+      });
+
+      // --- 5. BUMP STEALING MECHANICS ---
+      allStickmen.forEach(stick => {
+        enemies.forEach(enemy => {
+          const dist = Math.hypot(stick.x - enemy.x, stick.y - enemy.y);
+          if (dist < 26) {
+            // Stickman steals from Enemy
+            if (enemy.carrying.length > 0 && stick.carrying.length < stick.maxCarry && enemy.immunityTimer <= 0) {
+              const stolen = enemy.carrying.pop();
+              stick.carrying.push(stolen);
+              enemy.immunityTimer = 2.0; // 2s steal immunity
+              audio.playSteal();
+              spawnParticles(enemy.x, enemy.y, '#ffea00', 10);
+              addFloatingText(stick.x, stick.y - 20, 'RECOVERED! 🍿', '#00f3ff');
+            }
+            // Enemy steals from Stickman
+            else if (stick.carrying.length > 0 && enemy.carrying.length < enemy.maxCarry && stick.immunityTimer <= 0) {
+              const stolen = stick.carrying.pop();
+              enemy.carrying.push(stolen);
+              stick.immunityTimer = 2.0; // 2s steal immunity
+              audio.playSteal();
+              spawnParticles(stick.x, stick.y, '#ff3366', 10);
+              addFloatingText(enemy.x, enemy.y - 20, 'STOLEN! 🥦', '#ff3366');
+            }
+          }
+        });
+      });
+
+      // Update Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= dt * 1.5;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      // Update Floating Texts
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y += ft.dy;
+        ft.alpha -= dt * 0.8;
+        if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+      }
+
+      updateHUD();
+      checkGameOver();
+    }
+
+    // Helper pathfinding
+    function moveTowards(entity, tx, ty, speed) {
+      const dx = tx - entity.x;
+      const dy = ty - entity.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 3) {
+        entity.x += (dx / dist) * speed;
+        entity.y += (dy / dist) * speed;
+        entity.facing = dx >= 0 ? 1 : -1;
+        entity.walkFrame += 0.2;
       }
     }
 
-    function resolveSeatCollisions(entity, seats) {
-      seats.forEach(seat => {
-        const r = entity.radius || 6;
-        if (circleRectOverlap(entity.x, entity.y, r, seat)) {
-          const closestX = Math.max(seat.x, Math.min(entity.x, seat.x + seat.width));
-          const closestY = Math.max(seat.y, Math.min(entity.y, seat.y + seat.height));
-          const distX = entity.x - closestX;
-          const distY = entity.y - closestY;
-          const dist = Math.hypot(distX, distY);
-
-          if (dist > 0) {
-            const overlap = r - dist;
-            entity.x += (distX / dist) * overlap;
-            entity.y += (distY / dist) * overlap;
-          } else {
-            entity.y = seat.y - r;
-          }
-        }
+    function findNearestCandy(x, y) {
+      let best = null;
+      let minD = 99999;
+      candies.forEach(c => {
+        const d = Math.hypot(c.x - x, c.y - y);
+        if (d < minD) { minD = d; best = c; }
       });
-
-      const m = 20;
-      entity.x = Math.max(m, Math.min(canvas.width - m, entity.x));
-      entity.y = Math.max(m + 15, Math.min(canvas.height - m - 10, entity.y));
+      return best;
     }
 
-    function endGame() {
-      gameActive = false;
-      const modal = document.getElementById('gameOverModal');
-      const winTitle = document.getElementById('winnerText');
-      const winSub = document.getElementById('winnerSubtext');
+    function findNearestEnemyWithCandy(x, y) {
+      let best = null;
+      let minD = 99999;
+      enemies.forEach(e => {
+        if (e.carrying.length > 0) {
+          const d = Math.hypot(e.x - x, e.y - y);
+          if (d < minD) { minD = d; best = e; }
+        }
+      });
+      return best;
+    }
 
-      modal.classList.remove('hidden');
+    function findNearestStickmanWithCandy(x, y) {
+      let best = null;
+      let minD = 99999;
+      [player, ...allies].forEach(s => {
+        if (s.carrying.length > 0) {
+          const d = Math.hypot(s.x - x, s.y - y);
+          if (d < minD) { minD = d; best = s; }
+        }
+      });
+      return best;
+    }
 
-      if (stickmenScore > foodScore) {
-        winTitle.innerText = "🎉 STICKMEN VICTORY! 🎉";
-        winTitle.style.color = "#00ff66";
-        winSub.innerHTML = `Your Stickmen Team collected <strong>${stickmenScore}</strong> pieces of candy!<br>Healthy Foods only got <strong>${foodScore}</strong> pieces.`;
-      } else if (foodScore > stickmenScore) {
-        winTitle.innerText = "🥕 HEALTHY FOOD WON! 🥦";
-        winTitle.style.color = "#ff3366";
-        winSub.innerHTML = `Healthy Foods stole <strong>${foodScore}</strong> pieces of candy!<br>Stickmen Team collected <strong>${stickmenScore}</strong> pieces.`;
+    function updateHUD() {
+      document.getElementById('score-stickmen-val').textContent = scoreStickmen;
+      document.getElementById('score-enemies-val').textContent = scoreEnemies;
+      document.getElementById('score-floor-val').textContent = candies.length;
+
+      const abilityNames = {
+        carrot: 'Carrot Dash 🥕',
+        tree_trap: 'Tree Trap 🌳',
+        bounce_blast: 'Bounce Blast 💥',
+        multi_bagger: 'Multi-Bagger 🎒'
+      };
+
+      document.getElementById('hud-ability-name').textContent = `Power: ${abilityNames[selectedAbilityType]}`;
+      const cdBox = document.getElementById('hud-ability-cd');
+      if (abilityCooldownTimer > 0) {
+        cdBox.textContent = `[${abilityCooldownTimer.toFixed(1)}s]`;
+        cdBox.style.color = '#ff3366';
       } else {
-        winTitle.innerText = "🤝 IT'S A TIE! 🤝";
-        winTitle.style.color = "#ffea00";
-        winSub.innerHTML = `Both teams collected <strong>${stickmenScore}</strong> pieces of candy!`;
+        cdBox.textContent = '[READY - SPACE/E]';
+        cdBox.style.color = '#00f3ff';
       }
     }
 
-    // RENDER THEATER & ENTITIES
-    function draw() {
-      ctx.fillStyle = '#0a0a0f';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    function checkGameOver() {
+      const carriedTotal = player.carrying.length +
+        allies.reduce((a, b) => a + b.carrying.length, 0) +
+        enemies.reduce((a, b) => a + b.carrying.length, 0);
 
-      const screenW = Math.min(600, canvas.width * 0.65);
-      const screenH = Math.min(110, canvas.height * 0.22);
-      const screenX = (canvas.width - screenW) / 2;
+      if (candies.length === 0 && carriedTotal === 0) {
+        gameRunning = false;
+        
+        const winTitle = document.getElementById('win-title');
+        const winSub = document.getElementById('win-subtitle');
 
-      drawMovieScreen(screenX, 25, screenW, screenH);
-      drawTheaterSeats();
-      drawExitDoors();
-      drawCandy();
-      drawEnemies();
+        document.getElementById('final-stickmen-score').textContent = scoreStickmen;
+        document.getElementById('final-enemies-score').textContent = scoreEnemies;
+        document.getElementById('final-brushed-score').textContent = scoreBrushed;
 
-      allies.forEach(ally => {
-        drawStickmanCharacter(ally.x, ally.y, ally.facing, ally.walkFrame, teamColor, false, ally.frozenTimer, ally.carrying.length, ally.stealImmunityTimer);
-      });
+        if (scoreStickmen > scoreEnemies) {
+          winTitle.textContent = '🍿 STICKMEN VICTORY! 🍿';
+          winTitle.style.color = '#00f3ff';
+          winSub.textContent = 'The Stickmen saved the movie night snacks!';
+        } else if (scoreEnemies > scoreStickmen) {
+          winTitle.textContent = '🥦 HEALTHY FOOD VICTORY! 🥦';
+          winTitle.style.color = '#ff3366';
+          winSub.textContent = 'The Healthy Food veggies stole all the cinema candy!';
+        } else {
+          winTitle.textContent = '🤝 IT\'S A TIE! 🤝';
+          winTitle.style.color = '#ffea00';
+          winSub.textContent = 'An equal amount of snacks were saved and stolen!';
+        }
 
-      drawStickmanCharacter(player.x, player.y, player.facing, player.walkFrame, teamColor, true, player.frozenTimer, player.carrying.length, player.stealImmunityTimer);
-
-      drawToothbrushStorm();
-      drawFloatingTexts();
-      drawHUDOverlay();
+        document.getElementById('game-over-modal').style.display = 'flex';
+      }
     }
 
-    function drawMovieScreen(x, y, w, h) {
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(x, y, w, h);
+    // --- DRAWING FUNCTIONS ---
+    let oceanWaveTime = 0;
 
+    function drawCinemaScreen() {
+      // 1. Cinema Screen background at top center
       ctx.save();
-      ctx.beginPath();
-      ctx.rect(x, y, w, h);
-      ctx.clip();
+      const sx = 250, sy = 12, sw = 600, sh = 80;
 
-      const oceanGrad = ctx.createLinearGradient(x, y, x, y + h);
-      oceanGrad.addColorStop(0, '#00b4d8');
-      oceanGrad.addColorStop(1, '#03045e');
-      ctx.fillStyle = oceanGrad;
-      ctx.fillRect(x, y, w, h);
+      // Glow border
+      ctx.shadowColor = '#00f3ff';
+      ctx.shadowBlur = 12;
+      ctx.strokeStyle = '#00f3ff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(sx, sy, sw, sh);
 
-      const fx = x + ((timeStep * 35) % (w + 40)) - 20;
-      const fy = y + h * 0.5 + Math.sin(timeStep * 2) * 10;
-      ctx.fillStyle = '#ff9e00';
+      // Ocean film gradient background
+      const grad = ctx.createLinearGradient(sx, sy, sx, sy + sh);
+      grad.addColorStop(0, '#002b4d');
+      grad.addColorStop(1, '#006699');
+      ctx.fillStyle = grad;
+      ctx.fillRect(sx, sy, sw, sh);
+
+      // Animated Ocean Waves
+      oceanWaveTime += 0.03;
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.25)';
       ctx.beginPath();
-      ctx.ellipse(fx, fy, 12, 6, 0, 0, Math.PI * 2);
+      ctx.moveTo(sx, sy + sh);
+      for (let x = 0; x <= sw; x += 10) {
+        const y = sy + 45 + Math.sin(oceanWaveTime + x * 0.02) * 10;
+        ctx.lineTo(sx + x, y);
+      }
+      ctx.lineTo(sx + sw, sy + sh);
       ctx.fill();
 
+      // Swimming fish in ocean
+      const fishX1 = sx + ((oceanWaveTime * 40) % sw);
+      const fishX2 = sx + sw - ((oceanWaveTime * 30) % sw);
+      ctx.font = '16px sans-serif';
+      ctx.fillText('🐬', fishX1, sy + 35);
+      ctx.fillText('🐠', fishX2, sy + 55);
+
+      // Screen Header text badge
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🎬 NOW SHOWING: OCEAN CLASH ADVENTURE 🐬', sx + sw / 2, sy + 18);
       ctx.restore();
 
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 3;
+      // 2. Front Fire Exits (Top Left & Top Right)
+      drawExitDoor(50, 10, 100, 35, 'FIRE EXIT 🚪', '#ff3366');
+      drawExitDoor(950, 10, 100, 35, 'FIRE EXIT 🚪', '#ff3366');
+
+      // 3. Back Entrances (Bottom Left & Bottom Right)
+      drawExitDoor(50, 655, 100, 35, 'BASE 🍿', '#00f3ff');
+      drawExitDoor(950, 655, 100, 35, 'BASE 🍿', '#00f3ff');
+
+      // 4. Seating Grid
+      drawSeatingGrid();
+    }
+
+    function drawExitDoor(x, y, w, h, label, color) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(20, 25, 40, 0.8)';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+      ctx.fillRect(x, y, w, h);
       ctx.strokeRect(x, y, w, h);
 
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.035)';
-      ctx.beginPath();
-      ctx.moveTo(x - 20, y + h);
-      ctx.lineTo(x + w + 20, y + h);
-      ctx.lineTo(canvas.width - 50, canvas.height - 85);
-      ctx.lineTo(50, canvas.height - 85);
-      ctx.fill();
+      ctx.fillStyle = color;
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, x + w / 2, y + h / 2 + 3);
+      ctx.restore();
     }
 
-    function drawTheaterSeats() {
-      const seats = getSeatLayout();
-      seats.forEach(seat => {
-        ctx.fillStyle = seatColorTheme.arm;
-        ctx.fillRect(seat.x, seat.y, 3, seat.height);
-        ctx.fillRect(seat.x + seat.width - 3, seat.y, 3, seat.height);
-
-        ctx.fillStyle = seatColorTheme.main;
-        ctx.fillRect(seat.x + 2, seat.y, seat.width - 4, 6);
-
-        ctx.fillStyle = seatColorTheme.cushion;
-        ctx.fillRect(seat.x + 3, seat.y + 6, seat.width - 6, seat.height - 6);
-      });
-    }
-
-    function drawExitDoors() {
-      const exits = getExits();
-
-      exits.topExits.forEach(door => {
-        ctx.fillStyle = '#1c1c1c';
-        ctx.fillRect(door.x - door.w/2, door.y - door.h/2, door.w, door.h);
-        ctx.strokeStyle = '#ff3366';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(door.x - door.w/2, door.y - door.h/2, door.w, door.h);
-
-        ctx.fillStyle = '#ff3366';
-        ctx.font = 'bold 9px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('FIRE EXIT', door.x, door.y - 8);
-      });
-
-      exits.bottomExits.forEach(door => {
-        ctx.fillStyle = '#111111';
-        ctx.fillRect(door.x - door.w/2, door.y - door.h/2, door.w, door.h);
-        ctx.strokeStyle = '#00ff66';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(door.x - door.w/2, door.y - door.h/2, door.w, door.h);
-
-        ctx.fillStyle = '#00ff66';
-        ctx.font = 'bold 9px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('ENTRANCE', door.x, door.y - 10);
-      });
-    }
-
-    function drawCandy() {
-      candyItems.forEach(item => {
-        if (item.status !== 'floor') return;
-
-        ctx.save();
-        ctx.translate(item.x, item.y);
-
-        if (item.type === 'popcorn') {
-          ctx.fillStyle = '#e63946';
-          ctx.fillRect(-6, -4, 12, 12);
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(-3, -4, 3, 12);
-          ctx.fillRect(2, -4, 3, 12);
-          ctx.fillStyle = '#ffb703';
-          ctx.beginPath();
-          ctx.arc(-3, -6, 3, 0, Math.PI * 2);
-          ctx.arc(2, -6, 3, 0, Math.PI * 2);
-          ctx.arc(0, -8, 3.5, 0, Math.PI * 2);
-          ctx.fill();
-
-        } else if (item.type === 'candy') {
-          ctx.fillStyle = '#ff007f';
-          ctx.beginPath();
-          ctx.ellipse(0, 0, 6, 4, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.moveTo(-6, 0); ctx.lineTo(-10, -4); ctx.lineTo(-10, 4);
-          ctx.moveTo(6, 0); ctx.lineTo(10, -4); ctx.lineTo(10, 4);
-          ctx.fill();
-
-        } else if (item.type === 'drink') {
-          ctx.fillStyle = '#2a9d8f';
-          ctx.fillRect(-4, -4, 8, 12);
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(-5, -6, 10, 3);
-          ctx.strokeStyle = '#e76f51';
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(0, -6);
-          ctx.lineTo(3, -11);
-          ctx.stroke();
-        }
-
-        ctx.restore();
-      });
-    }
-
-    function drawEnemies() {
-      enemies.forEach(e => {
-        ctx.save();
-        ctx.translate(e.x, e.y);
-
-        if (e.restTimer > 0) {
-          ctx.fillStyle = '#ffff00';
-          ctx.font = 'bold 10px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(`REST: ${Math.ceil(e.restTimer)}s`, 0, -22);
-        }
-
-        if (e.stealImmunityTimer > 0) {
-          ctx.strokeStyle = 'rgba(255, 234, 0, 0.8)';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(0, 0, 16, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-
-        if (e.type === 'carrot') {
-          ctx.fillStyle = '#ff6600';
-          ctx.beginPath();
-          ctx.moveTo(0, 12);
-          ctx.lineTo(-7, -8);
-          ctx.lineTo(7, -8);
-          ctx.closePath();
-          ctx.fill();
-          ctx.fillStyle = '#00cc44';
-          ctx.fillRect(-3, -14, 6, 6);
-
-        } else if (e.type === 'broccoli') {
-          ctx.fillStyle = '#00aa33';
-          ctx.beginPath();
-          ctx.arc(0, -8, 10, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#88cc44';
-          ctx.fillRect(-3, -2, 6, 12);
-
-        } else if (e.type === 'cabbage') {
-          ctx.fillStyle = '#66ff33';
-          ctx.beginPath();
-          ctx.arc(0, 0, 11, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#229900';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-
-        } else if (e.type === 'apple') {
-          ctx.fillStyle = '#ff0033';
-          ctx.beginPath();
-          ctx.arc(0, 0, 10, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#663300';
-          ctx.fillRect(-1, -13, 2, 4);
-        }
-
-        if (e.carrying.length > 0) {
-          ctx.fillStyle = '#ffff00';
-          ctx.font = 'bold 11px monospace';
-          ctx.fillText(`🍿x${e.carrying.length}`, 0, -18);
-        }
-
-        ctx.restore();
-      });
-    }
-
-    function drawStickmanCharacter(x, y, facing, walkFrame, color, isCaptain, frozenTimer, carryCount, stealImmunityTimer) {
+    function drawSeatingGrid() {
       ctx.save();
-      ctx.strokeStyle = '#ffffff';
-      ctx.fillStyle = '#ffffff';
+      const seatRows = 5;
+      const seatCols = 4;
+      const blockWidths = [160, 440, 720]; // 3 Seat blocks leaving 2 wide vertical aisles
+
+      blockWidths.forEach(bx => {
+        for (let r = 0; r < seatRows; r++) {
+          for (let c = 0; c < seatCols; c++) {
+            const sx = bx + c * 22;
+            const sy = 160 + r * 45;
+
+            // Cinema Chair
+            ctx.fillStyle = '#2d1527';
+            ctx.strokeStyle = '#ff007f';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(sx, sy, 18, 22, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            // Armrest
+            ctx.fillStyle = '#1a0b17';
+            ctx.fillRect(sx - 2, sy + 10, 3, 10);
+            ctx.fillRect(sx + 17, sy + 10, 3, 10);
+          }
+        }
+      });
+      ctx.restore();
+    }
+
+    function drawStickman(char) {
+      ctx.save();
+      const x = char.x;
+      const y = char.y;
+      const facing = char.facing;
+      const walkFrame = char.walkFrame;
+
+      // Immunity Aura Shield
+      if (char.immunityTimer > 0) {
+        ctx.shadowColor = '#ffea00';
+        ctx.shadowBlur = 12;
+        ctx.strokeStyle = '#ffea00';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(x, y - 10, 22, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = char.isPlayer ? '#00f3ff' : '#66ccff';
+      ctx.fillStyle = char.isPlayer ? '#00f3ff' : '#66ccff';
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
 
@@ -1255,193 +1115,186 @@
       const headY = neckY - headRadius;
       const shoulderY = neckY + 4;
 
-      if (stealImmunityTimer > 0) {
-        ctx.strokeStyle = 'rgba(255, 234, 0, 0.8)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(x, y - 8, 20, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-
-      // Head
+      // 1. Head
       ctx.beginPath();
       ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
       ctx.stroke();
 
       // Eye
       ctx.beginPath();
-      ctx.arc(x + facing * 2, headY - 0.5, 1, 0, Math.PI * 2);
+      ctx.arc(x + facing * 2, headY - 1, 1, 0, Math.PI * 2);
       ctx.fill();
 
-      // CAPTAIN'S HAT
-      if (isCaptain) {
+      // Captain Hat for Player
+      if (char.isPlayer) {
         ctx.fillStyle = '#ffea00';
-        ctx.fillRect(x - 9, headY - 9, 18, 3);
-        ctx.fillRect(x - 6, headY - 16, 12, 7);
-        ctx.fillStyle = '#ff0055';
-        ctx.fillRect(x - 6, headY - 11, 12, 2);
+        ctx.beginPath();
+        ctx.arc(x, headY - headRadius, 4, Math.PI, 0);
+        ctx.fill();
       }
 
-      // Torso with Colored Team Shirt
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 4;
+      // 2. Torso
       ctx.beginPath();
       ctx.moveTo(x, neckY);
       ctx.lineTo(x, y);
       ctx.stroke();
 
-      // Legs with Colored Pants
-      ctx.lineWidth = 2.5;
+      // 3. Legs
       const legSwing = Math.sin(walkFrame) * 6;
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x - legSwing, y + legLength);
+      ctx.stroke();
+
+      ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x + legSwing, y + legLength);
       ctx.stroke();
 
-      // Arms
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.8;
+      // 4. Arms
       const armSwing = Math.sin(walkFrame + Math.PI) * 4;
       ctx.beginPath();
       ctx.moveTo(x, shoulderY);
       ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+      ctx.stroke();
+
+      ctx.beginPath();
       ctx.moveTo(x, shoulderY);
       ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
       ctx.stroke();
 
-      // Frozen Overlay
-      if (frozenTimer > 0) {
-        ctx.fillStyle = 'rgba(0, 255, 255, 0.4)';
-        ctx.beginPath();
-        ctx.arc(x, y - 10, 18, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#00ffff';
-        ctx.font = 'bold 10px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(`FROZEN! ${Math.ceil(frozenTimer)}s`, x, y - 30);
-      }
-
-      // Carry Badge
-      if (carryCount > 0) {
-        ctx.fillStyle = '#00ff66';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`🍿x${carryCount}`, x, y - (isCaptain ? 26 : 20));
-      }
+      // 5. Carried Candies stack above head
+      char.carrying.forEach((item, idx) => {
+        ctx.font = '14px sans-serif';
+        ctx.fillText(item, x - 7, headY - 12 - idx * 14);
+      });
 
       ctx.restore();
     }
 
-    function drawToothbrushStorm() {
-      if (!stormTriggered) return;
+    function drawEnemy(enemy) {
+      ctx.save();
+      const x = enemy.x;
+      const y = enemy.y;
 
-      toothpasteClouds.forEach(c => {
-        ctx.fillStyle = c.color;
+      // Immunity Shield
+      if (enemy.immunityTimer > 0) {
+        ctx.shadowColor = '#ffea00';
+        ctx.shadowBlur = 12;
+        ctx.strokeStyle = '#ffea00';
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+        ctx.arc(x, y, 20, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Frozen Visual
+      if (enemy.frozenTimer > 0) {
+        ctx.fillStyle = 'rgba(34, 204, 68, 0.3)';
+        ctx.strokeStyle = '#22cc44';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(x, y, 24, 0, Math.PI * 2);
         ctx.fill();
+        ctx.stroke();
+        ctx.font = '12px sans-serif';
+        ctx.fillText('🌿 TRAPPED', x - 28, y - 26);
+      }
+
+      // Food Character Face/Emoji Body
+      ctx.font = '24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(enemy.emoji, x, y + 8);
+
+      // Carried Candy Stack
+      enemy.carrying.forEach((item, idx) => {
+        ctx.font = '14px sans-serif';
+        ctx.fillText(item, x - 7, y - 18 - idx * 14);
       });
 
-      if (stormState === 'tube_entering' || stormState === 'spewing_cloud' || stormState === 'raining') {
-        ctx.save();
-        ctx.translate(toothpasteTube.x, toothpasteTube.y);
-
-        ctx.fillStyle = '#ff0055';
-        ctx.fillRect(-45, -14, 60, 28);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(-30, -14, 15, 28);
-        ctx.fillStyle = '#00e5ff';
-        ctx.fillRect(-15, -14, 15, 28);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(-55, -8, 10, 16);
-        ctx.fillStyle = '#45f3ff';
-        ctx.beginPath();
-        ctx.arc(-58, 0, 7, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
-      }
-
-      toothbrushes.forEach(tb => {
-        ctx.save();
-        ctx.translate(tb.x, tb.y);
-        ctx.rotate(tb.angle);
-
-        ctx.fillStyle = tb.color;
-        ctx.fillRect(-3, -tb.length / 2, 6, tb.length);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(-4, tb.length / 2 - 8, 8, 8);
-        ctx.fillStyle = '#66fcf1';
-        ctx.fillRect(-4, tb.length / 2 - 2, 8, 3);
-
-        ctx.restore();
-      });
+      ctx.restore();
     }
 
-    function drawFloatingTexts() {
-      for (let i = floatingTexts.length - 1; i >= 0; i--) {
-        const ft = floatingTexts[i];
-        ft.y -= 0.6;
-        ft.life -= 0.03;
-
-        ctx.save();
-        ctx.fillStyle = ft.color;
-        ctx.font = '900 12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(ft.text, ft.x, ft.y);
-        ctx.restore();
-
-        if (ft.life <= 0) floatingTexts.splice(i, 1);
-      }
+    function drawToothbrush(tb) {
+      ctx.save();
+      ctx.translate(tb.x, tb.y);
+      ctx.rotate(tb.angle);
+      ctx.font = '22px sans-serif';
+      ctx.fillText('🪥', -11, 8);
+      ctx.restore();
     }
 
-    function drawHUDOverlay() {
-      if (player.powerCooldown > 0) {
-        ctx.fillStyle = '#ffea00';
-        ctx.font = 'bold 12px monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText(`POWER COOLDOWN: ${Math.ceil(player.powerCooldown)}s`, 20, canvas.height - 15);
-      }
-    }
+    // --- MAIN RENDER LOOP ---
+    let lastTime = performance.now();
 
     function draw() {
-      ctx.fillStyle = '#0a0a0f';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const now = performance.now();
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
 
-      const screenW = Math.min(600, canvas.width * 0.65);
-      const screenH = Math.min(110, canvas.height * 0.22);
-      const screenX = (canvas.width - screenW) / 2;
+      if (gameRunning) {
+        updatePhysics(dt);
+      }
 
-      drawMovieScreen(screenX, 25, screenW, screenH);
-      drawTheaterSeats();
-      drawExitDoors();
-      drawCandy();
-      drawEnemies();
+      // Responsive Canvas Scale mapping
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
 
-      allies.forEach(ally => {
-        drawStickmanCharacter(ally.x, ally.y, ally.facing, ally.walkFrame, teamColor, false, ally.frozenTimer, ally.carrying.length, ally.stealImmunityTimer);
+      const scaleX = canvas.width / LOGICAL_WIDTH;
+      const scaleY = canvas.height / LOGICAL_HEIGHT;
+
+      ctx.save();
+      ctx.scale(scaleX, scaleY);
+
+      // Clear Canvas
+      ctx.fillStyle = '#0a0d14';
+      ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+
+      // Draw Cinema & Seating
+      drawCinemaScreen();
+
+      // Draw Floor Candies
+      candies.forEach(c => {
+        ctx.font = '20px sans-serif';
+        ctx.fillText(c.type, c.x - 10, c.y + 7);
       });
 
-      drawStickmanCharacter(player.x, player.y, player.facing, player.walkFrame, teamColor, true, player.frozenTimer, player.carrying.length, player.stealImmunityTimer);
+      // Draw Falling Toothbrushes
+      toothbrushes.forEach(drawToothbrush);
 
-      drawToothbrushStorm();
-      drawFloatingTexts();
-      drawHUDOverlay();
-    }
+      // Draw Stickmen (Player + Allies)
+      if (player) drawStickman(player);
+      allies.forEach(drawStickman);
 
-    function animate() {
-      updatePhysics();
-      draw();
-      requestAnimationFrame(animate);
+      // Draw Enemies
+      enemies.forEach(drawEnemy);
+
+      // Draw Particles
+      particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Draw Floating Text Popups
+      floatingTexts.forEach(ft => {
+        ctx.fillStyle = ft.color;
+        ctx.globalAlpha = Math.max(0, ft.alpha);
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText(ft.text, ft.x - 15, ft.y);
+      });
+
+      ctx.restore();
+
+      requestAnimationFrame(draw);
     }
 
     window.onload = function() {
-      resizeCanvas();
-      animate();
+      requestAnimationFrame(draw);
+      openAbilityModal();
     };
   </script>
 </body>
