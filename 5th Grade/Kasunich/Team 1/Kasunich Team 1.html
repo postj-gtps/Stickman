@@ -318,6 +318,7 @@
  walkFrame: 0,
  hp: 100,
  maxHp: 100,
+ shootCooldown: 0,
  isLifted: false,
  liftTimer: 0,
  liftSource: null
@@ -412,14 +413,25 @@
  shuffleArray(availableKeyTiles);
  const colorKeys = ['red', 'blue', 'green', 'yellow'];
 
- // 1. Assign 4 Key Cheeseburgers to distinct sectors
+ // Helper function to generate valid road coordinates for cheeseburgers (Bug 5 fix)
+ function getRandomRoadRatios() {
+ const onHorizontalRoad = Math.random() < 0.5;
+ if (onHorizontalRoad) {
+ return { xRatio: 0.20 + Math.random() * 0.60, yRatio: 0.50 };
+ } else {
+ return { xRatio: 0.50, yRatio: 0.20 + Math.random() * 0.60 };
+ }
+ }
+
+ // 1. Assign 4 Key Cheeseburgers to distinct sectors on road lanes
  for (let i = 0; i < 4 && i < availableKeyTiles.length; i++) {
  const pos = availableKeyTiles[i];
+ const posRatios = getRandomRoadRatios();
  cityGrid[pos.x][pos.y].key = colorKeys[i];
  cityGrid[pos.x][pos.y].cheeseburger = {
  colorKey: colorKeys[i],
- xRatio: 0.20 + Math.random() * 0.60,
- yRatio: 0.20 + Math.random() * 0.60,
+ xRatio: posRatios.xRatio,
+ yRatio: posRatios.yRatio,
  hp: 4,
  maxHp: 4,
  isDefeated: false,
@@ -430,15 +442,16 @@
  };
  }
 
- // 2. Assign Patrolling Mini-Cheeseburgers to ALL other non-special sectors
+ // 2. Assign Patrolling Mini-Cheeseburgers to ALL other non-special sectors on roads
  for (let x = 0; x < GRID_SIZE; x++) {
  for (let y = 0; y < GRID_SIZE; y++) {
  const cell = cityGrid[x][y];
  if (cell.type !== TILE_TYPES.STADIUM && cell.type !== TILE_TYPES.RYFFR && cell.type !== TILE_TYPES.PURPLE_BOSS && !cell.cheeseburger) {
+ const posRatios = getRandomRoadRatios();
  cell.cheeseburger = {
  colorKey: null,
- xRatio: 0.25 + Math.random() * 0.50,
- yRatio: 0.25 + Math.random() * 0.50,
+ xRatio: posRatios.xRatio,
+ yRatio: posRatios.yRatio,
  hp: 3,
  maxHp: 3,
  isDefeated: false,
@@ -457,8 +470,9 @@
  isDefeated: false,
  shootTimer: 0,
  liftTimer: 0,
- liftCooldown: 240,
- floatOffset: 0
+ liftCooldown: 200,
+ floatOffset: 0,
+ moveTimer: 0
  };
 
  player.hp = player.maxHp;
@@ -525,14 +539,18 @@
  });
 
  function shootKetchup() {
- if (hasWon) return;
+ if (hasWon || player.shootCooldown > 0) return;
+ 
+ // Fire Rate Cooldown (Bug 4 Fix)
+ player.shootCooldown = 12; // 12 frames ~ 5 shots per second max
+
  ketchupProjectiles.push({
  x: player.x + player.facing * 14,
  y: player.y - 14,
- vx: player.facing * 9.5,
+ vx: player.facing * 12.0, // Speed balanced (Bug 9 Fix)
  vy: (Math.random() - 0.5) * 1.5,
  radius: 6,
- life: 55
+ life: 50
  });
  spawnPopup(player.x, player.y - 30, 'SQUIRT!', '#ff3366');
  }
@@ -546,6 +564,18 @@
  player.isLifted = false;
  player.liftTimer = 0;
  updateHpUI();
+ }
+
+ function respawnAtStadium() {
+ player.hp = player.maxHp;
+ player.isLifted = false;
+ player.liftTimer = 0;
+ currentGridX = CENTER;
+ currentGridY = CENTER;
+ resetPlayerToCenter();
+ updateHpUI();
+ updateLocationUI();
+ spawnPopup(player.x, player.y - 40, 'RESPAWNED AT STADIUM! 🏟️', '#ffcc00');
  }
 
  function resetGame() {
@@ -615,7 +645,7 @@
  const pad = (4 - i) * 16;
  const wallRadius = baseBuildingRadius + pad;
 
- if (!unlockedWalls[colorKey] && distFromCenter < wallRadius + 6) {
+ if (!unlockedWalls[colorKey] && distFromCenter < wallRadius + 4) {
  return false;
  }
  }
@@ -640,6 +670,8 @@
 
  function updatePhysics() {
  if (hasWon) return;
+
+ if (player.shootCooldown > 0) player.shootCooldown--;
 
  const w = canvas.width;
  const h = canvas.height;
@@ -734,11 +766,20 @@
  }
 
  if (currentTile.type === TILE_TYPES.PURPLE_BOSS && !purpleBoss.isDefeated) {
- const bossXPos = w / 2;
+ const bossXPos = w / 2 + Math.sin(purpleBoss.moveTimer) * (w * 0.22);
  const bossYPos = h * 0.38 + Math.sin(purpleBoss.floatOffset) * 10;
  const dist = Math.hypot(kp.x - bossXPos, kp.y - bossYPos);
 
+ const allKeysCollected = Object.values(hasKey).every(v => v);
+
  if (dist < 50) {
+ // Boss Invulnerability Fix (Bugs 1 & 3)
+ if (!allKeysCollected) {
+ spawnPopup(bossXPos, bossYPos - 40, 'LOCKED! Need all 4 Keys! 🔑', '#ff3366');
+ ketchupProjectiles.splice(i, 1);
+ continue;
+ }
+
  purpleBoss.hp--;
  spawnSplatParticles(kp.x, kp.y, '#ff0033', 12);
  spawnPopup(bossXPos, bossYPos - 40, 'BOSS SPLAT! -1 HP', '#ff3366');
@@ -782,9 +823,9 @@
  spawnPopup(player.x, player.y - 30, 'OUCH! -8 HP', '#ff3333');
  pickleProjectiles.splice(i, 1);
 
+ // Respawn at Stadium on Death (Bug 3 Fix)
  if (player.hp <= 0) {
- spawnPopup(player.x, player.y, 'KNOCKED OUT!', '#ff0000');
- resetPlayerToCenter();
+ respawnAtStadium();
  }
  continue;
  }
@@ -823,38 +864,42 @@
  player.isLifted = true;
  player.liftTimer = 360;
  player.liftSource = { x: cbX, y: cbY };
- spawnPopup(player.x, player.y - 40, 'AIR LIFTED! 🛸', '#f1c40f');
+ spawnPopup(player.x, player.y - 40, '🛸 TRACTOR BEAM!', '#f1c40f');
  }
  }
 
- // Purple Boss AI
+ // Dynamic Purple Boss AI & Powers (Bug 10 Fix)
  if (currentTile.type === TILE_TYPES.PURPLE_BOSS && !purpleBoss.isDefeated) {
  purpleBoss.floatOffset += 0.04;
- const bX = w / 2;
- const bY = h * 0.38;
+ purpleBoss.moveTimer += 0.02;
+ const bX = w / 2 + Math.sin(purpleBoss.moveTimer) * (w * 0.22);
+ const bY = h * 0.38 + Math.sin(purpleBoss.floatOffset) * 10;
 
  purpleBoss.shootTimer++;
- if (purpleBoss.shootTimer >= 40) {
+ if (purpleBoss.shootTimer >= 45) {
  purpleBoss.shootTimer = 0;
- const angle = Math.atan2(player.y - bY, player.x - bX);
+ const baseAngle = Math.atan2(player.y - bY, player.x - bX);
 
+ // 3-Pickle Fan Spread Attack
+ for (let spread = -0.3; spread <= 0.3; spread += 0.3) {
  pickleProjectiles.push({
  x: bX,
  y: bY,
- vx: Math.cos(angle) * 5.8,
- vy: Math.sin(angle) * 5.8,
- isTeleporting: true,
+ vx: Math.cos(baseAngle + spread) * 5.2,
+ vy: Math.sin(baseAngle + spread) * 5.2,
+ isTeleporting: Math.random() < 0.5,
  life: 200
  });
+ }
  }
 
  purpleBoss.liftCooldown--;
  if (purpleBoss.liftCooldown <= 0 && !player.isLifted) {
- purpleBoss.liftCooldown = 350;
+ purpleBoss.liftCooldown = 320;
  player.isLifted = true;
- player.liftTimer = 450;
+ player.liftTimer = 420;
  player.liftSource = { x: bX, y: bY };
- spawnPopup(player.x, player.y - 40, 'BOSS TRACTOR BEAM! ⚡', '#a855f7');
+ spawnPopup(player.x, player.y - 40, '🛸 BOSS TRACTOR BEAM!', '#a855f7');
  }
  }
 
@@ -892,18 +937,28 @@
  }
  }
 
- // Transitions
+ // Sector Transitions & Pickle Cleanup (Bugs 2 & 6 Fix)
  const margin = 10;
+ let changedSector = false;
+
  if (player.x < margin) {
- if (currentGridX > 0) { currentGridX--; player.x = w - margin - 5; updateLocationUI(); } else player.x = margin;
+ if (currentGridX > 0) { currentGridX--; player.x = w - margin - 5; changedSector = true; } else player.x = margin;
  } else if (player.x > w - margin) {
- if (currentGridX < GRID_SIZE - 1) { currentGridX++; player.x = margin + 5; updateLocationUI(); } else player.x = w - margin;
+ if (currentGridX < GRID_SIZE - 1) { currentGridX++; player.x = margin + 5; changedSector = true; } else player.x = w - margin;
  }
 
  if (player.y < margin) {
- if (currentGridY > 0) { currentGridY--; player.y = h - margin - 5; updateLocationUI(); } else player.y = margin;
+ if (currentGridY > 0) { currentGridY--; player.y = h - margin - 5; changedSector = true; } else player.y = margin;
  } else if (player.y > h - margin) {
- if (currentGridY < GRID_SIZE - 1) { currentGridY++; player.y = h - margin - 5; updateLocationUI(); } else player.y = h - margin;
+ // FIXED Y-AXIS TELEPORT BUG (Bug 6 Fix)
+ if (currentGridY < GRID_SIZE - 1) { currentGridY++; player.y = margin + 5; changedSector = true; } else player.y = h - margin;
+ }
+
+ if (changedSector) {
+ updateLocationUI();
+ // Clear active projectiles when entering new door (Bug 2 Fix)
+ pickleProjectiles = [];
+ ketchupProjectiles = [];
  }
  }
 
@@ -1033,7 +1088,7 @@
 
  drawPlusSignRoad(w, h);
 
- const bX = w / 2;
+ const bX = w / 2 + Math.sin(purpleBoss.moveTimer) * (w * 0.22);
  const bY = h * 0.38 + Math.sin(purpleBoss.floatOffset) * 10;
 
  ctx.fillStyle = '#4a154b';
@@ -1047,9 +1102,22 @@
  ctx.textAlign = 'center';
  ctx.fillText('PURPLE BOSS TOWER 🏰', w / 2, 42);
 
+ const allKeysCollected = Object.values(hasKey).every(v => v);
+
  if (!purpleBoss.isDefeated) {
  ctx.save();
  ctx.translate(bX, bY);
+
+ // Invulnerability Shield Dome if missing keys
+ if (!allKeysCollected) {
+ ctx.strokeStyle = 'rgba(0, 240, 255, 0.7)';
+ ctx.fillStyle = 'rgba(0, 240, 255, 0.15)';
+ ctx.lineWidth = 3;
+ ctx.beginPath();
+ ctx.arc(0, -10, 68, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.stroke();
+ }
 
  ctx.fillStyle = '#d35400';
  ctx.fillRect(-48, 20, 96, 18);
@@ -1083,7 +1151,6 @@
 
  ctx.restore();
 
- const allKeysCollected = Object.values(hasKey).every(v => v);
  ctx.fillStyle = '#000000';
  ctx.fillRect(w / 2 - 130, 8, 260, 20);
  ctx.strokeStyle = '#a855f7';
@@ -1606,25 +1673,43 @@
  ctx.restore();
  });
 
+ // Redesigned UFO Air-Lift Tractor Beam Visual (Bugs 7 & 8 Fix)
  if (player.isLifted && player.liftSource) {
  ctx.save();
- ctx.strokeStyle = 'rgba(241, 196, 15, 0.5)';
- ctx.fillStyle = 'rgba(241, 196, 15, 0.2)';
- ctx.lineWidth = 3;
-
+ 
+ // Gradient Energy Beam Cone
+ const grad = ctx.createLinearGradient(player.liftSource.x, player.liftSource.y, player.x, player.y);
+ grad.addColorStop(0, 'rgba(0, 240, 255, 0.7)');
+ grad.addColorStop(1, 'rgba(255, 204, 0, 0.25)');
+ 
+ ctx.fillStyle = grad;
  ctx.beginPath();
  ctx.moveTo(player.liftSource.x - 22, player.liftSource.y);
- ctx.lineTo(player.x - 18, player.y);
- ctx.lineTo(player.x + 18, player.y);
+ ctx.lineTo(player.x - 24, player.y);
+ ctx.lineTo(player.x + 24, player.y);
  ctx.lineTo(player.liftSource.x + 22, player.liftSource.y);
  ctx.closePath();
  ctx.fill();
+
+ // Pulsing UFO Energy Rings
+ ctx.strokeStyle = '#00f0ff';
+ ctx.lineWidth = 2;
+ ctx.beginPath();
+ ctx.ellipse(player.x, player.y - 15, 22, 6, 0, 0, Math.PI * 2);
  ctx.stroke();
 
- ctx.fillStyle = '#f1c40f';
- ctx.font = 'bold 10px monospace';
+ ctx.strokeStyle = '#ffcc00';
+ ctx.beginPath();
+ ctx.ellipse(player.x, player.y - 30, 16, 4, 0, 0, Math.PI * 2);
+ ctx.stroke();
+
+ ctx.fillStyle = '#ffcc00';
+ ctx.font = '900 11px sans-serif';
  ctx.textAlign = 'center';
- ctx.fillText('AIR LIFTED!', player.x, player.y - 55);
+ ctx.strokeStyle = '#000000';
+ ctx.lineWidth = 3;
+ ctx.strokeText('🛸 TRACTOR BEAM!', player.x, player.y - 52);
+ ctx.fillText('🛸 TRACTOR BEAM!', player.x, player.y - 52);
  ctx.restore();
  }
  }
@@ -1684,7 +1769,6 @@
  case TILE_TYPES.PURPLE_BOSS: drawPurpleBossScreen(w, h); break;
  }
 
- // CORRECTED RENDER COORDINATES FOR CHEESEBURGER (cb.xRatio * w)
  if (currentTile.cheeseburger && !currentTile.cheeseburger.isDefeated) {
  const cb = currentTile.cheeseburger;
  drawCheeseburger(cb.xRatio * w, cb.yRatio * h, cb);
