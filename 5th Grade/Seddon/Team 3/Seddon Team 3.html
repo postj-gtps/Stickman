@@ -232,6 +232,7 @@
         Healthy Foods spawn at <strong>FRONT FIRE EXITS</strong> to steal theater candy!<br>
         Lead your Stickmen Team, grab candy, and return it to <strong>BACK ENTRANCES</strong>.<br>
         <strong>⚡ STEALING UNLOCKED:</strong> Run into opponents to steal candy! (2-sec immunity after a steal).<br>
+        <strong>🪥 TOOTHBRUSH STORM (50% CHANCE):</strong> Toothbrushes can rain down and clear candy!<br>
         Choose your Captain Hat ability:
       </p>
       <div class="power-grid">
@@ -280,6 +281,15 @@
     let stickmenScore = 0;
     let foodScore = 0;
     let timeStep = 0;
+
+    // TOOTHBRUSH STORM STATE
+    let stormTriggered = false;
+    let stormScheduledTime = 0;
+    let stormState = 'idle'; // 'idle', 'tube_entering', 'spewing_cloud', 'raining', 'finished'
+    let stormPhaseTimer = 0;
+    let toothpasteTube = { x: 0, y: 0, targetX: 0, speed: 6 };
+    let toothpasteClouds = [];
+    let toothbrushes = [];
 
     // CAPTAIN PLAYER STICKMAN
     const player = {
@@ -420,6 +430,15 @@
       timeStep = 0;
       floatingTexts = [];
 
+      // TOOTHBRUSH STORM CALCULATION:
+      // Raised to 50% chance of happening on any given round (calculated after power selection)
+      stormTriggered = Math.random() < 0.50;
+      stormScheduledTime = Math.floor(Math.random() * 30) + 1; // randbetween 1, 30 seconds
+      stormState = 'idle';
+      stormPhaseTimer = 0;
+      toothpasteClouds = [];
+      toothbrushes = [];
+
       // Pick Random Team Color for Clothes
       teamColor = teamColorOptions[Math.floor(Math.random() * teamColorOptions.length)];
 
@@ -469,14 +488,11 @@
         });
       }
 
-      // Spawn Candy Scattered STRICTLY in Open Aisle & Walkway Space
+      // Spawn Candy Scattered: 60% WEIGHTED TOWARDS TOP HALF NEAR FIRE EXITS
       candyItems = [];
       const itemTypes = ['popcorn', 'candy', 'drink'];
       const totalCandy = 24;
       const seats = getSeatLayout();
-
-      const startY = canvas.height * 0.32;
-      const endY = canvas.height * 0.76;
 
       for (let i = 0; i < totalCandy; i++) {
         let valid = false;
@@ -486,23 +502,19 @@
         while (!valid && attempts < 300) {
           attempts++;
           const region = Math.random();
-          if (region < 0.4) {
-            itemY = Math.random() * (endY - startY + 40) + startY - 20;
-            const aisleChoice = Math.random();
-            if (aisleChoice < 0.33) itemX = canvas.width * 0.18 + Math.random() * 40;
-            else if (aisleChoice < 0.66) itemX = canvas.width * 0.5 + (Math.random() - 0.5) * 40;
-            else itemX = canvas.width * 0.82 - Math.random() * 40;
-          } else if (region < 0.7) {
-            itemY = Math.random() * (startY - 160) + 140;
-            itemX = Math.random() * (canvas.width - 200) + 100;
+          if (region < 0.60) {
+            // 60% WEIGHTED: Top Half / Front Floor / Upper Aisles near Fire Exits
+            itemY = Math.random() * (canvas.height * 0.38) + 95;
+            itemX = Math.random() * (canvas.width - 180) + 90;
           } else {
-            itemY = Math.random() * (canvas.height - endY - 110) + endY + 25;
+            // 40% WEIGHTED: Bottom Half / Lower Aisles & Back Floor
+            itemY = Math.random() * (canvas.height * 0.38) + canvas.height * 0.48;
             itemX = Math.random() * (canvas.width - 180) + 90;
           }
 
           let overlap = false;
           for (let s of seats) {
-            if (circleRectOverlap(itemX, itemY, 12, s)) {
+            if (circleRectOverlap(itemX, itemY, 14, s)) {
               overlap = true;
               break;
             }
@@ -515,7 +527,7 @@
           x: itemX,
           y: itemY,
           type: itemTypes[Math.floor(Math.random() * itemTypes.length)],
-          status: 'floor' // 'floor', 'stickman', 'enemy', 'saved', 'stolen'
+          status: 'floor' // 'floor', 'stickman', 'enemy', 'saved', 'stolen', 'destroyed'
         });
       }
 
@@ -573,16 +585,109 @@
       };
     }
 
+    // UPDATE TOOTHBRUSH STORM LOGIC
+    function updateToothbrushStorm() {
+      if (!stormTriggered) return;
+
+      // Check if scheduled time reached
+      if (stormState === 'idle' && timeStep >= stormScheduledTime) {
+        stormState = 'tube_entering';
+        toothpasteTube = {
+          x: canvas.width + 80,
+          y: 65,
+          targetX: canvas.width - 160,
+          speed: 7
+        };
+        addFloatingText(canvas.width / 2, 80, "🪥 TOOTHBRUSH STORM INCOMING! 🪥", "#45f3ff");
+      }
+
+      // Phase 1: Tube enters from right
+      if (stormState === 'tube_entering') {
+        if (toothpasteTube.x > toothpasteTube.targetX) {
+          toothpasteTube.x -= toothpasteTube.speed;
+        } else {
+          stormState = 'spewing_cloud';
+          stormPhaseTimer = 1.8; // Spew for 1.8 seconds
+        }
+      }
+
+      // Phase 2: Spew Toothpaste Cloud
+      if (stormState === 'spewing_cloud') {
+        stormPhaseTimer -= 0.03;
+
+        if (Math.random() < 0.6) {
+          toothpasteClouds.push({
+            x: toothpasteTube.x - Math.random() * (canvas.width * 0.75),
+            y: 50 + Math.random() * 35,
+            radius: 18 + Math.random() * 16,
+            color: Math.random() < 0.5 ? '#66fcf1' : '#ffffff'
+          });
+        }
+
+        if (stormPhaseTimer <= 0) {
+          stormState = 'raining';
+          stormPhaseTimer = 5.0; // Toothbrushes rain for 5 seconds
+        }
+      }
+
+      // Phase 3: Toothbrushes Rain Down for 5 seconds
+      if (stormState === 'raining') {
+        stormPhaseTimer -= 0.03;
+
+        if (Math.random() < 0.45) {
+          toothbrushes.push({
+            x: Math.random() * (canvas.width - 120) + 60,
+            y: 80,
+            vy: 6 + Math.random() * 3,
+            length: 24,
+            color: ['#ff007f', '#00ff66', '#ffea00', '#00e5ff'][Math.floor(Math.random() * 4)],
+            angle: (Math.random() - 0.5) * 0.4
+          });
+        }
+
+        if (stormPhaseTimer <= 0) {
+          stormState = 'finished';
+        }
+      }
+
+      // Move falling toothbrushes and check hit on candy
+      for (let i = toothbrushes.length - 1; i >= 0; i--) {
+        const tb = toothbrushes[i];
+        tb.y += tb.vy;
+
+        candyItems.forEach(candy => {
+          if (candy.status === 'floor') {
+            const dist = Math.hypot(tb.x - candy.x, tb.y - candy.y);
+            if (dist < 22) {
+              candy.status = 'destroyed';
+              addFloatingText(candy.x, candy.y, "BRUSHED AWAY! 🪥", "#ffffff");
+            }
+          }
+        });
+
+        if (tb.y > canvas.height + 40) {
+          toothbrushes.splice(i, 1);
+        }
+      }
+
+      if (stormState === 'raining' || stormState === 'finished') {
+        if (toothpasteTube.x < canvas.width + 120) {
+          toothpasteTube.x += 4;
+        }
+      }
+    }
+
     function updatePhysics() {
       if (!gameActive) return;
       timeStep += 0.03;
+
+      updateToothbrushStorm();
 
       const seats = getSeatLayout();
       const exits = getExits();
 
       if (player.powerCooldown > 0) player.powerCooldown -= 0.03;
 
-      // Decrement Immunity Timers
       if (player.stealImmunityTimer > 0) player.stealImmunityTimer -= 0.03;
       allies.forEach(a => { if (a.stealImmunityTimer > 0) a.stealImmunityTimer -= 0.03; });
       enemies.forEach(e => { if (e.stealImmunityTimer > 0) e.stealImmunityTimer -= 0.03; });
@@ -721,7 +826,6 @@
 
           const dist = Math.hypot(stickman.x - enemy.x, stickman.y - enemy.y);
           if (dist < 26) {
-            // A. Stickman Steals Candy From Healthy Food
             if (stickman.carrying.length < stickman.maxCarry &&
                 enemy.carrying.length > 0 &&
                 stickman.stealImmunityTimer <= 0 &&
@@ -731,12 +835,11 @@
               stolenCandy.status = 'stickman';
               stickman.carrying.push(stolenCandy);
 
-              stickman.stealImmunityTimer = 2.0; // 2 SECOND STEAL IMMUNITY
+              stickman.stealImmunityTimer = 2.0;
               enemy.stealImmunityTimer = 2.0;
 
               addFloatingText(stickman.x, stickman.y - 22, "STOLE CANDY! ⚡", "#00ff66");
             }
-            // B. Healthy Food Steals Candy From Stickman
             else if (enemy.carrying.length < enemy.maxCarry &&
                      stickman.carrying.length > 0 &&
                      stickman.stealImmunityTimer <= 0 &&
@@ -746,7 +849,7 @@
               stolenCandy.status = 'enemy';
               enemy.carrying.push(stolenCandy);
 
-              stickman.stealImmunityTimer = 2.0; // 2 SECOND STEAL IMMUNITY
+              stickman.stealImmunityTimer = 2.0;
               enemy.stealImmunityTimer = 2.0;
 
               addFloatingText(enemy.x, enemy.y - 22, "STOLE CANDY! ⚡", "#ff3366");
@@ -804,7 +907,7 @@
               updateScoreDisplay();
 
               if (enemy.type === 'carrot') {
-                enemy.restTimer = 30; // 30 SECOND MANDATORY REST AFTER FIRE EXIT RETURN
+                enemy.restTimer = 30;
               }
             }
           } else {
@@ -831,7 +934,7 @@
             if (enemy.type === 'broccoli' && enemy.treePower && enemy.carrying.length === 0) {
               allStickmen.forEach(s => {
                 if (Math.hypot(s.x - enemy.x, s.y - enemy.y) < 30) {
-                  s.frozenTimer = 5; // CAUGHT FOR 5 SECONDS BY BROCCOLI!
+                  s.frozenTimer = 5;
                   enemy.treePower = false;
                   addFloatingText(s.x, s.y - 20, "CAUGHT! 🌳", "#00ffcc");
                 }
@@ -862,8 +965,7 @@
       });
 
       // --- 6. CHECK GAME OVER CONDITION ---
-      // Game ends immediately when ALL candy pieces have been saved or stolen!
-      const activeCandyCount = candyItems.filter(c => c.status !== 'saved' && c.status !== 'stolen').length;
+      const activeCandyCount = candyItems.filter(c => c.status !== 'saved' && c.status !== 'stolen' && c.status !== 'destroyed').length;
       if (activeCandyCount === 0) {
         endGame();
       }
@@ -932,14 +1034,13 @@
       drawCandy();
       drawEnemies();
 
-      // Draw Allies
       allies.forEach(ally => {
         drawStickmanCharacter(ally.x, ally.y, ally.facing, ally.walkFrame, teamColor, false, ally.frozenTimer, ally.carrying.length, ally.stealImmunityTimer);
       });
 
-      // Draw Captain Player
       drawStickmanCharacter(player.x, player.y, player.facing, player.walkFrame, teamColor, true, player.frozenTimer, player.carrying.length, player.stealImmunityTimer);
 
+      drawToothbrushStorm();
       drawFloatingTexts();
       drawHUDOverlay();
     }
@@ -1085,7 +1186,6 @@
           ctx.fillText(`REST: ${Math.ceil(e.restTimer)}s`, 0, -22);
         }
 
-        // Steal Immunity Shield Ring
         if (e.stealImmunityTimer > 0) {
           ctx.strokeStyle = 'rgba(255, 234, 0, 0.8)';
           ctx.lineWidth = 2;
@@ -1155,7 +1255,6 @@
       const headY = neckY - headRadius;
       const shoulderY = neckY + 4;
 
-      // Steal Immunity Shield Ring (2s After Steal)
       if (stealImmunityTimer > 0) {
         ctx.strokeStyle = 'rgba(255, 234, 0, 0.8)';
         ctx.lineWidth = 2;
@@ -1177,10 +1276,10 @@
       // CAPTAIN'S HAT
       if (isCaptain) {
         ctx.fillStyle = '#ffea00';
-        ctx.fillRect(x - 9, headY - 9, 18, 3); // Brim
-        ctx.fillRect(x - 6, headY - 16, 12, 7); // Crown
+        ctx.fillRect(x - 9, headY - 9, 18, 3);
+        ctx.fillRect(x - 6, headY - 16, 12, 7);
         ctx.fillStyle = '#ff0055';
-        ctx.fillRect(x - 6, headY - 11, 12, 2); // Ribbon
+        ctx.fillRect(x - 6, headY - 11, 12, 2);
       }
 
       // Torso with Colored Team Shirt
@@ -1235,6 +1334,54 @@
       ctx.restore();
     }
 
+    function drawToothbrushStorm() {
+      if (!stormTriggered) return;
+
+      toothpasteClouds.forEach(c => {
+        ctx.fillStyle = c.color;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      if (stormState === 'tube_entering' || stormState === 'spewing_cloud' || stormState === 'raining') {
+        ctx.save();
+        ctx.translate(toothpasteTube.x, toothpasteTube.y);
+
+        ctx.fillStyle = '#ff0055';
+        ctx.fillRect(-45, -14, 60, 28);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-30, -14, 15, 28);
+        ctx.fillStyle = '#00e5ff';
+        ctx.fillRect(-15, -14, 15, 28);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-55, -8, 10, 16);
+        ctx.fillStyle = '#45f3ff';
+        ctx.beginPath();
+        ctx.arc(-58, 0, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      toothbrushes.forEach(tb => {
+        ctx.save();
+        ctx.translate(tb.x, tb.y);
+        ctx.rotate(tb.angle);
+
+        ctx.fillStyle = tb.color;
+        ctx.fillRect(-3, -tb.length / 2, 6, tb.length);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-4, tb.length / 2 - 8, 8, 8);
+        ctx.fillStyle = '#66fcf1';
+        ctx.fillRect(-4, tb.length / 2 - 2, 8, 3);
+
+        ctx.restore();
+      });
+    }
+
     function drawFloatingTexts() {
       for (let i = floatingTexts.length - 1; i >= 0; i--) {
         const ft = floatingTexts[i];
@@ -1281,6 +1428,7 @@
 
       drawStickmanCharacter(player.x, player.y, player.facing, player.walkFrame, teamColor, true, player.frozenTimer, player.carrying.length, player.stealImmunityTimer);
 
+      drawToothbrushStorm();
       drawFloatingTexts();
       drawHUDOverlay();
     }
