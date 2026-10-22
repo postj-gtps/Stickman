@@ -274,7 +274,7 @@
     <div id="ability-modal" class="modal-overlay">
       <div class="modal-card">
         <h2 style="font-size: 24px; font-weight: 900; color: #ffea00; margin-bottom: 6px;">SELECT CAPTAIN POWER!</h2>
-        <p style="font-size: 13px; color: #cbd5e0;">Choose your Stickman Captain ability for this round. (All character speeds reduced by 50%!)</p>
+        <p style="font-size: 13px; color: #cbd5e0;">Choose your Stickman Captain ability for this round. Balanced 4v4 Match!</p>
         
         <div class="ability-grid">
           <div class="ability-card selected" onclick="selectAbility('carrot')">
@@ -520,7 +520,7 @@
       floatingTexts = [];
       toothbrushes = [];
 
-      // 1. Player setup (Halved base speed: 2.25, Carrot Dash: 2.9)
+      // 1. Player setup (Base speed: 2.25, Carrot Dash: 2.9)
       const playerSpeed = selectedAbilityType === 'carrot' ? 2.9 : 2.25;
       const maxCarryCap = selectedAbilityType === 'multi_bagger' ? 3 : 1;
 
@@ -537,22 +537,22 @@
         isPlayer: true
       };
 
-      // 2. AI Allies setup (Halved speed: 2.1)
+      // 2. AI Allies setup (3 NPC Stickmen allies, speed: 2.1)
       allies = [
-        { x: 300, y: 630, speed: 2.1, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'stickman', isPlayer: false, name: 'Ally 1' },
-        { x: 800, y: 630, speed: 2.1, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'stickman', isPlayer: false, name: 'Ally 2' }
+        { x: 250, y: 630, speed: 2.1, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'stickman', isPlayer: false, name: 'Ally 1' },
+        { x: 550, y: 630, speed: 2.1, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'stickman', isPlayer: false, name: 'Ally 2' },
+        { x: 850, y: 630, speed: 2.1, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'stickman', isPlayer: false, name: 'Ally 3' }
       ];
 
-      // 3. Healthy Food Enemies setup (Halved speeds)
-      // Carrot: 2.6 | Broccoli: 1.9 | Cabbage: 2.0 | Apple: 1.7
+      // 3. Healthy Food Enemies setup (Speed tuned: Carrot fast at 2.5, others at 1.6 - 1.9)
       enemies = [
-        { x: 100, y: 50, speed: 2.6, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Carrot', color: '#ff7700', emoji: '🥕', frozenTimer: 0, stunTimer: 0 },
-        { x: 300, y: 50, speed: 1.9, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Broccoli', color: '#22cc44', emoji: '🥦', frozenTimer: 0, stunTimer: 0 },
-        { x: 800, y: 50, speed: 2.0, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Cabbage', color: '#88e034', emoji: '🥬', frozenTimer: 0, stunTimer: 0 },
-        { x: 1000, y: 50, speed: 1.7, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Apple', color: '#ff3344', emoji: '🍎', frozenTimer: 0, stunTimer: 0 }
+        { x: 100, y: 50, speed: 2.5, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Carrot', color: '#ff7700', emoji: '🥕', frozenTimer: 0, stunTimer: 0 },
+        { x: 350, y: 50, speed: 1.8, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Broccoli', color: '#22cc44', emoji: '🥦', frozenTimer: 0, stunTimer: 0 },
+        { x: 750, y: 50, speed: 1.9, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Cabbage', color: '#88e034', emoji: '🥬', frozenTimer: 0, stunTimer: 0 },
+        { x: 1000, y: 50, speed: 1.6, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Apple', color: '#ff3344', emoji: '🍎', frozenTimer: 0, stunTimer: 0 }
       ];
 
-      // 4. Midline Candy Spawns (24 Candies distributed within +/- 10% of vertical midline: y = 280 to 420)
+      // 4. Midline Candy Spawns (24 Candies distributed near horizontal middle)
       candies = [];
       const candyTypes = ['🍿', '🍫', '🍭', '🥤', '🍬', '🍩'];
 
