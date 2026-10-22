@@ -14,7 +14,7 @@
     }
 
     body {
-      background-color: #0c0f1d;
+      background-color: #0a0d1a;
       color: #ffffff;
       display: flex;
       flex-direction: column;
@@ -22,7 +22,7 @@
       justify-content: flex-start;
       height: 100vh;
       overflow: hidden;
-      padding: 12px;
+      padding: 10px;
     }
 
     /* Top Header Bar */
@@ -33,47 +33,49 @@
       width: 100%;
       max-width: 1100px;
       margin-bottom: 8px;
-      padding: 8px 18px;
-      background: #181c30;
-      border: 3px solid #ffcc00;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #1e2440 0%, #111528 100%);
+      border: 4px solid #ffcc00;
+      border-radius: 16px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.6), 0 0 12px rgba(255,204,0,0.3);
     }
 
     .score-board {
       display: flex;
-      gap: 20px;
-      font-size: 20px;
+      gap: 24px;
+      font-size: 22px;
       font-weight: 900;
       letter-spacing: 1px;
     }
 
-    .score-red { color: #ff3333; text-shadow: 0 0 8px rgba(255,51,51,0.6); }
-    .score-blue { color: #3399ff; text-shadow: 0 0 8px rgba(51,153,255,0.6); }
+    .score-red { color: #ff4d4d; text-shadow: 0 0 10px rgba(255,77,77,0.8); }
+    .score-blue { color: #3399ff; text-shadow: 0 0 10px rgba(51,153,255,0.8); }
 
     .status-display {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 800;
       color: #ffdd57;
       text-align: center;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
     }
 
     .btn-reset {
-      background: #ffcc00;
-      color: #000;
-      border: none;
-      padding: 8px 18px;
+      background: linear-gradient(180deg, #ffee55 0%, #ffcc00 100%);
+      color: #000000;
+      border: 2px solid #ffffff;
+      padding: 8px 20px;
       font-size: 14px;
       font-weight: 900;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
       text-transform: uppercase;
       box-shadow: 0 4px 0 #cca300;
-      transition: transform 0.1s, background 0.15s;
+      transition: transform 0.1s, filter 0.15s;
     }
 
     .btn-reset:hover {
-      background: #ffee55;
+      filter: brightness(1.1);
+      transform: translateY(-1px);
     }
 
     .btn-reset:active {
@@ -94,19 +96,20 @@
 
     canvas {
       background-color: #111;
-      border: 4px solid #ffffff;
-      border-radius: 12px;
+      border: 5px solid #ffffff;
+      border-radius: 16px;
       display: block;
       width: 100%;
       height: 100%;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
     }
 
     .instructions {
       margin-top: 6px;
-      font-size: 12px;
-      font-weight: bold;
-      color: #cccccc;
+      font-size: 13px;
+      font-weight: 800;
+      color: #00e5ff;
+      text-shadow: 0 0 6px rgba(0,229,255,0.5);
       text-align: center;
     }
 
@@ -117,59 +120,61 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(10, 12, 22, 0.88);
+      background: rgba(8, 10, 20, 0.92);
       display: flex;
       justify-content: center;
       align-items: center;
       z-index: 100;
-      border-radius: 12px;
+      border-radius: 16px;
     }
 
     .modal-card {
-      background: #1d223a;
+      background: linear-gradient(180deg, #232a48 0%, #151a30 100%);
       border: 4px solid #ffcc00;
-      border-radius: 16px;
-      padding: 22px;
-      width: 90%;
-      max-width: 620px;
+      border-radius: 20px;
+      padding: 24px;
+      width: 92%;
+      max-width: 640px;
       text-align: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.9);
     }
 
     .modal-card h2 {
-      font-size: 24px;
+      font-size: 26px;
       color: #ffcc00;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 1.5px;
+      text-shadow: 0 3px 6px rgba(0,0,0,0.6);
     }
 
     .setup-section {
       margin-bottom: 14px;
       text-align: left;
-      background: #141728;
+      background: #121628;
       padding: 12px 16px;
-      border-radius: 10px;
-      border: 1px solid #333a5c;
+      border-radius: 12px;
+      border: 2px solid #2d365c;
     }
 
     .setup-section h3 {
       font-size: 14px;
-      color: #3399ff;
+      color: #00e5ff;
       margin-bottom: 8px;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .char-select-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
+      gap: 12px;
     }
 
     .char-option {
-      background: #252a45;
-      border: 2px solid #444c77;
-      border-radius: 8px;
+      background: #1d233f;
+      border: 3px solid #3d4775;
+      border-radius: 10px;
       padding: 10px;
       cursor: pointer;
       text-align: center;
@@ -178,23 +183,24 @@
 
     .char-option:hover {
       border-color: #ffcc00;
-      background: #31375c;
+      background: #2a3259;
+      transform: translateY(-2px);
     }
 
     .char-option.selected {
-      border-color: #ff3333;
-      background: #4a1c24;
-      box-shadow: 0 0 12px rgba(255,51,51,0.6);
+      border-color: #ff3344;
+      background: #4a1924;
+      box-shadow: 0 0 14px rgba(255,51,68,0.7);
     }
 
     .char-option h4 {
-      font-size: 14px;
+      font-size: 15px;
       color: #ffffff;
     }
 
     .char-option p {
       font-size: 11px;
-      color: #bbb;
+      color: #cccccc;
       margin-top: 4px;
     }
 
@@ -203,37 +209,45 @@
       justify-content: space-between;
       align-items: center;
       margin-top: 6px;
-      font-size: 13px;
-    }
-
-    select, input[type="number"] {
-      background: #252a45;
-      color: #fff;
-      border: 2px solid #ffcc00;
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: bold;
     }
 
-    .btn-start {
-      background: #2ecc71;
+    select, input[type="number"] {
+      background: #1e2544;
       color: #fff;
-      border: none;
-      padding: 12px 32px;
-      font-size: 18px;
+      border: 2px solid #ffcc00;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      outline: none;
+    }
+
+    .btn-start {
+      background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%);
+      color: #fff;
+      border: 2px solid #ffffff;
+      padding: 14px 32px;
+      font-size: 20px;
       font-weight: 900;
-      border-radius: 10px;
+      border-radius: 12px;
       cursor: pointer;
       text-transform: uppercase;
-      box-shadow: 0 5px 0 #27ae60;
-      margin-top: 8px;
+      box-shadow: 0 6px 0 #1e8449;
+      margin-top: 10px;
       width: 100%;
-      transition: background 0.15s;
+      transition: filter 0.15s, transform 0.1s;
     }
 
     .btn-start:hover {
-      background: #34d07b;
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .btn-start:active {
+      transform: translateY(3px);
+      box-shadow: 0 3px 0 #1e8449;
     }
   </style>
 </head>
@@ -243,7 +257,7 @@
   <div id="header">
     <div class="score-board">
       <span class="score-red">RED: <span id="score-red-text">0</span></span>
-      <span style="color:#666;">|</span>
+      <span style="color:#555;">|</span>
       <span class="score-blue">BLUE: <span id="score-blue-text">0</span></span>
     </div>
     <div id="status" class="status-display">Configure match settings to start!</div>
@@ -266,17 +280,17 @@
             <div class="char-option" id="opt-big" onclick="selectPlayerChar('BIG')">
               <h4>BIG</h4>
               <p>Slow (0.9x)</p>
-              <p><strong>Power: BOUNCE</strong></p>
+              <p><strong style="color:#ffcc00;">BOUNCE</strong></p>
             </div>
             <div class="char-option selected" id="opt-med" onclick="selectPlayerChar('MED')">
               <h4>MEDIUM</h4>
               <p>Normal (1.0x)</p>
-              <p><strong>Power: SNEAK</strong></p>
+              <p><strong style="color:#2ecc71;">SNEAK</strong></p>
             </div>
             <div class="char-option" id="opt-small" onclick="selectPlayerChar('SMALL')">
               <h4>SMALL</h4>
               <p>Fast (1.1x)</p>
-              <p><strong>Power: TRIP</strong></p>
+              <p><strong style="color:#00e5ff;">TRIP</strong></p>
             </div>
           </div>
         </div>
@@ -450,6 +464,13 @@
       const kCode = e.code;
       const kKey = e.key;
 
+      // Block Arrow Keys explicitly to reinforce WASD movement habits
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(kCode) ||
+          ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(kKey)) {
+        e.preventDefault();
+        return;
+      }
+
       keys[kCode] = true;
       keys[kKey] = true;
       keys[kKey.toLowerCase()] = true;
@@ -617,7 +638,7 @@
         p.searchTimer = 0;
       });
 
-      statusEl.textContent = `Get the Blue Flag and return to Red End Zone! First to ${targetScore}!`;
+      statusEl.textContent = `Steal the Blue Flag and return to Red Zone! First to ${targetScore}!`;
       statusEl.style.color = '#ffdd57';
     }
 
@@ -675,7 +696,7 @@
               p.sneakCooldownTimer = 600;
               lastKnownPlayerX = p.x;
               lastKnownPlayerY = p.y;
-              statusEl.textContent = "SNEAK POWER ACTIVATED! (Opponents chasing last known position!)";
+              statusEl.textContent = "⚡ SNEAK ACTIVATED! Opponents chasing last known position!";
               statusEl.style.color = "#2ecc71";
             }
 
@@ -733,7 +754,7 @@
       const ownFlag = isRed ? redFlag : blueFlag;
       const enemyTeam = isRed ? blueTeam : redTeam;
 
-      // Find if player is sneaking
+      // Check if player character is currently sneaking
       const pcEnemy = enemyTeam.find(e => e.isPC);
       const isPlayerSneaking = pcEnemy && pcEnemy.sneakActiveTimer > 0;
 
@@ -750,6 +771,9 @@
         let minDist = Infinity;
 
         enemyTeam.forEach(e => {
+          // FIX: Ignore downed/tripped enemies so Defense AI doesn't camp on top of prone targets
+          if (e.proneTimer > 0) return;
+
           const inOurSide = isRed ? (e.x < halfX) : (e.x > halfX);
           if (inOurSide || e.hasFlag) {
             const dist = Math.hypot(e.x - p.x, e.y - p.y);
@@ -839,13 +863,13 @@
               blueFlag.carrier = p;
               blueFlag.isDropped = false;
               p.hasFlag = true;
-              statusEl.textContent = `${p.type} STOLE THE BLUE FLAG!`;
+              statusEl.textContent = `🚩 ${p.type} STOLE THE BLUE FLAG!`;
               statusEl.style.color = '#ffcc00';
             } else if (blueFlag.isDropped) {
               blueFlag.x = blueFlag.homeX;
               blueFlag.y = blueFlag.homeY;
               blueFlag.isDropped = false;
-              statusEl.textContent = `BLUE RETURNED THEIR FLAG!`;
+              statusEl.textContent = `🛡️ BLUE RETURNED THEIR FLAG!`;
               statusEl.style.color = '#3399ff';
             }
           }
@@ -859,13 +883,13 @@
               redFlag.carrier = p;
               redFlag.isDropped = false;
               p.hasFlag = true;
-              statusEl.textContent = `BLUE STOLE THE RED FLAG!`;
+              statusEl.textContent = `🚩 BLUE STOLE THE RED FLAG!`;
               statusEl.style.color = '#ff3333';
             } else if (redFlag.isDropped) {
               redFlag.x = redFlag.homeX;
               redFlag.y = redFlag.homeY;
               redFlag.isDropped = false;
-              statusEl.textContent = `RED RETURNED THEIR FLAG!`;
+              statusEl.textContent = `🛡️ RED RETURNED THEIR FLAG!`;
               statusEl.style.color = '#ffcc00';
             }
           }
@@ -904,7 +928,7 @@
           redFlag.carrier = null;
           redFlag.isDropped = true;
         }
-        statusEl.textContent = `${victim.team.toUpperCase()} DROPPED THE FLAG!`;
+        statusEl.textContent = `💥 ${victim.team.toUpperCase()} DROPPED THE FLAG!`;
         statusEl.style.color = '#ff3333';
       }
 
@@ -921,6 +945,10 @@
         // TRIP POWER: Only apply if victim is not prone and not trip-immune
         if (victim.proneTimer === 0 && victim.tripImmunityTimer === 0) {
           victim.proneTimer = 180; // 3 seconds prone
+          // FIX: Recoil tagger back 18px so characters don't stay glued together
+          const recoilAngle = Math.atan2(tagger.y - victim.y, tagger.x - victim.x);
+          tagger.x += Math.cos(recoilAngle) * 18;
+          tagger.y += Math.sin(recoilAngle) * 18;
         }
       } else {
         const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
@@ -939,7 +967,7 @@
         if (scoreRed >= targetScore) {
           triggerGameOver('RED TEAM WINS!', 'Congratulations! Red Team captured enough flags to win!');
         } else {
-          statusEl.textContent = 'RED SCORED A POINT!';
+          statusEl.textContent = '🎉 RED SCORED A POINT!';
           statusEl.style.color = '#2ecc71';
           resetRoundPositions();
         }
@@ -951,7 +979,7 @@
         if (scoreBlue >= targetScore) {
           triggerGameOver('BLUE TEAM WINS!', 'Blue Team captured enough flags to win the match!');
         } else {
-          statusEl.textContent = 'BLUE SCORED A POINT!';
+          statusEl.textContent = '🎉 BLUE SCORED A POINT!';
           statusEl.style.color = '#3399ff';
           resetRoundPositions();
         }
@@ -973,26 +1001,22 @@
         ctx.drawImage(crowdCanvas, 0, 0);
       }
 
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Grass Pitch
-      ctx.fillStyle = '#27ae60';
-      ctx.fillRect(fieldX, fieldY, fieldW, fieldH);
-
-      // Grass Stripes
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
-      const stripeW = fieldW / 10;
-      for (let i = 0; i < 10; i += 2) {
-        ctx.fillRect(fieldX + i * stripeW, fieldY, stripeW, fieldH);
+      // Checkered Vibrant Pitch
+      const tileSize = fieldW / 12;
+      for (let i = 0; i < 12; i++) {
+        ctx.fillStyle = (i % 2 === 0) ? '#27ae60' : '#2ecc71';
+        ctx.fillRect(fieldX + i * tileSize, fieldY, tileSize, fieldH);
       }
 
       // Outer Boundary
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 5;
       ctx.strokeRect(fieldX, fieldY, fieldW, fieldH);
 
-      // Center Line
+      // Center Line & Circle
       const halfX = fieldX + fieldW / 2;
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -1000,7 +1024,6 @@
       ctx.lineTo(halfX, fieldY + fieldH);
       ctx.stroke();
 
-      // Center Circle
       ctx.beginPath();
       ctx.arc(halfX, fieldY + fieldH / 2, Math.min(fieldW, fieldH) * 0.16, 0, Math.PI * 2);
       ctx.stroke();
@@ -1010,24 +1033,34 @@
       const rightBaseX = fieldX + fieldW * 0.82;
 
       // Red Base (Left)
-      ctx.fillStyle = 'rgba(231, 76, 60, 0.28)';
+      ctx.fillStyle = 'rgba(231, 76, 60, 0.35)';
       ctx.fillRect(fieldX, fieldY, fieldW * 0.18, fieldH);
-      ctx.strokeStyle = '#ff3333';
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#ff3344';
+      ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.moveTo(leftBaseX, fieldY);
       ctx.lineTo(leftBaseX, fieldY + fieldH);
       ctx.stroke();
 
       // Blue Base (Right)
-      ctx.fillStyle = 'rgba(52, 152, 219, 0.28)';
+      ctx.fillStyle = 'rgba(52, 152, 219, 0.35)';
       ctx.fillRect(rightBaseX, fieldY, fieldW * 0.18, fieldH);
       ctx.strokeStyle = '#3399ff';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.moveTo(rightBaseX, fieldY);
       ctx.lineTo(rightBaseX, fieldY + fieldH);
       ctx.stroke();
+
+      // End Zone Turf Text Labels
+      ctx.save();
+      ctx.font = '900 16px sans-serif';
+      ctx.textAlign = 'center';
+      
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.fillText('RED ZONE', fieldX + fieldW * 0.09, fieldY + 25);
+      ctx.fillText('BLUE ZONE', fieldX + fieldW * 0.91, fieldY + 25);
+      ctx.restore();
     }
 
     function drawFlag(flagObj, color, label) {
@@ -1044,34 +1077,38 @@
       if (flagObj.isDropped) {
         ctx.beginPath();
         ctx.arc(x, y, 18, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 255, 0, 0.4)';
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
         ctx.fill();
+        ctx.strokeStyle = '#ffcc00';
+        ctx.lineWidth = 2;
+        ctx.stroke();
       }
 
       // Flagpole
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3.5;
       ctx.beginPath();
       ctx.moveTo(x, y);
-      ctx.lineTo(x, y - 32);
+      ctx.lineTo(x, y - 34);
       ctx.stroke();
 
-      // Triangular Flag
+      // Animated Triangular Flag Wave
+      const waveOffset = Math.sin(animFrameCount * 0.1) * 3;
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.moveTo(x, y - 32);
-      ctx.lineTo(x + 22, y - 22);
-      ctx.lineTo(x, y - 12);
+      ctx.moveTo(x, y - 34);
+      ctx.lineTo(x + 24 + waveOffset, y - 24);
+      ctx.lineTo(x, y - 14);
       ctx.closePath();
       ctx.fill();
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2;
       ctx.stroke();
 
-      // Flag Stand
+      // Flag Base Stand
       ctx.beginPath();
-      ctx.ellipse(x, y, 8, 4, 0, 0, Math.PI * 2);
-      ctx.fillStyle = '#222';
+      ctx.ellipse(x, y, 9, 4.5, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#222222';
       ctx.fill();
       ctx.stroke();
 
@@ -1100,22 +1137,37 @@
         }
       }
 
-      const teamShirtColor = isRed ? '#ff3333' : '#3399ff';
+      const teamShirtColor = isRed ? '#ff3344' : '#3399ff';
       const pantsColor = '#111111';
       const skinColor = p.skinColor;
 
-      // Handle Prone / Tripped rendering state
+      // Handle Prone / Tripped rendering state with DIZZY SPINNING STARS
       if (p.proneTimer > 0) {
         ctx.strokeStyle = pantsColor;
-        ctx.lineWidth = 3 * scale;
+        ctx.lineWidth = 3.5 * scale;
         ctx.beginPath();
         ctx.ellipse(x, y + 4, 16 * scale, 6 * scale, 0, 0, Math.PI * 2);
         ctx.stroke();
 
-        ctx.font = 'bold 10px sans-serif';
+        // Dizzy Spinning Stars above Tripped character
+        const starCount = 3;
+        const spinRadius = 12 * scale;
+        const spinAngle = animFrameCount * 0.12;
+        for (let i = 0; i < starCount; i++) {
+          const angle = spinAngle + (i * (Math.PI * 2 / starCount));
+          const sx = x + Math.cos(angle) * spinRadius;
+          const sy = y - 14 * scale + Math.sin(angle) * (spinRadius * 0.35);
+
+          ctx.fillStyle = '#ffdd57';
+          ctx.beginPath();
+          ctx.arc(sx, sy, 2.5 * scale, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.font = '900 11px sans-serif';
         ctx.fillStyle = '#ffdd57';
         ctx.textAlign = 'center';
-        ctx.fillText('TRIPPED', x, y - 12);
+        ctx.fillText('TRIPPED!', x, y - 22 * scale);
         ctx.restore();
         return;
       }
@@ -1129,7 +1181,7 @@
 
       // 1. Black Pants (Legs)
       ctx.strokeStyle = pantsColor;
-      ctx.lineWidth = 3.5 * scale;
+      ctx.lineWidth = 3.8 * scale;
       ctx.lineCap = 'round';
 
       const legSwing = Math.sin(p.walkFrame) * 6 * scale;
@@ -1145,7 +1197,7 @@
 
       // 2. Team-Colored Shirt (Torso)
       ctx.strokeStyle = teamShirtColor;
-      ctx.lineWidth = 5.5 * scale;
+      ctx.lineWidth = 6 * scale;
       ctx.beginPath();
       ctx.moveTo(x, neckY);
       ctx.lineTo(x, y);
@@ -1154,7 +1206,7 @@
       // 3. Team Shirt Sleeves & Arms
       const armSwing = Math.sin(p.walkFrame + Math.PI) * 5 * scale;
       ctx.strokeStyle = teamShirtColor;
-      ctx.lineWidth = 3.2 * scale;
+      ctx.lineWidth = 3.5 * scale;
 
       // Back Arm
       ctx.beginPath();
@@ -1171,25 +1223,25 @@
       // 4. Flesh-Tone Head
       ctx.fillStyle = skinColor;
       ctx.strokeStyle = '#222222';
-      ctx.lineWidth = 1 * scale;
+      ctx.lineWidth = 1.2 * scale;
       ctx.beginPath();
       ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
-      // Eye
+      // Eye Direction
       ctx.fillStyle = '#000000';
       ctx.beginPath();
       ctx.arc(x + facing * 2.5 * scale, headY - 0.5, 1 * scale, 0, Math.PI * 2);
       ctx.fill();
 
       // 5. Role Badge & Immunity Label
-      ctx.font = 'bold 10px sans-serif';
+      ctx.font = '900 10px sans-serif';
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'center';
       const roleTag = p.isPC ? 'YOU' : p.role.substring(0, 3).toUpperCase();
       const labelText = isImmune ? `${p.type[0]}-IMMUNE` : `${p.type[0]}-${roleTag}`;
-      ctx.fillText(labelText, x, headY - 9);
+      ctx.fillText(labelText, x, headY - 10);
 
       ctx.restore();
     }
@@ -1198,23 +1250,23 @@
       const pc = redTeam.find(p => p.isPC);
       if (pc && pc.type === 'MED') {
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 12px sans-serif';
+        ctx.font = '900 12px sans-serif';
         ctx.textAlign = 'left';
         ctx.fillText('SNEAK COOLDOWN:', 20, canvas.height - 15);
 
-        const barW = 100;
-        const barH = 10;
-        const barX = 150;
-        const barY = canvas.height - 24;
+        const barW = 110;
+        const barH = 12;
+        const barX = 155;
+        const barY = canvas.height - 26;
 
-        ctx.fillStyle = '#222';
+        ctx.fillStyle = '#1c2238';
         ctx.fillRect(barX, barY, barW, barH);
 
         const pct = 1 - (pc.sneakCooldownTimer / 600);
         ctx.fillStyle = pct >= 1 ? '#2ecc71' : '#ff9900';
         ctx.fillRect(barX, barY, barW * pct, barH);
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
         ctx.strokeRect(barX, barY, barW, barH);
       }
     }
@@ -1223,7 +1275,7 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       drawStadiumAndField();
-      drawFlag(redFlag, '#ff3333', 'RED');
+      drawFlag(redFlag, '#ff3344', 'RED');
       drawFlag(blueFlag, '#3399ff', 'BLUE');
 
       redTeam.forEach(p => drawStickman(p));

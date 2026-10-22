@@ -202,10 +202,10 @@
  let alertTimer = 0;
  let alertColor = "#ffd700";
 
- // OCTOPUS GRAB MECHANIC & TRAP ESCAPE STATE
+ // OCTOPUS GRAB MECHANIC & TRAP ESCAPE STATE (Rebalanced for elementary kids)
  let grabbedByOctopusTimer = 0;
  let grabbingOctopus = null;
- let escapePressesRemaining = 15;
+ let escapePressesRemaining = 8; // Reduced from 15 to 8 for easier breakout
 
  // ENTITIES
  let corals = [];
@@ -214,6 +214,7 @@
  let wreckedShip = null;
  let bubbles = [];
  let zapParticles = [];
+ let inkParticles = [];
  let waveOffset = 0;
 
  let jellyfishList = [];
@@ -268,13 +269,14 @@
  // Trap escape when grabbed by Octopus
  if (grabbedByOctopusTimer > 0) {
  escapePressesRemaining--;
+ triggerInkSplash(player.x, player.y);
  if (escapePressesRemaining <= 0) {
  grabbedByOctopusTimer = 0;
  grabbingOctopus = null;
  alertMessage = "⚡ FREED! BROKE OUT OF OCTOPUS TRAP! ⚡";
  alertColor = "#00ffcc";
  alertTimer = 90;
- player.invulnerableTimer = 60;
+ player.invulnerableTimer = 90; // Grant 1.5s post-escape invulnerability
  }
  return;
  }
@@ -341,14 +343,11 @@
  });
 
  function updateSeabedDepth() {
- // Level 1 starts at baseline height where seabed is near bottom of canvas frame.
- // Each level compounds ocean world depth by 5%!
  worldHeight = canvas.height * Math.pow(1.05, currentLevel - 1);
  seabedY = worldHeight - 35;
  }
 
  function calculateOxygenCapacity() {
- // Fixed 12-second base tank (720 frames) + 5 seconds (+300 frames) per upgrade level
  const baseSeconds = 12;
  const upgradeBonusSeconds = player.oxygenUpgradeLevel * 5;
  maxOxygen = (baseSeconds + upgradeBonusSeconds) * 60;
@@ -359,6 +358,7 @@
  chests = [];
  ambientFish = [];
  bubbles = [];
+ inkParticles = [];
 
  const coralCount = Math.floor(canvas.width / 35);
  for (let i = 0; i < coralCount; i++) {
@@ -491,7 +491,6 @@
 
  function updateUI() {
  document.getElementById('level-display').innerText = currentLevel;
- // Calculate current diver depth in meters scaling with level ocean height
  const maxSeabedMeters = 50 * Math.pow(1.05, currentLevel - 1);
  const currentDepthMeters = Math.max(0, ((player.y - surfaceY) / Math.max(1, seabedY - surfaceY)) * maxSeabedMeters).toFixed(1);
  document.getElementById('depth-display').innerText = `${currentDepthMeters}m`;
@@ -510,6 +509,22 @@
  vy: Math.sin(angle) * spd,
  life: 25,
  color: Math.random() < 0.5 ? '#00ffff' : '#ffff00'
+ });
+ }
+ }
+
+ function triggerInkSplash(x, y) {
+ for (let i = 0; i < 12; i++) {
+ const angle = Math.random() * Math.PI * 2;
+ const spd = 1.5 + Math.random() * 3.5;
+ inkParticles.push({
+ x: x,
+ y: y,
+ vx: Math.cos(angle) * spd,
+ vy: Math.sin(angle) * spd,
+ radius: 4 + Math.random() * 6,
+ life: 30,
+ color: Math.random() < 0.5 ? '#4b0082' : '#110022'
  });
  }
  }
@@ -619,13 +634,15 @@
  player.x = grabbingOctopus.x;
  player.y = grabbingOctopus.y + 10;
  }
- currentOxygen = Math.max(0, currentOxygen - 1.5);
+ // Rebalanced oxygen drain while trapped (reduced from 1.5 to 0.4 per frame)
+ currentOxygen = Math.max(0, currentOxygen - 0.4);
 
  if (grabbedByOctopusTimer <= 0) {
  grabbingOctopus = null;
  alertMessage = "FREED FROM OCTOPUS!";
  alertColor = "#00f0ff";
  alertTimer = 60;
+ player.invulnerableTimer = 90; // Grant 1.5s invulnerability
  }
  } else {
  // Standard WASD Movement
@@ -668,7 +685,6 @@
  // Vertical Camera Follow
  cameraY = Math.max(0, Math.min(worldHeight - canvas.height, player.y - canvas.height / 2));
 
- // Update real-time depth meter
  updateUI();
 
  // Ambient Bubbles
@@ -684,6 +700,16 @@
  p.y += p.vy;
  p.life--;
  if (p.life <= 0) zapParticles.splice(i, 1);
+ }
+
+ // Ink Particles
+ for (let i = inkParticles.length - 1; i >= 0; i--) {
+ const ink = inkParticles[i];
+ ink.x += ink.vx;
+ ink.y += ink.vy;
+ ink.radius += 0.2;
+ ink.life--;
+ if (ink.life <= 0) inkParticles.splice(i, 1);
  }
 
  // Ambient Swimming Fish
@@ -705,9 +731,9 @@
  currentOxygen = Math.min(maxOxygen, currentOxygen + 6);
  }
 
- // --- 3. ENEMY MOVEMENT WITH FRAME BOUNCING ---
+ // --- 3. ENEMY MOVEMENT & COLLISION IMMUNITY WHILE TRAPPED ---
 
- // A. JELLYFISH
+ // A. JELLYFISH (Disabled when trapped by Octopus or invulnerable)
  jellyfishList.forEach(jelly => {
  jelly.x += jelly.vx;
  jelly.phase += 0.08;
@@ -721,7 +747,7 @@
  jelly.vx *= -1;
  }
 
- if (player.invulnerableTimer <= 0) {
+ if (player.invulnerableTimer <= 0 && grabbedByOctopusTimer <= 0) {
  const dist = Math.hypot(player.x - jelly.x, player.y - jelly.y);
  if (dist < jelly.radius + 12) {
  triggerZapEffect(player.x, player.y);
@@ -751,17 +777,17 @@
  if (grabbedByOctopusTimer <= 0 && player.invulnerableTimer <= 0) {
  const dist = Math.hypot(player.x - octo.x, player.y - octo.y);
  if (dist < octo.radius + 12) {
- grabbedByOctopusTimer = 180;
- escapePressesRemaining = 15;
+ grabbedByOctopusTimer = 100; // Reduced trap hold time (~1.6s)
+ escapePressesRemaining = 8; // Reduced required presses to 8
  grabbingOctopus = octo;
- alertMessage = "🐙 OCTOPUS GRAB! SPAM [ENTER] 15x TO ESCAPE! 🐙";
+ alertMessage = "🐙 OCTOPUS GRAB! SPAM [ENTER] 8x TO ESCAPE! 🐙";
  alertColor = "#ff6600";
  alertTimer = 180;
  }
  }
  });
 
- // C. SHARK
+ // C. SHARK (Disabled when trapped by Octopus)
  sharkList.forEach(shark => {
  shark.x += shark.vx;
  shark.tailAngle += 0.15;
@@ -774,12 +800,14 @@
  shark.vx *= -1;
  }
 
+ if (grabbedByOctopusTimer <= 0 && player.invulnerableTimer <= 0) {
  const dist = Math.hypot(player.x - shark.x, player.y - shark.y);
  if (dist < shark.radius + 10) {
  gameState = 'gameover';
  alertMessage = "🦈 EATEN BY SHARK! GAME OVER! 🦈";
  alertColor = "#ff0000";
  alertTimer = 9999;
+ }
  }
  });
 
@@ -841,14 +869,13 @@
  /* --- CARTOON DRAWING FUNCTIONS --- */
 
  function drawBackground() {
- // Multi-stage dark gradient spanning total ocean depth
  const oceanGrad = ctx.createLinearGradient(0, 0, 0, Math.max(canvas.height, worldHeight));
- oceanGrad.addColorStop(0, '#0077be'); // Bright sunlit surface
- oceanGrad.addColorStop(0.12, '#004f8b'); // Mid ocean
- oceanGrad.addColorStop(0.30, '#002654'); // Deep navy
- oceanGrad.addColorStop(0.55, '#001026'); // Midnight ocean
- oceanGrad.addColorStop(0.80, '#000511'); // Twilight abyssal zone
- oceanGrad.addColorStop(1.0, '#000205'); // Pitch black deep trench
+ oceanGrad.addColorStop(0, '#0077be');
+ oceanGrad.addColorStop(0.12, '#004f8b');
+ oceanGrad.addColorStop(0.30, '#002654');
+ oceanGrad.addColorStop(0.55, '#001026');
+ oceanGrad.addColorStop(0.80, '#000511');
+ oceanGrad.addColorStop(1.0, '#000205');
 
  ctx.fillStyle = oceanGrad;
  ctx.fillRect(0, 0, canvas.width, Math.max(canvas.height, worldHeight));
@@ -1131,7 +1158,6 @@
  ctx.lineWidth = 2;
  ctx.strokeRect(chest.x - 12, chest.y - 14, 24, 8);
  } else {
- // High-visibility chest styling for deep waters
  ctx.fillStyle = '#ff9900';
  ctx.strokeStyle = '#ffff00';
  ctx.lineWidth = 3;
@@ -1322,9 +1348,24 @@
  const shoulderY = neckY + 4;
 
  ctx.translate(x, y);
+
+ // Draw Ink Shield Cloud when trapped by Octopus
  if (grabbedByOctopusTimer > 0) {
- ctx.rotate(Math.sin(grabbedByOctopusTimer * 0.2) * 0.4);
+ ctx.rotate(Math.sin(grabbedByOctopusTimer * 0.2) * 0.3);
+ 
+ ctx.save();
+ ctx.fillStyle = 'rgba(20, 0, 40, 0.75)';
+ ctx.strokeStyle = '#a855f7';
+ ctx.lineWidth = 3;
+ ctx.shadowColor = '#a855f7';
+ ctx.shadowBlur = 15;
+ ctx.beginPath();
+ ctx.arc(0, -8, 38, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.stroke();
+ ctx.restore();
  }
+
  ctx.translate(-x, -y);
 
  // Head & Diving Mask
@@ -1379,9 +1420,11 @@
  // Spam ENTER Escape Prompt overlay when trapped
  if (grabbedByOctopusTimer > 0) {
  ctx.fillStyle = '#ff0055';
- ctx.font = '900 14px Comic Sans MS, sans-serif';
+ ctx.font = '900 15px Comic Sans MS, sans-serif';
  ctx.textAlign = 'center';
- ctx.fillText(`🚨 SPAM ENTER TO ESCAPE! (${escapePressesRemaining} LEFT) 🚨`, x, y - 40);
+ ctx.shadowColor = '#000000';
+ ctx.shadowBlur = 6;
+ ctx.fillText(`🚨 SPAM ENTER TO ESCAPE! (${escapePressesRemaining} LEFT) 🚨`, x, y - 55);
  }
 
  ctx.restore();
@@ -1393,6 +1436,17 @@
  ctx.fillStyle = p.color;
  ctx.beginPath();
  ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.restore();
+ });
+ }
+
+ function drawInkParticles() {
+ inkParticles.forEach(ink => {
+ ctx.save();
+ ctx.fillStyle = ink.color;
+ ctx.beginPath();
+ ctx.arc(ink.x, ink.y, ink.radius, 0, Math.PI * 2);
  ctx.fill();
  ctx.restore();
  });
@@ -1497,7 +1551,7 @@
  ctx.font = '900 15px Comic Sans MS, sans-serif';
  ctx.fillText('"Welcome Diver! Collect treasure from chests at the bottom', centerX, centerY + 5);
  ctx.fillText('of the ocean, then swim back up to our Motorboat!', centerX, centerY + 30);
- ctx.fillText('Avoid sea creatures! If trapped by an Octopus, SPAM [ENTER] 15x!"', centerX, centerY + 55);
+ ctx.fillText('Avoid sea creatures! If trapped by an Octopus, SPAM [ENTER] 8x!"', centerX, centerY + 55);
 
  ctx.fillStyle = '#ff0055';
  ctx.fillRect(centerX - 160, centerY + 80, 320, 42);
@@ -1658,6 +1712,7 @@
  drawSharks();
  drawBubbles();
  drawZapParticles();
+ drawInkParticles();
  drawStickman(player.x, player.y, player.facing, player.walkFrame);
 
  ctx.restore();

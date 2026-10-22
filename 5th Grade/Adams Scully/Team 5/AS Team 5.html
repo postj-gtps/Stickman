@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stickman Engine - Dragon's Castle & Bubble Blower</title>
+  <title>Stickman Engine - Dragon's Castle & The Diamond Quest</title>
   <style>
     * {
       box-sizing: border-box;
@@ -14,7 +14,7 @@
     }
 
     body {
-      background-color: #0f1923;
+      background-color: #0d1b2a;
       color: #ffffff;
       display: flex;
       flex-direction: column;
@@ -22,10 +22,10 @@
       justify-content: flex-start;
       height: 100vh;
       overflow: hidden;
-      padding: 12px;
+      padding: 10px;
     }
 
-    /* Header Section */
+    /* Top Header Bar */
     #header {
       display: flex;
       justify-content: space-between;
@@ -34,72 +34,83 @@
       max-width: 1280px;
       margin-bottom: 6px;
       padding-bottom: 6px;
-      border-bottom: 3px solid #ff4757;
+      border-bottom: 4px solid #ff4757;
     }
 
     .title-group {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     h1 {
-      font-size: 20px;
+      font-size: 22px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
       font-weight: 900;
       color: #fffa65;
-      text-shadow: 2px 2px 0px #000;
+      text-shadow: 3px 3px 0px #000;
     }
 
     .hud-badge {
       background: #ff4757;
       color: #ffffff;
-      padding: 4px 12px;
+      padding: 5px 12px;
       border-radius: 16px;
       font-size: 13px;
-      font-weight: 800;
-      box-shadow: 0 3px 0px #b21f2d;
+      font-weight: 900;
+      box-shadow: 0 4px 0px #b21f2d, 0 4px 8px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
+      text-shadow: 1px 1px 0 #000;
     }
 
     .gold-badge {
       background: #ffa502;
-      box-shadow: 0 3px 0px #cc8e00;
+      box-shadow: 0 4px 0px #cc8e00;
     }
 
     .level-badge {
       background: #00d2d3;
-      box-shadow: 0 3px 0px #01a3a4;
+      box-shadow: 0 4px 0px #01a3a4;
       color: #000000;
+      text-shadow: none;
     }
 
     .shield-badge {
       background: #ff9ff3;
-      box-shadow: 0 3px 0px #f368e0;
-      color: #222;
+      box-shadow: 0 4px 0px #f368e0;
+      color: #111;
+      text-shadow: none;
+    }
+
+    .bubble-badge {
+      background: #54a0ff;
+      box-shadow: 0 4px 0px #2e86de;
+      color: #ffffff;
     }
 
     .btn-reset {
       background: #2ed573;
       color: #ffffff;
-      border: none;
-      border-radius: 6px;
+      border: 2px solid #000;
+      border-radius: 8px;
       padding: 8px 18px;
-      font-size: 13px;
-      font-weight: 800;
+      font-size: 14px;
+      font-weight: 900;
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 1px;
-      box-shadow: 0 4px 0px #1e90ff;
+      box-shadow: 0 5px 0px #1e90ff;
       transition: all 0.1s ease-in-out;
+      text-shadow: 1px 1px 0 #000;
     }
 
     .btn-reset:hover {
       background: #1e90ff;
-      transform: translateY(-1px);
+      transform: translateY(-2px);
     }
 
     .btn-reset:active {
@@ -107,7 +118,7 @@
       box-shadow: 0 1px 0px #1e90ff;
     }
 
-    /* Radar Distance HUD */
+    /* Radar Distance HUD Bar */
     #hud {
       display: flex;
       align-items: center;
@@ -115,27 +126,28 @@
       width: 100%;
       max-width: 1280px;
       margin-bottom: 6px;
-      background: #2f3542;
+      background: #1e272e;
       padding: 8px 16px;
-      border-radius: 8px;
-      border: 2px solid #57606f;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      border: 3px solid #485460;
+      box-shadow: 0 5px 12px rgba(0, 0, 0, 0.4);
     }
 
     .meter-label {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 900;
       color: #70a1ff;
       white-space: nowrap;
       letter-spacing: 1px;
+      text-shadow: 1px 1px 0 #000;
     }
 
     .meter-container {
       flex-grow: 1;
-      height: 20px;
-      background-color: #57606f;
-      border: 2px solid #2f3542;
-      border-radius: 10px;
+      height: 22px;
+      background-color: #485460;
+      border: 2px solid #1e272e;
+      border-radius: 11px;
       overflow: hidden;
       position: relative;
     }
@@ -143,20 +155,21 @@
     .meter-bar {
       height: 100%;
       width: 0%;
-      background: linear-gradient(90deg, #ff4757, #ffa502, #eccc68, #2ed573);
+      background: linear-gradient(90deg, #ff4757, #ffa502, #fffa65, #2ed573);
       transition: width 0.08s ease-out;
-      border-radius: 10px;
+      border-radius: 11px;
     }
 
     .meter-text {
-      font-size: 13px;
-      font-weight: 800;
+      font-size: 14px;
+      font-weight: 900;
       color: #ffffff;
-      min-width: 250px;
+      min-width: 280px;
       text-align: right;
+      text-shadow: 1px 1px 0 #000;
     }
 
-    /* Main Canvas Wrapper */
+    /* Canvas Wrapper */
     #canvas-wrapper {
       position: relative;
       width: 100%;
@@ -169,68 +182,71 @@
 
     canvas {
       background-color: #70a1ff;
-      border: 4px solid #2f3542;
-      border-radius: 10px;
+      border: 4px solid #1e272e;
+      border-radius: 12px;
       display: block;
       width: 100%;
       height: 100%;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }
 
     .instructions {
       margin-top: 6px;
       font-size: 13px;
-      font-weight: 800;
+      font-weight: 900;
       color: #70a1ff;
       text-align: center;
+      text-shadow: 1px 1px 0 #000;
     }
 
-    /* Game Over & Victory Overlay */
+    /* Overlay Screen */
     #overlay {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(15, 25, 35, 0.88);
+      background: rgba(15, 23, 42, 0.92);
       display: none;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       z-index: 10;
-      border-radius: 8px;
+      border-radius: 10px;
     }
 
     #overlay h2 {
-      font-size: 48px;
+      font-size: 56px;
       font-weight: 900;
-      text-shadow: 4px 4px 0 #000;
+      text-shadow: 5px 5px 0 #000;
       margin-bottom: 8px;
     }
 
     #overlay p {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 800;
       color: #fffa65;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
       text-shadow: 2px 2px 0 #000;
+      text-align: center;
+      padding: 0 20px;
     }
 
     #overlay button {
       background: #fffa65;
       color: #000;
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 900;
-      padding: 12px 32px;
-      border: none;
-      border-radius: 10px;
+      padding: 14px 36px;
+      border: 3px solid #000;
+      border-radius: 12px;
       cursor: pointer;
-      box-shadow: 0 5px 0 #ffa502;
+      box-shadow: 0 6px 0 #ffa502;
       transition: transform 0.1s;
     }
 
     #overlay button:hover {
-      transform: scale(1.05);
+      transform: scale(1.06);
     }
   </style>
 </head>
@@ -243,7 +259,8 @@
       <div id="levelBadge" class="hud-badge level-badge">Level 1</div>
       <div id="livesBadge" class="hud-badge">Lives: ❤️❤️❤️</div>
       <div id="scoreBadge" class="hud-badge gold-badge">Gold: 0 / 10</div>
-      <div id="shieldBadge" class="hud-badge shield-badge">[E] Shield: OFF</div>
+      <div id="shieldBadge" class="hud-badge shield-badge">[E] Shield: Ready</div>
+      <div id="bubbleBadge" class="hud-badge bubble-badge">[B] Bubbles: 10/10</div>
     </div>
     <button class="btn-reset" onclick="resetSimulation()">Reset Game</button>
   </div>
@@ -261,24 +278,24 @@
   <div id="canvas-wrapper">
     <canvas id="simCanvas"></canvas>
 
-    <!-- Victory / Defeat Overlay Screen -->
+    <!-- Overlay Screen -->
     <div id="overlay">
-      <h2 id="overlayTitle">YOU WIN!</h2>
-      <p id="overlaySub">WOOHOO! YOU CLEARED THE LEVEL!</p>
+      <h2 id="overlayTitle">WOOHOO! YOU WIN!</h2>
+      <p id="overlaySub">You claimed the legendary Castle Diamond!</p>
       <button id="overlayBtn" onclick="nextLevelOrReset()">Next Level</button>
     </div>
   </div>
 
   <div class="instructions">
-    [WASD] Movement | [SPACEBAR] Dig / Open Chest | [E] Inflated Star Shield | [B] Bubble Blower
+    [WASD] Exclusive Movement | [SPACEBAR] Dig / Open Chest | [E] Star Shield | [B] Bubble Blower
   </div>
 
   <script>
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
 
-    // WORLD MAP CONFIGURATION
-    const WORLD_WIDTH = 4500;
+    // WORLD CONFIGURATION
+    const WORLD_WIDTH = 4800;
 
     // GAME LEVEL & PROGRESSION STATE
     let currentLevel = 1;
@@ -297,7 +314,7 @@
     const player = {
       x: 250,
       y: 0,
-      speed: 5.8,
+      speed: 6.0,
       facing: 1, // 1 = Right, -1 = Left
       walkFrame: 0,
       isDigging: false,
@@ -310,10 +327,19 @@
       knockbackVx: 0,
       knockbackVy: 0,
       isDead: false,
-      shieldActive: false
+      
+      // SHIELD MECHANICS (10s active duration, 20s cooldown)
+      shieldActive: false,
+      shieldActiveTimer: 0,   // frames left of active shield
+      shieldCooldownTimer: 0, // frames left of cooldown
+      
+      // BUBBLE MECHANICS (10 ammo, 10s cooldown refill)
+      bubbleAmmo: 10,
+      maxBubbleAmmo: 10,
+      bubbleCooldownTimer: 0 // frames left of 10s refill cooldown
     };
 
-    // REAL HIDDEN TREASURE STATE (Marked with Green Checkmark when un-earthed)
+    // REAL HIDDEN TREASURE STATE
     const treasure = {
       x: 0,
       y: 0,
@@ -322,7 +348,7 @@
       totalCoins: 15
     };
 
-    // FAKE CHESTS (Start Underground with X when dug up, then chase player)
+    // FAKE CHESTS (Start underground with X, dug up to chase player)
     let fakeTreasures = [];
 
     // DRAGON ENEMY
@@ -339,6 +365,14 @@
 
     // DIAMOND ARMOR CASTLE GUARDS
     let diamondGuards = [];
+
+    // CASTLE & DIAMOND TREASURE
+    const castle = {
+      gateX: WORLD_WIDTH - 650,
+      interiorX: WORLD_WIDTH - 300,
+      isOpen: false,
+      diamondCollected: false
+    };
 
     // EVIL SOCCER GOAL POSTS
     let soccerGoals = [];
@@ -374,7 +408,7 @@
 
     // KEYBOARD INPUT - WASD ONLY FOR MOVEMENT (Arrow Keys Explicitly Prevented)
     window.addEventListener('keydown', (e) => {
-      // Prevent default page scroll
+      // Prevent page scrolling on game controls & ignore arrow keys
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyE', 'KeyB'].includes(e.code)) {
         e.preventDefault();
       }
@@ -389,13 +423,12 @@
         handleActionKey();
       }
 
-      // Shield Toggle [E]
+      // Shield Toggle [E] (10s Duration, 20s Cooldown)
       if (e.code === 'KeyE' && !player.isDead) {
-        player.shieldActive = !player.shieldActive;
-        updateUI();
+        activateShield();
       }
 
-      // Bubble Blower [B]
+      // Bubble Blower [B] (10 Ammo, 10s Cooldown)
       if (e.code === 'KeyB' && !player.isDead) {
         shootBubble();
       }
@@ -419,16 +452,28 @@
       player.isDigging = false;
       player.digTimer = 0;
       player.score = 0;
-      player.goldNeeded = 10 + (currentLevel - 1) * 10; // Gold requirement increases each level
+      player.goldNeeded = 10 + (currentLevel - 1) * 10;
       player.lives = 3;
       player.invulnerableTimer = 0;
       player.knockbackVx = 0;
       player.knockbackVy = 0;
       player.isDead = false;
+
+      // Reset Shield State
       player.shieldActive = false;
+      player.shieldActiveTimer = 0;
+      player.shieldCooldownTimer = 0;
+
+      // Reset Bubble Blower State
+      player.bubbleAmmo = 10;
+      player.bubbleCooldownTimer = 0;
+
+      // Reset Castle & Diamond State
+      castle.isOpen = false;
+      castle.diamondCollected = false;
 
       // Real Treasure Location
-      treasure.x = 1800 + Math.random() * (WORLD_WIDTH - 2800);
+      treasure.x = 1400 + Math.random() * (WORLD_WIDTH - 2500);
       treasure.y = groundY + Math.random() * (canvas.height * 0.14);
       treasure.state = 'hidden';
       treasure.totalCoins = player.goldNeeded + 5;
@@ -445,9 +490,9 @@
       fakeTreasures = [];
       const fakeCount = 4 + currentLevel;
       for (let i = 0; i < fakeCount; i++) {
-        let fakeX = 600 + Math.random() * (WORLD_WIDTH - 1200);
+        let fakeX = 600 + Math.random() * (WORLD_WIDTH - 1600);
         while (Math.abs(fakeX - treasure.x) < 300) {
-          fakeX = 600 + Math.random() * (WORLD_WIDTH - 1200);
+          fakeX = 600 + Math.random() * (WORLD_WIDTH - 1600);
         }
         fakeTreasures.push({
           x: fakeX,
@@ -460,17 +505,16 @@
         });
       }
 
-      // Diamond Armor Guards at Castle Gates
-      const castleGatesX = WORLD_WIDTH - 500;
+      // Diamond Armor Guards Standing Right in Front of Castle Gates
       diamondGuards = [
-        { x: castleGatesX - 60, y: groundY - 10, facing: -1, dialogueTimer: 0 },
-        { x: castleGatesX + 40, y: groundY - 10, facing: -1, dialogueTimer: 0 }
+        { x: castle.gateX - 50, y: groundY - 10, facing: -1 },
+        { x: castle.gateX + 50, y: groundY - 10, facing: -1 }
       ];
 
       // Evil Soccer Goal Posts
       soccerGoals = [
         { x: 900, y: groundY + 10, width: 70, height: 55, mouthOpen: 0, trappedInBubble: false, bubbleY: 0 },
-        { x: 1700, y: groundY + 10, width: 70, height: 55, mouthOpen: 0, trappedInBubble: false, bubbleY: 0 },
+        { x: 1800, y: groundY + 10, width: 70, height: 55, mouthOpen: 0, trappedInBubble: false, bubbleY: 0 },
         { x: 2800, y: groundY + 10, width: 70, height: 55, mouthOpen: 0, trappedInBubble: false, bubbleY: 0 }
       ];
 
@@ -482,9 +526,9 @@
       rainDrops = [];
       floatingTexts = [];
 
-      // Clouds
+      // Scenery Generation
       clouds = [];
-      for (let i = 0; i < 26; i++) {
+      for (let i = 0; i < 28; i++) {
         clouds.push({
           x: Math.random() * WORLD_WIDTH,
           y: 20 + Math.random() * (canvas.height * 0.22),
@@ -493,9 +537,8 @@
         });
       }
 
-      // Background Trees
       backgroundTrees = [];
-      for (let x = 0; x < WORLD_WIDTH; x += 70 + Math.random() * 40) {
+      for (let x = 0; x < WORLD_WIDTH - 1000; x += 70 + Math.random() * 40) {
         backgroundTrees.push({
           x: x,
           y: canvas.height * 0.58,
@@ -503,9 +546,8 @@
         });
       }
 
-      // World Trees
       worldTrees = [];
-      for (let x = 80; x < WORLD_WIDTH - 600; x += 110 + Math.random() * 70) {
+      for (let x = 80; x < WORLD_WIDTH - 1100; x += 110 + Math.random() * 70) {
         worldTrees.push({
           x: x,
           y: groundY - 10 + Math.random() * (canvas.height * 0.18),
@@ -513,9 +555,8 @@
         });
       }
 
-      // Foreground Trees
       foregroundTrees = [];
-      for (let x = 150; x < WORLD_WIDTH - 700; x += 320 + Math.random() * 220) {
+      for (let x = 150; x < WORLD_WIDTH - 1200; x += 320 + Math.random() * 220) {
         foregroundTrees.push({
           x: x,
           y: canvas.height * 0.88,
@@ -523,7 +564,6 @@
         });
       }
 
-      // Wildlife
       birds = [];
       for (let i = 0; i < 10; i++) {
         birds.push({
@@ -538,7 +578,7 @@
       squirrels = [];
       for (let i = 0; i < 12; i++) {
         squirrels.push({
-          x: 200 + Math.random() * (WORLD_WIDTH - 800),
+          x: 200 + Math.random() * (WORLD_WIDTH - 1200),
           y: groundY + Math.random() * (canvas.height * 0.15),
           vx: (Math.random() - 0.5) * 1.6,
           stateTimer: Math.random() * 100,
@@ -549,16 +589,47 @@
       updateUI();
     }
 
+    function activateShield() {
+      if (player.shieldActive) return;
+      if (player.shieldCooldownTimer > 0) {
+        const secs = Math.ceil(player.shieldCooldownTimer / 60);
+        addFloatingText(`⏳ Shield Cooldown: ${secs}s`, player.x, player.y - 25, '#fffa65');
+        return;
+      }
+
+      // Activate Shield for 10 seconds (600 frames at 60fps)
+      player.shieldActive = true;
+      player.shieldActiveTimer = 600; 
+      addFloatingText("🛡️ STAR SHIELD ACTIVATED! (10s)", player.x, player.y - 30, '#ff9ff3');
+      spawnSparkles(player.x, player.y, '#ff9ff3', 20);
+      updateUI();
+    }
+
     function shootBubble() {
+      if (player.bubbleAmmo <= 0) {
+        const secs = Math.ceil(player.bubbleCooldownTimer / 60);
+        addFloatingText(`⏳ Refilling Bubbles: ${secs}s`, player.x, player.y - 25, '#fffa65');
+        return;
+      }
+
+      player.bubbleAmmo--;
       playerBubbles.push({
         x: player.x + player.facing * 18,
         y: player.y - 10,
-        vx: player.facing * 8,
+        vx: player.facing * 8.5,
         vy: (Math.random() - 0.5) * 1.5,
-        radius: 14,
+        radius: 15,
         life: 120
       });
       addFloatingText("🫧 BUBBLE!", player.x, player.y - 25, '#70a1ff');
+
+      // Trigger 10s cooldown refill when ammo reaches 0
+      if (player.bubbleAmmo === 0) {
+        player.bubbleCooldownTimer = 600; // 10 seconds (600 frames)
+        addFloatingText("⚡ BUBBLE REFILL STARTED (10s)", player.x, player.y - 45, '#ffa502');
+      }
+
+      updateUI();
     }
 
     function handleActionKey() {
@@ -633,16 +704,16 @@
       player.isDead = true;
       // Rain animation starts
       rainDrops = [];
-      for (let i = 0; i < 150; i++) {
+      for (let i = 0; i < 160; i++) {
         rainDrops.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          speed: 12 + Math.random() * 8,
-          length: 15 + Math.random() * 10
+          speed: 13 + Math.random() * 8,
+          length: 16 + Math.random() * 10
         });
       }
 
-      document.getElementById('overlayTitle').textContent = "YOU LOOSE";
+      document.getElementById('overlayTitle').textContent = "YOU LOSE";
       document.getElementById('overlayTitle').style.color = "#ff4757";
       document.getElementById('overlaySub').textContent = "🌧️ Oh no! Rain falls as you ran out of lives!";
       document.getElementById('overlayBtn').textContent = "Try Again";
@@ -654,13 +725,13 @@
 
       // Confetti burst
       confetti = [];
-      for (let i = 0; i < 180; i++) {
+      for (let i = 0; i < 200; i++) {
         confetti.push({
           x: Math.random() * canvas.width,
           y: -20 - Math.random() * 200,
           vx: (Math.random() - 0.5) * 6,
           vy: 3 + Math.random() * 5,
-          color: ['#ff4757', '#ffa502', '#fffa65', '#2ed573', '#1e90ff', '#ff9ff3'][Math.floor(Math.random() * 6)],
+          color: ['#ff4757', '#ffa502', '#fffa65', '#2ed573', '#1e90ff', '#ff9ff3', '#00d2d3'][Math.floor(Math.random() * 7)],
           size: 6 + Math.random() * 6,
           rotation: Math.random() * Math.PI * 2
         });
@@ -668,7 +739,7 @@
 
       document.getElementById('overlayTitle').textContent = "WOOHOO! YOU WIN!";
       document.getElementById('overlayTitle').style.color = "#2ed573";
-      document.getElementById('overlaySub').textContent = `🎉 Level ${currentLevel} Complete! You entered the Castle!`;
+      document.getElementById('overlaySub').textContent = `🎉 Level ${currentLevel} Complete! You entered the Castle & got the Diamond!`;
       document.getElementById('overlayBtn').textContent = "Next Level";
       document.getElementById('overlay').style.display = 'flex';
     }
@@ -722,7 +793,34 @@
     function updatePhysics() {
       if (camera.shake > 0) camera.shake *= 0.88;
 
-      // Handle Knockback
+      // Update Shield Timers
+      if (player.shieldActive) {
+        player.shieldActiveTimer--;
+        if (player.shieldActiveTimer <= 0) {
+          player.shieldActive = false;
+          player.shieldCooldownTimer = 1200; // 20 seconds cooldown (1200 frames)
+          addFloatingText("🛡️ Shield Expired! Cooldown 20s", player.x, player.y - 30, '#ffa502');
+          updateUI();
+        }
+      } else if (player.shieldCooldownTimer > 0) {
+        player.shieldCooldownTimer--;
+        if (player.shieldCooldownTimer <= 0) {
+          addFloatingText("🛡️ Shield Ready! Press [E]", player.x, player.y - 30, '#ff9ff3');
+          updateUI();
+        }
+      }
+
+      // Update Bubble Cooldown Refill Timer
+      if (player.bubbleCooldownTimer > 0) {
+        player.bubbleCooldownTimer--;
+        if (player.bubbleCooldownTimer <= 0) {
+          player.bubbleAmmo = player.maxBubbleAmmo;
+          addFloatingText("🫧 Bubbles Refilled! (10/10)", player.x, player.y - 30, '#54a0ff');
+          updateUI();
+        }
+      }
+
+      // Handle Knockback Forces
       if (Math.abs(player.knockbackVx) > 0.2 || Math.abs(player.knockbackVy) > 0.2) {
         player.x += player.knockbackVx;
         player.y += player.knockbackVy;
@@ -753,7 +851,7 @@
         }
       }
 
-      // World Constraints
+      // World Boundary Constraints
       const minPlayableY = canvas.height * 0.52;
       const maxPlayableY = canvas.height * 0.92;
       player.x = Math.max(20, Math.min(WORLD_WIDTH - 20, player.x));
@@ -766,7 +864,7 @@
         if (player.digTimer === 0) player.isDigging = false;
       }
 
-      // Smooth Camera Follow
+      // Camera Follow Smooth Movement
       const targetCameraX = player.x - canvas.width / 2;
       camera.x += (targetCameraX - camera.x) * 0.1;
       camera.x = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, camera.x));
@@ -774,18 +872,30 @@
       // --- DIAMOND GUARDS & CASTLE GATE INTERACTION ---
       diamondGuards.forEach(guard => {
         const distToGuard = Math.abs(player.x - guard.x);
-        if (distToGuard < 70 && !isLevelCleared) {
+        if (distToGuard < 60 && !castle.isOpen) {
           if (player.score >= player.goldNeeded) {
-            // Player has enough gold! Pass through into castle!
-            addFloatingText("💎 GUARD: Welcome! Enter the Castle!", guard.x, guard.y - 40, '#00d2d3');
-            triggerLevelClear();
+            // Player paid gold requirement! Open Castle Gates!
+            castle.isOpen = true;
+            addFloatingText("💎 GUARD: Gold accepted! Castle Gates Open! Enter to get the Diamond!", guard.x, guard.y - 40, '#00d2d3');
+            spawnSparkles(castle.gateX, guard.y, '#00d2d3', 30);
           } else {
-            // Not enough gold! Guard stops you!
-            player.x = guard.x - 75; // Push player back
-            addFloatingText(`💎 GUARD: Halt! You need ${player.goldNeeded} Gold Coins!`, guard.x, guard.y - 40, '#ff4757');
+            // Not enough gold! Guard pushes player back!
+            player.x = guard.x - 75;
+            addFloatingText(`💎 GUARD: Halt! Collect ${player.goldNeeded} Gold Coins first!`, guard.x, guard.y - 40, '#ff4757');
           }
         }
       });
+
+      // --- ENTER CASTLE GATES & CLAIM DIAMOND TO WIN ---
+      if (castle.isOpen && !castle.diamondCollected) {
+        // Check if player enters inside the open Castle Gate
+        if (player.x >= castle.gateX - 30 && player.x <= castle.interiorX + 50) {
+          castle.diamondCollected = true;
+          spawnSparkles(player.x, player.y, '#00d2d3', 50);
+          addFloatingText("💎 YOU GOT THE CASTLE DIAMOND!", player.x, player.y - 40, '#00d2d3');
+          triggerLevelClear();
+        }
+      }
 
       // --- BUBBLE PROJECTILES PHYSICS & ENEMY CAPTURE ---
       for (let i = playerBubbles.length - 1; i >= 0; i--) {
@@ -905,7 +1015,7 @@
       // --- EVIL SOCCER GOALS PHYSICS ---
       soccerGoals.forEach(goal => {
         if (goal.trappedInBubble) {
-          goal.y -= 3.5; // Float goal post up away
+          goal.y -= 3.5;
         } else {
           const left = goal.x - goal.width / 2;
           const right = goal.x + goal.width / 2;
@@ -944,7 +1054,7 @@
         }
         s.x += s.vx;
         s.tailPhase += 0.12;
-        s.x = Math.max(40, Math.min(WORLD_WIDTH - 800, s.x));
+        s.x = Math.max(40, Math.min(WORLD_WIDTH - 1200, s.x));
       });
 
       // Update Gold Coins
@@ -1012,14 +1122,39 @@
 
     function updateUI() {
       document.getElementById('levelBadge').textContent = `Level ${currentLevel}`;
+      
       let hearts = '';
       for (let i = 0; i < player.maxLives; i++) {
         hearts += i < player.lives ? '❤️' : '🖤';
       }
       document.getElementById('livesBadge').textContent = `Lives: ${hearts}`;
       document.getElementById('scoreBadge').textContent = `Gold: ${player.score} / ${player.goldNeeded}`;
-      document.getElementById('shieldBadge').textContent = player.shieldActive ? "[E] Shield: ON 🛡️" : "[E] Shield: OFF";
-      document.getElementById('shieldBadge').style.background = player.shieldActive ? "#2ed573" : "#ff9ff3";
+      
+      // Update Shield UI Badge
+      const shieldBadge = document.getElementById('shieldBadge');
+      if (player.shieldActive) {
+        const secs = Math.ceil(player.shieldActiveTimer / 60);
+        shieldBadge.textContent = `[E] Shield: ACTIVE (${secs}s) 🛡️`;
+        shieldBadge.style.background = "#2ed573";
+      } else if (player.shieldCooldownTimer > 0) {
+        const secs = Math.ceil(player.shieldCooldownTimer / 60);
+        shieldBadge.textContent = `[E] Shield: CD (${secs}s)`;
+        shieldBadge.style.background = "#ffa502";
+      } else {
+        shieldBadge.textContent = "[E] Shield: Ready";
+        shieldBadge.style.background = "#ff9ff3";
+      }
+
+      // Update Bubble UI Badge
+      const bubbleBadge = document.getElementById('bubbleBadge');
+      if (player.bubbleCooldownTimer > 0) {
+        const secs = Math.ceil(player.bubbleCooldownTimer / 60);
+        bubbleBadge.textContent = `[B] Bubbles: Refill (${secs}s)`;
+        bubbleBadge.style.background = "#ffa502";
+      } else {
+        bubbleBadge.textContent = `[B] Bubbles: ${player.bubbleAmmo}/${player.maxBubbleAmmo}`;
+        bubbleBadge.style.background = "#54a0ff";
+      }
     }
 
     function updateHUD() {
@@ -1050,7 +1185,7 @@
         }
       } else if (treasure.state === 'opened') {
         if (player.score >= player.goldNeeded) {
-          meterText.textContent = "GO TO CASTLE GATES TO WIN LEVEL! 🏰";
+          meterText.textContent = "ENTER CASTLE GATES TO GET THE DIAMOND! 🏰";
           meterText.style.color = "#00d2d3";
         } else {
           meterText.textContent = `COLLECT GOLD! (${player.score}/${player.goldNeeded})`;
@@ -1088,44 +1223,166 @@
       });
     }
 
-    // EXPANDED CASTLE WITH ENTRANCE AT WORLD END
-    function drawCastle(parallaxFactor) {
-      const castleWorldX = WORLD_WIDTH - 450;
-      const renderX = castleWorldX - camera.x * parallaxFactor;
-      const castleY = canvas.height * 0.52;
+    // GRAND MEDIEVAL CASTLE DRAWN DIRECTLY BEHIND THE GUARDS
+    function drawCastle() {
+      const renderX = castle.gateX - camera.x;
+      const groundY = canvas.height * 0.72;
 
-      if (renderX > -400 && renderX < canvas.width + 400) {
+      if (renderX > -600 && renderX < canvas.width + 800) {
         ctx.save();
-        ctx.translate(renderX, castleY);
+        ctx.translate(renderX, groundY);
 
-        // Stone Base Wall
-        ctx.fillStyle = '#747d8c';
-        ctx.fillRect(-180, -120, 360, 120);
+        // 1. Heavy Stone Outer Castle Walls
+        ctx.fillStyle = '#57606f';
+        ctx.strokeStyle = '#2f3542';
+        ctx.lineWidth = 4;
+        ctx.fillRect(-220, -220, 800, 220);
+        ctx.strokeRect(-220, -220, 800, 220);
 
-        // Main Keep Structure
-        ctx.fillStyle = '#a4b0be';
-        ctx.fillRect(-100, -180, 200, 60);
+        // Stone Wall Texture Bricks
+        ctx.strokeStyle = '#747d8c';
+        ctx.lineWidth = 2;
+        for (let bx = -210; bx < 570; bx += 50) {
+          for (let by = -210; by < 0; by += 28) {
+            ctx.strokeRect(bx + ((Math.abs(by) / 28) % 2) * 20, by, 40, 22);
+          }
+        }
 
-        // Towers
-        ctx.fillStyle = '#747d8c';
-        ctx.fillRect(-220, -200, 70, 200);
-        ctx.fillRect(150, -200, 70, 200);
-        ctx.fillRect(-45, -240, 90, 60);
+        // 2. Left Tower
+        ctx.fillStyle = '#485460';
+        ctx.fillRect(-260, -320, 100, 320);
+        ctx.strokeRect(-260, -320, 100, 320);
 
-        // Conical Roofs
+        // Left Tower Roof & Flag
         ctx.fillStyle = '#ff4757';
-        ctx.beginPath(); ctx.moveTo(-230, -200); ctx.lineTo(-185, -270); ctx.lineTo(-140, -200); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(140, -200); ctx.lineTo(185, -270); ctx.lineTo(230, -200); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(-50, -240); ctx.lineTo(0, -310); ctx.lineTo(50, -240); ctx.fill();
-
-        // Open Castle Arch Entrance Door
-        ctx.fillStyle = '#1e272e';
         ctx.beginPath();
-        ctx.arc(0, -20, 36, Math.PI, 0);
+        ctx.moveTo(-275, -320);
+        ctx.lineTo(-210, -420);
+        ctx.lineTo(-145, -320);
+        ctx.closePath();
         ctx.fill();
-        ctx.fillRect(-36, -20, 72, 20);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ffa502';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(-210, -420); ctx.lineTo(-210, -450); ctx.stroke();
+        ctx.fillStyle = '#fffa65';
+        ctx.beginPath(); ctx.moveTo(-210, -450); ctx.lineTo(-180, -438); ctx.lineTo(-210, -426); ctx.fill();
+
+        // 3. Right Tower
+        ctx.fillStyle = '#485460';
+        ctx.fillRect(520, -320, 100, 320);
+        ctx.strokeRect(520, -320, 100, 320);
+
+        // Right Tower Roof & Flag
+        ctx.fillStyle = '#ff4757';
+        ctx.beginPath();
+        ctx.moveTo(505, -320);
+        ctx.lineTo(570, -420);
+        ctx.lineTo(635, -320);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ffa502';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(570, -420); ctx.lineTo(570, -450); ctx.stroke();
+        ctx.fillStyle = '#fffa65';
+        ctx.beginPath(); ctx.moveTo(570, -450); ctx.lineTo(600, -438); ctx.lineTo(570, -426); ctx.fill();
+
+        // 4. Central Castle Keep Arch
+        ctx.fillStyle = '#2f3542';
+        ctx.fillRect(-80, -280, 160, 60);
+        ctx.strokeRect(-80, -280, 160, 60);
+
+        // Central Roof & Flag
+        ctx.fillStyle = '#3742fa';
+        ctx.beginPath();
+        ctx.moveTo(-90, -280);
+        ctx.lineTo(0, -360);
+        ctx.lineTo(90, -280);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // 5. Grand Archway Castle Gate
+        if (castle.isOpen) {
+          // Open Entrance Hallway
+          ctx.fillStyle = '#fffa65'; // Bright glowing golden entryway
+          ctx.beginPath();
+          ctx.arc(0, -40, 55, Math.PI, 0);
+          ctx.fill();
+          ctx.fillRect(-55, -40, 110, 40);
+
+          // Red Royal Carpet leading into castle
+          ctx.fillStyle = '#ff4757';
+          ctx.fillRect(-28, -8, 350, 12);
+        } else {
+          // Closed Iron Portcullis Wooden Gate
+          ctx.fillStyle = '#1e272e';
+          ctx.beginPath();
+          ctx.arc(0, -40, 52, Math.PI, 0);
+          ctx.fill();
+          ctx.fillRect(-52, -40, 104, 40);
+
+          // Wooden Planks Texture on Gate
+          ctx.strokeStyle = '#8b5a2b';
+          ctx.lineWidth = 4;
+          for (let gx = -44; gx <= 44; gx += 14) {
+            ctx.beginPath(); ctx.moveTo(gx, -70); ctx.lineTo(gx, 0); ctx.stroke();
+          }
+
+          // Iron Arch Frame
+          ctx.strokeStyle = '#ffa502';
+          ctx.lineWidth = 6;
+          ctx.beginPath();
+          ctx.arc(0, -40, 52, Math.PI, 0);
+          ctx.stroke();
+          ctx.strokeRect(-52, -40, 104, 40);
+        }
 
         ctx.restore();
+
+        // 6. Draw Legendary Diamond inside Castle Hallway when open
+        if (castle.isOpen && !castle.diamondCollected) {
+          const diamondRenderX = castle.interiorX - camera.x;
+          const diamondY = canvas.height * 0.70;
+
+          ctx.save();
+          ctx.translate(diamondRenderX, diamondY);
+
+          // Golden Pedestal
+          ctx.fillStyle = '#ffa502';
+          ctx.fillRect(-18, -10, 36, 12);
+          ctx.fillStyle = '#fffa65';
+          ctx.fillRect(-22, 2, 44, 8);
+
+          // Sparkling Floating Diamond
+          const pulse = Math.sin(Date.now() * 0.008) * 4;
+          ctx.fillStyle = '#00d2d3';
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2.5;
+
+          ctx.beginPath();
+          ctx.moveTo(0, -38 - pulse);
+          ctx.lineTo(18, -20 - pulse);
+          ctx.lineTo(0, 2 - pulse);
+          ctx.lineTo(-18, -20 - pulse);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Diamond Shine Highlight
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.moveTo(0, -38 - pulse);
+          ctx.lineTo(8, -20 - pulse);
+          ctx.lineTo(0, -10 - pulse);
+          ctx.lineTo(-8, -20 - pulse);
+          ctx.fill();
+
+          ctx.restore();
+        }
       }
     }
 
@@ -1209,6 +1466,47 @@
 
       ctx.fillStyle = '#7bed9f';
       ctx.fillRect(0, groundY, canvas.width, 6);
+
+      // Underground Dirt Marks ("X" Marks for Hidden Chest Locations)
+      // 1. Underground "X" for Hidden Real Treasure
+      if (treasure.state === 'hidden') {
+        const rx = treasure.x - camera.x;
+        if (rx > -50 && rx < canvas.width + 50) {
+          ctx.strokeStyle = '#ff4757';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(rx - 12, treasure.y - 12); ctx.lineTo(rx + 12, treasure.y + 12);
+          ctx.moveTo(rx + 12, treasure.y - 12); ctx.lineTo(rx - 12, treasure.y + 12);
+          ctx.stroke();
+
+          // DIRT Mound
+          ctx.fillStyle = '#7f5539';
+          ctx.beginPath();
+          ctx.arc(rx, treasure.y + 14, 18, Math.PI, 0);
+          ctx.fill();
+        }
+      }
+
+      // 2. Underground "X" Marks for Hidden Fake Chests
+      fakeTreasures.forEach(fake => {
+        if (fake.state === 'hidden') {
+          const fx = fake.x - camera.x;
+          if (fx > -50 && fx < canvas.width + 50) {
+            ctx.strokeStyle = '#ff4757';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(fx - 12, fake.y - 12); ctx.lineTo(fx + 12, fake.y + 12);
+            ctx.moveTo(fx + 12, fake.y - 12); ctx.lineTo(fx - 12, fake.y + 12);
+            ctx.stroke();
+
+            // DIRT Mound
+            ctx.fillStyle = '#7f5539';
+            ctx.beginPath();
+            ctx.arc(fx, fake.y + 14, 18, Math.PI, 0);
+            ctx.fill();
+          }
+        }
+      });
     }
 
     function drawEvilSoccerGoals(parallaxFactor) {
@@ -1219,7 +1517,6 @@
           ctx.translate(renderX, goal.y);
 
           if (goal.trappedInBubble) {
-            // Drawn Trapped in Giant Soap Bubble
             ctx.fillStyle = 'rgba(112, 161, 255, 0.4)';
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 3;
@@ -1287,7 +1584,6 @@
             ctx.translate(renderX, fake.y);
 
             if (fake.state === 'trapped') {
-              // Giant Bubble Enclosure
               ctx.fillStyle = 'rgba(112, 161, 255, 0.4)';
               ctx.strokeStyle = '#ffffff';
               ctx.lineWidth = 3;
@@ -1506,8 +1802,8 @@
         ctx.save();
         ctx.translate(renderX + facing * 8, y - 8);
 
-        // Big Inflated Bubble Shield
-        ctx.fillStyle = 'rgba(255, 159, 243, 0.45)';
+        // Inflated Bubble Shield
+        ctx.fillStyle = 'rgba(255, 159, 243, 0.50)';
         ctx.strokeStyle = '#f368e0';
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -1577,7 +1873,7 @@
       ctx.beginPath(); ctx.moveTo(renderX, y); ctx.lineTo(renderX - legSwing, y + legLength); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(renderX, y); ctx.lineTo(renderX + legSwing, y + legLength); ctx.stroke();
 
-      // Arms / Shovel
+      // Arms / Shovel / Bubble Blower
       if (isDigging) {
         ctx.beginPath(); ctx.moveTo(renderX, shoulderY); ctx.lineTo(renderX + facing * 9, shoulderY + 9); ctx.stroke();
         ctx.strokeStyle = '#7f5539';
@@ -1640,9 +1936,11 @@
 
       drawBrightSky();
       drawClouds(0.15);
-      drawCastle(0.25);
       drawBackgroundTrees(0.45);
       drawGround();
+
+      // Render Medieval Castle Anchored behind Guards
+      drawCastle();
 
       drawEvilSoccerGoals(1.0);
       drawFakeChests(1.0);

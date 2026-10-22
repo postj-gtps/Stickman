@@ -1,0 +1,4 @@
+Here is the current state of the code.  Today, my students were assigned to find bugs, and if possible, propose solutions.  I am pasting the bugs they found:
+
+
+Please update the code with fixes for these issues.  Since these are elementary school students, please feel free to add any features necessary to solve these problems.  Finally, do an aesthetic pass on the characters, settings, and UI to ensure that it fits with the instructions regarding visuals for elementary students.

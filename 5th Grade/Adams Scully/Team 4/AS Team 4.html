@@ -10,11 +10,11 @@
       user-select: none;
       margin: 0;
       padding: 0;
-      font-family: 'Courier New', Courier, monospace, sans-serif;
+      font-family: 'Fredoka', 'Comic Sans MS', 'Courier New', sans-serif;
     }
 
     body {
-      background-color: #0d0d11;
+      background-color: #0d0d18;
       color: #ffffff;
       display: flex;
       flex-direction: column;
@@ -22,7 +22,7 @@
       justify-content: flex-start;
       height: 100vh;
       overflow: hidden;
-      padding: 10px;
+      padding: 8px 12px;
     }
 
     /* Top Header Bar */
@@ -31,10 +31,13 @@
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      max-width: 1200px;
-      margin-bottom: 8px;
-      padding-bottom: 6px;
-      border-bottom: 3px solid #ff4081;
+      max-width: 1250px;
+      margin-bottom: 6px;
+      padding: 6px 12px;
+      background: #181828;
+      border: 3px solid #ff4081;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(255, 64, 129, 0.4);
     }
 
     .title-group {
@@ -44,12 +47,12 @@
     }
 
     h1 {
-      font-size: 19px;
-      letter-spacing: 2px;
+      font-size: 20px;
+      letter-spacing: 1px;
       text-transform: uppercase;
-      font-weight: bold;
+      font-weight: 900;
       color: #ffeb3b;
-      text-shadow: 0 0 10px rgba(255, 235, 59, 0.6);
+      text-shadow: 0 0 10px rgba(255, 235, 59, 0.7);
     }
 
     .stats {
@@ -58,7 +61,14 @@
       font-weight: bold;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
+    }
+
+    .stat-pill {
+      background: #232338;
+      padding: 3px 10px;
+      border-radius: 12px;
+      border: 1px solid #444466;
     }
 
     /* Health Bar Styling */
@@ -66,23 +76,23 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      background: #11111a;
-      padding: 4px 10px;
-      border-radius: 12px;
-      border: 2px solid #333344;
+      background: #232338;
+      padding: 4px 12px;
+      border-radius: 14px;
+      border: 2px solid #ff1744;
     }
 
     .health-label {
       color: #ff1744;
-      font-weight: bold;
-      font-size: 13px;
+      font-weight: 900;
+      font-size: 14px;
     }
 
     #health-bar-bg {
-      width: 120px;
-      height: 14px;
+      width: 130px;
+      height: 16px;
       background: #331111;
-      border-radius: 7px;
+      border-radius: 8px;
       overflow: hidden;
       border: 1px solid #ff5252;
     }
@@ -98,23 +108,24 @@
     #inventory-bar {
       display: flex;
       gap: 8px;
-      background: #181824;
+      background: #11111e;
       padding: 4px 8px;
-      border-radius: 8px;
-      border: 2px solid #ff4081;
+      border-radius: 10px;
+      border: 2px solid #00e5ff;
     }
 
     .inv-slot {
       display: flex;
       align-items: center;
       gap: 4px;
-      background: #252538;
+      background: #232338;
       border: 2px solid #444466;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 11px;
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 12px;
       font-weight: bold;
-      color: #aaaabb;
+      color: #aaaaee;
+      cursor: pointer;
       transition: all 0.15s;
     }
 
@@ -122,40 +133,41 @@
       border-color: #ffeb3b;
       background: #ff4081;
       color: #ffffff;
-      box-shadow: 0 0 10px rgba(255, 64, 129, 0.6);
+      box-shadow: 0 0 12px rgba(255, 64, 129, 0.8);
+      transform: scale(1.05);
     }
 
     .btn-reset {
       background: #ff4081;
       color: #ffffff;
       border: none;
-      padding: 6px 14px;
-      font-size: 12px;
-      font-weight: bold;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 900;
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 1px;
       transition: all 0.15s ease-in-out;
-      border-radius: 6px;
-      box-shadow: 0 0 10px rgba(255, 64, 129, 0.4);
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(255, 64, 129, 0.5);
     }
 
     .btn-reset:hover {
       background: #ff80ab;
-      transform: scale(1.05);
+      transform: scale(1.06);
     }
 
     /* Main Canvas Container */
     #canvas-wrapper {
       position: relative;
       width: 100%;
-      max-width: 1200px;
+      max-width: 1250px;
       flex-grow: 1;
       display: flex;
       justify-content: center;
       align-items: center;
-      box-shadow: 0 0 25px rgba(0,0,0,0.9);
-      border-radius: 8px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.9);
+      border-radius: 12px;
       overflow: hidden;
     }
 
@@ -165,6 +177,7 @@
       display: block;
       width: 100%;
       height: 100%;
+      border-radius: 12px;
     }
 
     /* Overlays */
@@ -173,10 +186,10 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      padding: 18px 32px;
-      border-radius: 16px;
-      font-size: 18px;
-      font-weight: bold;
+      padding: 20px 36px;
+      border-radius: 20px;
+      font-size: 20px;
+      font-weight: 900;
       letter-spacing: 1px;
       display: none;
       pointer-events: none;
@@ -187,37 +200,39 @@
     #toast-overlay {
       background: rgba(255, 64, 129, 0.95);
       color: #fff;
-      box-shadow: 0 0 25px rgba(255, 64, 129, 0.9);
-      animation: pulse 0.8s infinite alternate;
+      border: 3px solid #ffeb3b;
+      box-shadow: 0 0 30px rgba(255, 64, 129, 0.9);
+      animation: pulse 0.6s infinite alternate;
     }
 
     #wipe-prompt {
       background: rgba(255, 235, 59, 0.95);
       color: #000;
-      border: 3px solid #ff1744;
-      box-shadow: 0 0 25px rgba(255, 235, 59, 0.9);
-      font-size: 20px;
-      animation: pulse 0.4s infinite alternate;
+      border: 4px solid #ff1744;
+      box-shadow: 0 0 30px rgba(255, 235, 59, 0.9);
+      font-size: 21px;
+      animation: pulse 0.35s infinite alternate;
     }
 
     #gameover-overlay {
-      background: rgba(20, 0, 5, 0.95);
+      background: rgba(18, 2, 8, 0.96);
       color: #ff1744;
-      border: 3px solid #ff1744;
-      box-shadow: 0 0 30px rgba(255, 23, 68, 0.8);
+      border: 4px solid #ff1744;
+      box-shadow: 0 0 35px rgba(255, 23, 68, 0.9);
       pointer-events: auto;
     }
 
     #gameover-overlay button {
-      margin-top: 15px;
-      padding: 8px 18px;
-      font-size: 15px;
-      font-weight: bold;
+      margin-top: 16px;
+      padding: 10px 22px;
+      font-size: 16px;
+      font-weight: 900;
       background: #ff1744;
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
+      box-shadow: 0 0 15px rgba(255, 23, 68, 0.6);
     }
 
     @keyframes pulse {
@@ -227,7 +242,7 @@
 
     .instructions {
       margin-top: 6px;
-      font-size: 12px;
+      font-size: 13px;
       color: #ffeb3b;
       font-weight: bold;
       text-align: center;
@@ -239,29 +254,29 @@
   <!-- Header Section -->
   <div id="header">
     <div class="title-group">
-      <h1>Stickman Birthday Party</h1>
+      <h1> Stickman Birthday Party </h1>
       <div class="stats">
-        <span>LEVEL: <span id="level-display" style="color:#ffeb3b;">1</span></span>
-        <span>ROOMS: <span id="rooms-display" style="color:#00e5ff;">10</span></span>
-        <span>PRESENTS LEFT: <span id="presents-display" style="color:#ff4081;">0</span></span>
+        <span class="stat-pill">LEVEL: <span id="level-display" style="color:#ffeb3b;">1</span></span>
+        <span class="stat-pill">ROOMS: <span id="rooms-display" style="color:#00e5ff;">10</span></span>
+        <span class="stat-pill">PRESENTS LEFT: <span id="presents-display" style="color:#ff4081;">0</span></span>
       </div>
     </div>
 
     <!-- Inventory Bar -->
     <div id="inventory-bar">
-      <div class="inv-slot active" id="slot-1"><span>[1]</span> Normalizer</div>
-      <div class="inv-slot" id="slot-2"><span>[2]</span> Pizza</div>
-      <div class="inv-slot" id="slot-3"><span>[3]</span> Leaf Blower</div>
-      <div class="inv-slot" id="slot-4"><span>[4]</span> Extinguisher</div>
+      <div class="inv-slot active" id="slot-1" onclick="selectSlot(1)"><span>[1]</span> Normalizer Beam</div>
+      <div class="inv-slot" id="slot-2" onclick="selectSlot(2)"><span>[2]</span> Pizza Slice</div>
+      <div class="inv-slot" id="slot-3" onclick="selectSlot(3)"><span>[3]</span> Leaf Blower</div>
+      <div class="inv-slot" id="slot-4" onclick="selectSlot(4)"><span>[4]</span> Extinguisher</div>
     </div>
 
     <!-- Health Bar -->
     <div id="health-container">
-      <span class="health-label">HP:</span>
+      <span class="health-label">HP: ❤️</span>
       <div id="health-bar-bg">
         <div id="health-bar-fill"></div>
       </div>
-      <span id="health-text" style="font-size:12px; font-weight:bold; color:#fff;">50/50</span>
+      <span id="health-text" style="font-size:12px; font-weight:900; color:#fff;">50/50</span>
     </div>
 
     <button class="btn-reset" onclick="resetGame()">Reset Game</button>
@@ -274,13 +289,13 @@
     <div id="wipe-prompt">⚠️ FROSTING ON SCREEN! ⚠️<br>SPAM [W] AND [S] TO WIPE IT OFF!</div>
     <div id="gameover-overlay">
       💥 GAME OVER! 💥<br>
-      <span style="font-size:14px; color:#ffffff;">The evil party treats got you!</span><br>
+      <span style="font-size:15px; color:#ffffff;">The evil party treats got you!</span><br>
       <button onclick="resetGame()">Try Again</button>
     </div>
   </div>
 
   <div class="instructions">
-    [WASD] Move | [1-4] Select Tool | [SPACE] Use Tool | [E] Eat Normalized Cake | Black Presents are Traps!
+    [WASD] Exclusive Movement | [1-4] Select Tool | [SPACE] Use Tool | [E] Eat Normalized Cake | Black Presents are Traps!
   </div>
 
   <script>
@@ -311,24 +326,24 @@
 
       if (type === 'pop') {
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(450, now);
-        osc.frequency.exponentialRampToValueAtTime(30, now + 0.15);
-        gain.gain.setValueAtTime(1.0, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.frequency.setValueAtTime(550, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.18);
+        gain.gain.setValueAtTime(0.8, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
         osc.start(now);
-        osc.stop(now + 0.15);
+        osc.stop(now + 0.18);
       } else if (type === 'hit') {
         osc.type = 'square';
-        osc.frequency.setValueAtTime(160, now);
-        osc.frequency.exponentialRampToValueAtTime(30, now + 0.2);
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(35, now + 0.2);
         gain.gain.setValueAtTime(0.6, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
         osc.start(now);
         osc.stop(now + 0.2);
       } else if (type === 'icing') {
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(240, now);
-        osc.frequency.linearRampToValueAtTime(100, now + 0.25);
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.linearRampToValueAtTime(110, now + 0.25);
         gain.gain.setValueAtTime(0.5, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
         osc.start(now);
@@ -344,17 +359,17 @@
         osc.stop(now + 0.3);
       } else if (type === 'tool') {
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(300, now);
-        osc.frequency.exponentialRampToValueAtTime(600, now + 0.12);
-        gain.gain.setValueAtTime(0.3, now);
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(640, now + 0.12);
+        gain.gain.setValueAtTime(0.35, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
         osc.start(now);
         osc.stop(now + 0.12);
       } else if (type === 'eat') {
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(400, now);
-        osc.frequency.exponentialRampToValueAtTime(800, now + 0.2);
-        gain.gain.setValueAtTime(0.4, now);
+        osc.frequency.setValueAtTime(420, now);
+        osc.frequency.exponentialRampToValueAtTime(840, now + 0.2);
+        gain.gain.setValueAtTime(0.45, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
         osc.start(now);
         osc.stop(now + 0.2);
@@ -366,6 +381,7 @@
     let presents = [];
     let enemies = [];
     let projectiles = [];
+    let particles = [];
     let rooms = [];
     let doors = [];
     let totalPresentsCount = 0;
@@ -375,7 +391,7 @@
     let isGameOver = false;
 
     // SCREEN FROSTING MECHANIC
-    let icingAmount = 0; // 0 to 100
+    let icingAmount = 0;
     let icingSplatters = [];
     let lastWipeKey = null;
 
@@ -395,23 +411,26 @@
       speed: 4.2,
       facing: 1, // 1 = Right, -1 = Left
       walkFrame: 0,
-      radius: 10,
+      radius: 11,
       invulnerableTimer: 0,
-      burnTimer: 0
+      burnTimer: 0,
+      stunTimer: 0,
+      knockbackVx: 0,
+      knockbackVy: 0
     };
 
-    // Vibrant Color Themes for Rooms
+    // Vibrant Party Color Themes for Rooms (Elementary friendly & bold)
     const roomThemes = [
-      { bg: '#2b1e3a', wall: '#e040fb', name: 'Berry Purple' },
-      { bg: '#1a2e3b', wall: '#00e5ff', name: 'Ocean Blue' },
-      { bg: '#1b3a2b', wall: '#00e676', name: 'Party Mint' },
-      { bg: '#3a2e1b', wall: '#ffb300', name: 'Festive Gold' },
-      { bg: '#3a1b2e', wall: '#ff4081', name: 'Birthday Pink' },
-      { bg: '#281b3a', wall: '#7c4dff', name: 'Deep Violet' },
-      { bg: '#1b3a3a', wall: '#1de9b6', name: 'Confetti Teal' },
-      { bg: '#3a281b', wall: '#ff7043', name: 'Party Coral' },
-      { bg: '#1b283a', wall: '#42a5f5', name: 'Sky Blue' },
-      { bg: '#2e3a1b', wall: '#9ccc65', name: 'Lime Party' }
+      { bg: '#2d1b3f', wall: '#ff007f', name: 'Bubblegum Berry' },
+      { bg: '#102e42', wall: '#00e5ff', name: 'Electric Ocean' },
+      { bg: '#123826', wall: '#00e676', name: 'Party Mint' },
+      { bg: '#3a2b10', wall: '#ffc107', name: 'Festive Gold' },
+      { bg: '#3d162a', wall: '#ff4081', name: 'Birthday Pink' },
+      { bg: '#25153a', wall: '#b388ff', name: 'Neon Purple' },
+      { bg: '#103838', wall: '#1de9b6', name: 'Confetti Teal' },
+      { bg: '#3a1e10', wall: '#ff6e40', name: 'Party Coral' },
+      { bg: '#132842', wall: '#448aff', name: 'Sky Blue' },
+      { bg: '#283810', wall: '#b2ff59', name: 'Lime Party' }
     ];
 
     // Select Inventory Slot
@@ -422,9 +441,14 @@
       }
     }
 
-    // STRICT WASD CONTROLS ONLY (Arrow Keys Suppressed)
+    // STRICT WASD CONTROLS ONLY (Arrow Keys Explicitly Suppressed)
     window.addEventListener('keydown', (e) => {
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+        return; // Arrow keys strictly disabled for movement
+      }
+
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
         e.preventDefault();
       }
 
@@ -438,7 +462,7 @@
       if (e.code === 'Space') useEquippedTool();
       if (e.code === 'KeyE' || e.code === 'Keye') eatNearestNormalized();
 
-      // Movement
+      // WASD Movement & Frosting Wipe Logic
       if (e.code === 'KeyW' || e.code === 'Keyw') {
         keys['KeyW'] = true;
         if (icingAmount > 0 && lastWipeKey !== 'KeyW') {
@@ -484,18 +508,18 @@
           type: 'normalizer',
           x: player.x,
           y: player.y - 8,
-          vx: player.facing * 9,
+          vx: player.facing * 10,
           vy: 0,
-          life: 0.3,
+          life: 0.35,
           roomId: currentRoomIndex
         });
       } else if (selectedSlot === 2) {
-        // Pizza Throw
+        // Pizza Slice Throw
         projectiles.push({
           type: 'pizza',
           x: player.x,
           y: player.y - 8,
-          vx: player.facing * 7,
+          vx: player.facing * 7.5,
           vy: 0,
           angle: 0,
           life: 1.2,
@@ -507,10 +531,10 @@
           type: 'wind',
           x: player.x + player.facing * 10,
           y: player.y - 8,
-          vx: player.facing * 8,
+          vx: player.facing * 8.5,
           vy: 0,
-          size: 18,
-          life: 0.4,
+          size: 20,
+          life: 0.45,
           roomId: currentRoomIndex
         });
       } else if (selectedSlot === 4) {
@@ -520,10 +544,10 @@
             type: 'foam',
             x: player.x + player.facing * 10,
             y: player.y - 8,
-            vx: player.facing * (6 + Math.random() * 3),
+            vx: player.facing * (6 + Math.random() * 3.5),
             vy: (Math.random() - 0.5) * 3,
             size: 8 + Math.random() * 6,
-            life: 0.4,
+            life: 0.45,
             roomId: currentRoomIndex
           });
         }
@@ -535,11 +559,22 @@
       enemies.forEach(e => {
         if (e.active && e.isNormalized && e.roomId === currentRoomIndex) {
           const dist = Math.hypot(player.x - e.x, player.y - e.y);
-          if (dist < player.radius + e.size + 15) {
+          if (dist < player.radius + e.size + 16) {
             e.active = false;
-            player.health = Math.min(player.maxHealth, player.health + 5);
+            player.health = Math.min(player.maxHealth, player.health + 6);
             updateHealthUI();
             playSound('eat');
+
+            // Sparkle particles
+            for (let i = 0; i < 10; i++) {
+              particles.push({
+                x: e.x, y: e.y,
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
+                color: '#00e676',
+                life: 0.4
+              });
+            }
           }
         }
       });
@@ -547,12 +582,13 @@
 
     // LEVEL GENERATION (FIXED AT EXACTLY 10 ROOMS)
     function buildLevel(lvl) {
-      const numRooms = 10; // Exactly 10 rooms per specifications
+      const numRooms = 10;
       rooms = [];
       doors = [];
       presents = [];
       enemies = [];
       projectiles = [];
+      particles = [];
       isGameOver = false;
       icingAmount = 0;
       gameoverOverlay.style.display = 'none';
@@ -594,9 +630,9 @@
 
       let minRoomDim = Infinity;
       regions.forEach(r => { minRoomDim = Math.min(minRoomDim, r.w, r.h); });
-      scaleFactor = Math.max(0.35, Math.min(1.0, minRoomDim / 130));
+      scaleFactor = Math.max(0.4, Math.min(1.0, minRoomDim / 130));
       player.speed = player.baseSpeed * scaleFactor;
-      player.radius = 12 * scaleFactor;
+      player.radius = 11 * scaleFactor;
 
       // Populate 10 Rooms
       for (let i = 0; i < regions.length; i++) {
@@ -606,7 +642,7 @@
           balloons.push({
             rx: 0.15 + Math.random() * 0.7,
             ry: 0.15 + Math.random() * 0.7,
-            color: ['#ff4081', '#00e5ff', '#ffeb3b', '#7c4dff', '#00e676'][Math.floor(Math.random() * 5)]
+            color: ['#ff4081', '#00e5ff', '#ffeb3b', '#b388ff', '#00e676'][Math.floor(Math.random() * 5)]
           });
         }
 
@@ -671,7 +707,7 @@
         if (root1 !== root2 || Math.random() < 0.15) {
           if (root1 !== root2) parentSet[root1] = root2;
 
-          let doorSize = Math.min(edge.maxSpan - 10, Math.max(28 * scaleFactor, 20));
+          let doorSize = Math.min(edge.maxSpan - 10, Math.max(30 * scaleFactor, 22));
           doors.push({
             x: edge.x,
             y: edge.y,
@@ -684,13 +720,13 @@
       });
 
       // Spawn Real Presents & Black Trap Presents
-      totalPresentsCount = lvl + Math.floor(Math.random() * 4);
+      totalPresentsCount = lvl + Math.floor(Math.random() * 3);
       presentsRemaining = totalPresentsCount;
 
       // Real Presents
       for (let p = 0; p < totalPresentsCount; p++) {
         const targetRoom = rooms[p % rooms.length];
-        const padding = Math.min(20 * scaleFactor, targetRoom.w * 0.2);
+        const padding = Math.min(22 * scaleFactor, targetRoom.w * 0.22);
         const px = targetRoom.x + padding + Math.random() * (targetRoom.w - padding * 2);
         const py = targetRoom.y + padding + Math.random() * (targetRoom.h - padding * 2);
 
@@ -701,14 +737,14 @@
           collected: false,
           isFake: false,
           roomId: targetRoom.id,
-          color: ['#ff4081', '#00e5ff', '#ffc107', '#e040fb', '#ff5722'][p % 5]
+          color: ['#ff4081', '#00e5ff', '#ffc107', '#b388ff', '#ff5722'][p % 5]
         });
       }
 
       // Black Fake Presents (Traps)
-      for (let fp = 0; fp < 6; fp++) {
+      for (let fp = 0; fp < 5; fp++) {
         const targetRoom = rooms[(fp + 2) % rooms.length];
-        const padding = Math.min(20 * scaleFactor, targetRoom.w * 0.2);
+        const padding = Math.min(22 * scaleFactor, targetRoom.w * 0.22);
         const px = targetRoom.x + padding + Math.random() * (targetRoom.w - padding * 2);
         const py = targetRoom.y + padding + Math.random() * (targetRoom.h - padding * 2);
 
@@ -719,7 +755,7 @@
           collected: false,
           isFake: true,
           roomId: targetRoom.id,
-          color: '#000000' // Black color indicates fake present
+          color: '#000000'
         });
       }
 
@@ -747,12 +783,15 @@
         }
       });
 
-      // Reset Player State
+      // Reset Player State safely
       player.x = rooms[0].x + rooms[0].w / 2;
       player.y = rooms[0].y + rooms[0].h / 2;
       player.health = 50;
       player.invulnerableTimer = 0;
       player.burnTimer = 0;
+      player.stunTimer = 0;
+      player.knockbackVx = 0;
+      player.knockbackVy = 0;
       currentRoomIndex = 0;
       updateHealthUI();
 
@@ -781,10 +820,10 @@
     }
 
     function applyDamage(amount) {
-      if (player.invulnerableTimer > 0) return;
+      if (player.invulnerableTimer > 0 || isGameOver) return;
 
       player.health -= amount;
-      player.invulnerableTimer = 1.0;
+      player.invulnerableTimer = 0.8;
       updateHealthUI();
 
       if (player.health <= 0) {
@@ -798,23 +837,33 @@
 
     function generateIcingSplatters() {
       icingSplatters = [];
-      for (let i = 0; i < 14; i++) {
+      for (let i = 0; i < 15; i++) {
         icingSplatters.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          r: 30 + Math.random() * 45,
+          r: 28 + Math.random() * 42,
           color: ['#ff80ab', '#ffffff', '#f48fb1', '#ea80fc'][Math.floor(Math.random() * 4)]
         });
       }
     }
 
+    // ROBUST ROOM TRACKER (PREVENTS TELEPORTATION)
     function updateCurrentRoom() {
+      const cur = rooms[currentRoomIndex];
+
+      // Check active room first with generous padding
+      if (cur && player.x >= cur.x - 10 && player.x <= cur.x + cur.w + 10 &&
+          player.y >= cur.y - 10 && player.y <= cur.y + cur.h + 10) {
+        return;
+      }
+
+      // Find exact room containing player center
       for (let i = 0; i < rooms.length; i++) {
         const r = rooms[i];
         if (player.x >= r.x && player.x <= r.x + r.w &&
             player.y >= r.y && player.y <= r.y + r.h) {
           currentRoomIndex = i;
-          break;
+          return;
         }
       }
     }
@@ -824,11 +873,12 @@
       if (isGameOver) return;
 
       if (player.invulnerableTimer > 0) player.invulnerableTimer -= dt;
+      if (player.stunTimer > 0) player.stunTimer -= dt;
 
       // Handle Candle Burn Effect
       if (player.burnTimer > 0) {
         player.burnTimer -= dt;
-        player.health -= 0.8 * dt;
+        player.health -= 1.0 * dt;
         updateHealthUI();
         if (player.health <= 0) {
           isGameOver = true;
@@ -836,7 +886,7 @@
         }
       }
 
-      // Movement Input
+      // Movement Input (WASD strictly, slowed down if stunned by balloon pop)
       let dx = 0;
       let dy = 0;
 
@@ -850,45 +900,72 @@
         dy *= 0.7071;
       }
 
-      let nextX = player.x + dx * player.speed;
-      let nextY = player.y + dy * player.speed;
+      let currentSpeed = player.speed * (player.stunTimer > 0 ? 0.45 : 1.0);
 
-      // Wall Collision & Doorways
+      let stepX = dx * currentSpeed + player.knockbackVx;
+      let stepY = dy * currentSpeed + player.knockbackVy;
+
+      // Decay knockback smooth momentum
+      player.knockbackVx *= 0.8;
+      player.knockbackVy *= 0.8;
+      if (Math.abs(player.knockbackVx) < 0.05) player.knockbackVx = 0;
+      if (Math.abs(player.knockbackVy) < 0.05) player.knockbackVy = 0;
+
+      // CONTINUOUS AXIS-ALIGNED WALL SLIDING COLLISION SYSTEM
       const currentRoom = rooms[currentRoomIndex];
       if (currentRoom) {
         const pR = player.radius;
-        const wallThick = 4;
+        const wallThick = 6;
 
+        let nextX = player.x + stepX;
+        let nextY = player.y + stepY;
+
+        // --- X AXIS SLIDING CHECK ---
         let allowX = false;
-        let allowY = false;
-
-        if (nextX - pR > currentRoom.x + wallThick && nextX + pR < currentRoom.x + currentRoom.w - wallThick) {
+        if (nextX - pR >= currentRoom.x + wallThick && nextX + pR <= currentRoom.x + currentRoom.w - wallThick) {
           allowX = true;
         } else {
           for (let d of doors) {
-            if (d.type === 'vertical' && Math.abs(nextX - d.x) < pR + 6 && Math.abs(nextY - d.y) < d.size / 2 - 2) {
-              allowX = true;
-              break;
+            if (d.type === 'vertical' && abs(player.y - d.y) <= (d.size / 2 - pR * 0.4)) {
+              if (abs(nextX - d.x) <= pR + 12) {
+                allowX = true;
+                break;
+              }
             }
           }
         }
 
-        if (nextY - pR > currentRoom.y + wallThick && nextY + pR < currentRoom.y + currentRoom.h - wallThick) {
+        if (allowX) {
+          player.x = nextX;
+        } else {
+          player.x = Math.max(currentRoom.x + wallThick + pR, Math.min(currentRoom.x + currentRoom.w - wallThick - pR, player.x));
+          player.knockbackVx = 0;
+        }
+
+        // --- Y AXIS SLIDING CHECK ---
+        let allowY = false;
+        if (nextY - pR >= currentRoom.y + wallThick && nextY + pR <= currentRoom.y + currentRoom.h - wallThick) {
           allowY = true;
         } else {
           for (let d of doors) {
-            if (d.type === 'horizontal' && Math.abs(nextY - d.y) < pR + 6 && Math.abs(nextX - d.x) < d.size / 2 - 2) {
-              allowY = true;
-              break;
+            if (d.type === 'horizontal' && abs(player.x - d.x) <= (d.size / 2 - pR * 0.4)) {
+              if (abs(nextY - d.y) <= pR + 12) {
+                allowY = true;
+                break;
+              }
             }
           }
         }
 
-        if (allowX) player.x = nextX;
-        if (allowY) player.y = nextY;
+        if (allowY) {
+          player.y = nextY;
+        } else {
+          player.y = Math.max(currentRoom.y + wallThick + pR, Math.min(currentRoom.y + currentRoom.h - wallThick - pR, player.y));
+          player.knockbackVy = 0;
+        }
       } else {
-        player.x = nextX;
-        player.y = nextY;
+        player.x += stepX;
+        player.y += stepY;
       }
 
       updateCurrentRoom();
@@ -905,7 +982,7 @@
         proj.x += proj.vx;
         proj.y += proj.vy;
         proj.life -= dt;
-        if (proj.type === 'pizza') proj.angle += 0.3;
+        if (proj.type === 'pizza') proj.angle += 0.35;
 
         // Projectile Collisions with Enemies
         enemies.forEach(e => {
@@ -914,10 +991,10 @@
 
           if (dist < (proj.size || 10) + e.size / 2) {
             if (proj.type === 'normalizer' && (e.type === 'cupcake' || e.type === 'cake')) {
-              e.isNormalized = true; // Cupcake / cake becomes normal!
+              e.isNormalized = true; // Turn evil cupcake into normal sweet!
               proj.life = 0;
             } else if (proj.type === 'pizza' && e.type === 'toy') {
-              e.active = false; // Pizza knocks over / defeats toy
+              e.active = false; // Pizza knocks over / defeats toy robot!
               proj.life = 0;
               playSound('hit');
             } else if (proj.type === 'wind' && e.type === 'balloon') {
@@ -925,13 +1002,22 @@
               proj.life = 0;
               playSound('pop');
             } else if (proj.type === 'foam' && e.type === 'candle') {
-              e.active = false; // Extinguisher puts out candle
+              e.active = false; // Extinguisher puts out burning candle
               proj.life = 0;
             }
           }
         });
 
         if (proj.life <= 0) projectiles.splice(i, 1);
+      }
+
+      // Update Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        let pt = particles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.life -= dt;
+        if (pt.life <= 0) particles.splice(i, 1);
       }
 
       // Update Wandering Enemies in Active Room
@@ -943,31 +1029,49 @@
           e.y += e.vy;
 
           const r = rooms[e.roomId];
-          if (e.x - e.size / 2 < r.x + 6 || e.x + e.size / 2 > r.x + r.w - 6) e.vx *= -1;
-          if (e.y - e.size / 2 < r.y + 6 || e.y + e.size / 2 > r.y + r.h - 6) e.vy *= -1;
+          if (e.x - e.size / 2 < r.x + 8 || e.x + e.size / 2 > r.x + r.w - 8) e.vx *= -1;
+          if (e.y - e.size / 2 < r.y + 8 || e.y + e.size / 2 > r.y + r.h - 8) e.vy *= -1;
         }
 
         // Collision with Stickman
         const dist = Math.hypot(player.x - e.x, player.y - e.y);
-        if (dist < player.radius + e.size / 2) {
-          if (e.isNormalized) return; // Normalized treats are harmless
+        const minDist = player.radius + e.size / 2;
+
+        if (dist < minDist) {
+          if (e.isNormalized) return; // Normalized treats are harmless and delicious!
 
           if (e.type === 'cupcake' || e.type === 'cake') {
             applyDamage(2);
-            icingAmount = 100; // Screen icing covers screen
+            icingAmount = 100; // Screen frosting covers canvas
             generateIcingSplatters();
             playSound('icing');
           } else if (e.type === 'balloon') {
+            // FIX BUG 1: Balloons pop on contact, deal damage & apply party confetti stun!
+            applyDamage(3);
+            player.stunTimer = 1.2; // 1.2 second confetti stun
+            e.active = false;
             playSound('pop');
-            e.active = false; // Balloon pops when getting close
+
+            // Confetti burst particles
+            for (let i = 0; i < 16; i++) {
+              particles.push({
+                x: e.x, y: e.y,
+                vx: (Math.random() - 0.5) * 6,
+                vy: (Math.random() - 0.5) * 6,
+                color: ['#ff4081', '#00e5ff', '#ffeb3b', '#b388ff', '#00e676'][i % 5],
+                life: 0.5
+              });
+            }
           } else if (e.type === 'candle') {
-            applyDamage(10);
+            applyDamage(8);
             player.burnTimer = 3.0; // Burns stickman for 3s
             playSound('hit');
           } else if (e.type === 'toy') {
-            applyDamage(2); // Removes 2 health
-            player.x -= dx * 20;
-            player.y -= dy * 20;
+            // FIX BUGS 2 & 5: Calculate directional knockback impulse, avoid wall noclip!
+            applyDamage(2);
+            const angle = Math.atan2(player.y - e.y, player.x - e.x);
+            player.knockbackVx = Math.cos(angle) * 7.5;
+            player.knockbackVy = Math.sin(angle) * 7.5;
             playSound('hit');
           }
         }
@@ -981,7 +1085,7 @@
             p.collected = true;
 
             if (p.isFake) {
-              // Fake Black Present: Removes 5 Health
+              // Fake Black Present Trap: Inflicts 5 HP Damage
               applyDamage(5);
               playSound('hit');
             } else {
@@ -1002,6 +1106,8 @@
       wipePrompt.style.display = icingAmount > 0 ? 'block' : 'none';
     }
 
+    function abs(val) { return Math.abs(val); }
+
     function triggerLevelComplete() {
       toastOverlay.style.display = 'block';
       setTimeout(() => {
@@ -1011,7 +1117,7 @@
       }, 1400);
     }
 
-    // DRAW PROJECTILES & TOOLS
+    // DRAW PROJECTILES & PARTICLES
     function drawProjectiles() {
       projectiles.forEach(p => {
         if (p.roomId !== currentRoomIndex) return;
@@ -1022,28 +1128,37 @@
         if (p.type === 'normalizer') {
           ctx.fillStyle = '#00e676';
           ctx.shadowColor = '#00e676';
-          ctx.shadowBlur = 10;
-          ctx.fillRect(-8, -2, 16, 4);
+          ctx.shadowBlur = 12;
+          ctx.fillRect(-10, -3, 20, 6);
         } else if (p.type === 'pizza') {
           ctx.rotate(p.angle);
           ctx.fillStyle = '#ffb300';
           ctx.beginPath();
           ctx.moveTo(0, 0);
-          ctx.arc(0, 0, 9, -0.4, 0.4);
+          ctx.arc(0, 0, 10, -0.4, 0.4);
           ctx.closePath();
           ctx.fill();
         } else if (p.type === 'wind') {
-          ctx.fillStyle = 'rgba(220, 240, 255, 0.5)';
+          ctx.fillStyle = 'rgba(200, 235, 255, 0.55)';
           ctx.beginPath();
           ctx.arc(0, 0, p.size, 0, Math.PI * 2);
           ctx.fill();
         } else if (p.type === 'foam') {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
           ctx.beginPath();
           ctx.arc(0, 0, p.size, 0, Math.PI * 2);
           ctx.fill();
         }
 
+        ctx.restore();
+      });
+
+      particles.forEach(pt => {
+        ctx.save();
+        ctx.fillStyle = pt.color;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+        ctx.fill();
         ctx.restore();
       });
     }
@@ -1061,11 +1176,11 @@
           // Normalized Cute Cupcake/Cake
           ctx.fillStyle = '#00e676';
           ctx.shadowColor = '#00e676';
-          ctx.shadowBlur = 8;
+          ctx.shadowBlur = 10;
           ctx.fillRect(-s / 2, -s / 2, s, s);
           ctx.fillStyle = '#ffffff';
-          ctx.font = '10px sans-serif';
-          ctx.fillText('YUM!', -12, -s / 2 - 2);
+          ctx.font = 'bold 10px sans-serif';
+          ctx.fillText('YUM!', -12, -s / 2 - 4);
         } else if (e.type === 'cupcake') {
           ctx.fillStyle = '#ff80ab';
           ctx.beginPath();
@@ -1077,7 +1192,7 @@
           ctx.fillRect(-4, -6, 3, 3);
           ctx.fillRect(2, -6, 3, 3);
         } else if (e.type === 'cake') {
-          ctx.fillStyle = '#e040fb';
+          ctx.fillStyle = '#b388ff';
           ctx.fillRect(-s / 2, -s / 4, s, s / 2);
           ctx.fillStyle = '#00e5ff';
           ctx.fillRect(-s / 2 + 2, -s / 2, s - 4, s / 4);
@@ -1090,10 +1205,10 @@
           ctx.arc(0, -2, s / 2, 0, Math.PI * 2);
           ctx.fill();
           ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 1;
+          ctx.lineWidth = 1.5;
           ctx.beginPath();
           ctx.moveTo(0, s / 2);
-          ctx.lineTo(0, s / 2 + 6);
+          ctx.lineTo(0, s / 2 + 7);
           ctx.stroke();
         } else if (e.type === 'candle') {
           ctx.fillStyle = '#ffeb3b';
@@ -1119,6 +1234,7 @@
         ctx.fillStyle = r.theme.bg;
         ctx.fillRect(r.x, r.y, r.w, r.h);
 
+        // Wall & floor tiles
         ctx.fillStyle = r.theme.wall;
         ctx.globalAlpha = 0.15;
         for (let c = 12; c < r.w; c += 28) {
@@ -1136,7 +1252,7 @@
         });
 
         ctx.strokeStyle = r.theme.wall;
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 5;
         ctx.strokeRect(r.x, r.y, r.w, r.h);
       });
 
@@ -1146,15 +1262,9 @@
         if (d.type === 'vertical') {
           ctx.fillStyle = '#ffea00';
           ctx.fillRect(d.x - thickness / 2, d.y - d.size / 2, thickness, d.size);
-          ctx.fillStyle = '#00e5ff';
-          ctx.fillRect(d.x - thickness / 2 - 2, d.y - d.size / 2 - 3, thickness + 4, 4);
-          ctx.fillRect(d.x - thickness / 2 - 2, d.y + d.size / 2 - 1, thickness + 4, 4);
         } else {
           ctx.fillStyle = '#ffea00';
           ctx.fillRect(d.x - d.size / 2, d.y - thickness / 2, d.size, thickness);
-          ctx.fillStyle = '#00e5ff';
-          ctx.fillRect(d.x - d.size / 2 - 3, d.y - thickness / 2 - 2, 4, thickness + 4);
-          ctx.fillRect(d.x + d.size / 2 - 1, d.y - thickness / 2 - 2, 4, thickness + 4);
         }
       });
     }
@@ -1162,11 +1272,11 @@
     function drawFogOfWar() {
       rooms.forEach((r, idx) => {
         if (idx !== currentRoomIndex) {
-          ctx.fillStyle = 'rgba(5, 5, 8, 0.97)';
+          ctx.fillStyle = 'rgba(5, 5, 12, 0.97)';
           ctx.fillRect(r.x - 2, r.y - 2, r.w + 4, r.h + 4);
 
-          ctx.fillStyle = '#444455';
-          ctx.font = `${Math.max(9, 11 * scaleFactor)}px Courier New`;
+          ctx.fillStyle = '#555577';
+          ctx.font = `bold ${Math.max(10, 12 * scaleFactor)}px Courier New`;
           ctx.textAlign = 'center';
           ctx.fillText('???', r.x + r.w / 2, r.y + r.h / 2);
         }
@@ -1177,7 +1287,7 @@
           const thickness = 8;
           ctx.fillStyle = '#ffea00';
           ctx.shadowColor = '#ffea00';
-          ctx.shadowBlur = 8;
+          ctx.shadowBlur = 10;
 
           if (d.type === 'vertical') {
             ctx.fillRect(d.x - thickness / 2, d.y - d.size / 2, thickness, d.size);
@@ -1196,8 +1306,8 @@
           ctx.fillStyle = p.color;
           ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
 
-          // Black presents have dark charcoal cross ribbons
-          ctx.fillStyle = p.isFake ? '#1a1a1a' : '#ffffff';
+          // Black presents have dark ribbons
+          ctx.fillStyle = p.isFake ? '#222222' : '#ffffff';
           ctx.fillRect(p.x - s / 2, p.y - 1.5, s, 3);
           ctx.fillRect(p.x - 1.5, p.y - s / 2, 3, s);
 
@@ -1219,11 +1329,11 @@
 
       ctx.strokeStyle = '#ffffff';
       ctx.fillStyle = '#ffffff';
-      ctx.lineWidth = Math.max(1.2, 1.8 * scaleFactor);
+      ctx.lineWidth = Math.max(1.5, 2.0 * scaleFactor);
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      const headRadius = 5 * scaleFactor;
+      const headRadius = 5.5 * scaleFactor;
       const bodyLength = 14 * scaleFactor;
       const legLength = 10 * scaleFactor;
       const neckY = y - bodyLength;
@@ -1235,7 +1345,7 @@
       ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Birthday Party Hat
+      // Party Hat
       ctx.fillStyle = '#ff4081';
       ctx.beginPath();
       ctx.moveTo(x - headRadius, headY - 2);
@@ -1244,7 +1354,15 @@
       ctx.closePath();
       ctx.fill();
 
-      // Flame Overlay
+      // Confetti Stun Dizzy Stars Overlay
+      if (player.stunTimer > 0) {
+        ctx.fillStyle = '#ffeb3b';
+        ctx.font = '12px sans-serif';
+        ctx.fillText('⭐', x - 10, headY - 12);
+        ctx.fillText('⭐', x + 2, headY - 16);
+      }
+
+      // Candle Flame Overlay
       if (player.burnTimer > 0) {
         ctx.fillStyle = '#ff5722';
         ctx.beginPath();
@@ -1255,7 +1373,7 @@
       // Eye
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(x + facing * (2 * scaleFactor), headY - 0.5, 0.8 * scaleFactor, 0, Math.PI * 2);
+      ctx.arc(x + facing * (2 * scaleFactor), headY - 0.5, 0.9 * scaleFactor, 0, Math.PI * 2);
       ctx.fill();
 
       // Torso
@@ -1283,7 +1401,6 @@
       ctx.lineTo(x - facing * (4 * scaleFactor) - armSwing, shoulderY + 5 * scaleFactor);
       ctx.stroke();
 
-      // Front Arm holding equipped tool
       ctx.beginPath();
       ctx.moveTo(x, shoulderY);
       const toolX = x + facing * (8 * scaleFactor);
@@ -1294,16 +1411,16 @@
       // Draw Tool Icon in Hand
       if (selectedSlot === 1) { // Normalizer
         ctx.fillStyle = '#00e676';
-        ctx.fillRect(toolX - 2, toolY - 2, 6, 4);
+        ctx.fillRect(toolX - 2, toolY - 2, 7, 4);
       } else if (selectedSlot === 2) { // Pizza
         ctx.fillStyle = '#ffb300';
-        ctx.fillRect(toolX - 2, toolY - 2, 5, 5);
+        ctx.fillRect(toolX - 2, toolY - 2, 6, 6);
       } else if (selectedSlot === 3) { // Leaf Blower
         ctx.fillStyle = '#42a5f5';
-        ctx.fillRect(toolX - 2, toolY - 3, 7, 4);
+        ctx.fillRect(toolX - 2, toolY - 3, 8, 4);
       } else if (selectedSlot === 4) { // Extinguisher
         ctx.fillStyle = '#ff1744';
-        ctx.fillRect(toolX - 2, toolY - 3, 4, 7);
+        ctx.fillRect(toolX - 2, toolY - 3, 4, 8);
       }
 
       ctx.restore();

@@ -10,11 +10,11 @@
  user-select: none;
  margin: 0;
  padding: 0;
- font-family: 'Courier New', Courier, monospace, sans-serif;
+ font-family: 'Fredoka', 'Comic Sans MS', 'Courier New', sans-serif;
  }
 
  body {
- background-color: #0b1d0e;
+ background-color: #081c0f;
  color: #ffffff;
  display: flex;
  flex-direction: column;
@@ -22,7 +22,7 @@
  justify-content: flex-start;
  height: 100vh;
  overflow: hidden;
- padding: 16px;
+ padding: 12px;
  }
 
  /* Top Header Bar */
@@ -32,37 +32,45 @@
  align-items: center;
  width: 100%;
  max-width: 1100px;
- margin-bottom: 12px;
- padding-bottom: 8px;
- border-bottom: 2px solid #ffd700;
+ margin-bottom: 8px;
+ padding: 8px 16px;
+ background: #133a1b;
+ border: 3px solid #ffcc00;
+ border-radius: 12px;
+ box-shadow: 0 4px 10px rgba(0,0,0,0.5);
  }
 
  h1 {
- font-size: 18px;
- letter-spacing: 2px;
+ font-size: 20px;
+ letter-spacing: 1px;
  text-transform: uppercase;
- font-weight: bold;
- color: #ffd700;
- text-shadow: 2px 2px 4px #000000;
+ font-weight: 900;
+ color: #ffcc00;
+ text-shadow: 2px 2px 0px #000000;
  }
 
  .btn-reset {
- background: #1b4332;
- color: #ffd700;
- border: 2px solid #ffd700;
- padding: 6px 16px;
- font-size: 13px;
+ background: #ff4757;
+ color: #ffffff;
+ border: 2px solid #ffffff;
+ padding: 6px 18px;
+ font-size: 14px;
  font-weight: bold;
  cursor: pointer;
  text-transform: uppercase;
- letter-spacing: 1px;
- border-radius: 4px;
- transition: all 0.15s ease-in-out;
+ border-radius: 20px;
+ box-shadow: 0 3px 0px #b33939;
+ transition: all 0.1s ease-in-out;
  }
 
  .btn-reset:hover {
- background: #ffd700;
- color: #000000;
+ transform: translateY(-2px);
+ background: #ff6b81;
+ }
+
+ .btn-reset:active {
+ transform: translateY(1px);
+ box-shadow: none;
  }
 
  /* Main Canvas Container */
@@ -77,22 +85,25 @@
  }
 
  canvas {
- background-color: #122b14;
- border: 3px solid #ffd700;
- border-radius: 6px;
+ background-color: #0f2814;
+ border: 4px solid #ffcc00;
+ border-radius: 12px;
  display: block;
  width: 100%;
  height: 100%;
- box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+ box-shadow: 0 0 25px rgba(255, 204, 0, 0.4);
  }
 
  .instructions {
- margin-top: 8px;
- font-size: 12px;
- color: #a3e635;
+ margin-top: 6px;
+ font-size: 13px;
+ color: #7bed9f;
  text-align: center;
  font-weight: bold;
  text-shadow: 1px 1px 2px #000;
+ background: rgba(0,0,0,0.4);
+ padding: 4px 12px;
+ border-radius: 10px;
  }
  </style>
 </head>
@@ -119,13 +130,14 @@
 
  // GAME STATE & PROGRESSION
  let currentLevel = 1;
+ let gameState = 'PLAYING'; // 'PLAYING', 'GAMEOVER', 'VICTORY'
  const keys = {};
 
  // PLAYER STATE
  const player = {
  x: 0,
  y: 0,
- speed: 4.5,
+ speed: 4.8,
  facing: 1, // 1 = Right, -1 = Left
  walkFrame: 0,
  coinsCollected: 0,
@@ -134,7 +146,8 @@
  trapProgress: 0,
  trapTarget: 8,
  trappedEnemy: null,
- invincibleTimer: 0, // 5 seconds (300 frames @ 60fps)
+ squeezeTimer: 0, // 10-second squeeze defeat timer (600 frames)
+ invincibleTimer: 0, // 5 seconds invincibility (300 frames)
  goldenBananas: 0
  };
 
@@ -151,6 +164,7 @@
  let portal = null;
  let bananaTrees = [];
  let minions = [];
+ let venomProjectiles = [];
  let bananaProjectiles = [];
  let levers = [];
  let bossDoorOpen = false;
@@ -174,7 +188,9 @@
  return;
  }
 
- // Action: Throw Golden Banana in Level 2
+ if (gameState !== 'PLAYING') return;
+
+ // Action: Throw Golden Banana in Level 2 (SPACEBAR)
  if (e.code === 'Space' || key === ' ') {
  e.preventDefault();
  if (currentLevel === 2 && player.goldenBananas > 0) {
@@ -182,8 +198,8 @@
  bananaProjectiles.push({
  x: player.x,
  y: player.y - 10,
- vx: player.facing * 8,
- vy: -1.5,
+ vx: player.facing * 9,
+ vy: -1.0,
  rotation: 0
  });
  }
@@ -200,6 +216,7 @@
  player.trapProgress++;
  if (player.trapProgress >= player.trapTarget) {
  player.trappedBy = null;
+ player.squeezeTimer = 0;
  player.invincibleTimer = 300; // 5 Seconds Invincibility!
  if (player.trappedEnemy) player.trappedEnemy.cooldown = 180;
  }
@@ -236,16 +253,22 @@
  const h = canvas.height;
  const groundTop = h * 0.38;
 
+ gameState = 'PLAYING';
  player.x = w / 2;
  player.y = h * 0.65;
  player.facing = 1;
  player.walkFrame = 0;
  player.trappedBy = null;
  player.trappedEnemy = null;
+ player.squeezeTimer = 0;
  player.invincibleTimer = 0;
 
  portal = null;
  bananaProjectiles = [];
+ venomProjectiles = [];
+ minions = [];
+ anacondas = [];
+ angryRocks = [];
 
  if (level === 1) {
  document.getElementById('gameTitle').innerText = "Stickman Engine: Level 1 - Jungle Approach";
@@ -254,7 +277,6 @@
  player.coinsCollected = 0;
  player.armor = { helmet: false, chestplate: false, leggings: false, shield: false };
 
- // Trees with Vine Traps
  trees = [];
  for (let i = 0; i < 6; i++) {
  trees.push({
@@ -268,20 +290,20 @@
  }
 
  flowers = [];
- const colors = ['#ff4d6d', '#ff007f', '#00f5d4', '#e0aaff', '#ff6b35'];
- for (let i = 0; i < 20; i++) {
+ const colors = ['#ff4757', '#ff6b81', '#7bed9f', '#70a1ff', '#eccc68'];
+ for (let i = 0; i < 22; i++) {
  flowers.push({
  x: Math.random() * (w - 40) + 20,
  y: groundTop + 30 + Math.random() * (h - groundTop - 50),
  color: colors[Math.floor(Math.random() * colors.length)],
- radius: 3 + Math.random() * 3
+ radius: 4 + Math.random() * 3
  });
  }
 
  monkeys = trees.slice(0, 3).map(t => ({ x: t.x + 10, y: t.y - 40 * t.scale }));
  birds = [
- { x: w * 0.2, y: h * 0.18, color: '#ff0055', wing: 0 },
- { x: w * 0.75, y: h * 0.22, color: '#00bbf9', wing: 1 }
+ { x: w * 0.2, y: h * 0.18, color: '#ff4757', wing: 0 },
+ { x: w * 0.75, y: h * 0.22, color: '#1e90ff', wing: 1 }
  ];
 
  coins = [];
@@ -297,8 +319,8 @@
  ];
 
  anacondas = [
- { x: w * 0.25, y: groundTop + 100, speed: 1.2, cooldown: 0, anim: 0 },
- { x: w * 0.75, y: h - 90, speed: 1.4, cooldown: 0, anim: 1.5 }
+ { x: w * 0.25, y: groundTop + 100, speed: 1.3, cooldown: 0, anim: 0 },
+ { x: w * 0.75, y: h - 90, speed: 1.5, cooldown: 0, anim: 1.5 }
  ];
  angryRocks = [];
  rockSpawnTimer = 0;
@@ -307,31 +329,29 @@
  document.getElementById('gameTitle').innerText = "Stickman Engine: Level 2 - Temple Courtyard";
  document.getElementById('instructionBar').innerText = "Move: [W][A][S][D] | Collect Bananas from Trees | Press [SPACEBAR] to Throw Bananas at Minions!";
 
- player.goldenBananas = 5;
+ player.goldenBananas = 6;
 
- // Banana Trees
+ // Banana Trees with 10s Respawn Timers
  bananaTrees = [
- { x: w * 0.15, y: groundTop + 50, bananas: 3 },
- { x: w * 0.85, y: groundTop + 50, bananas: 3 },
- { x: w * 0.5, y: h - 70, bananas: 3 }
+ { x: w * 0.15, y: groundTop + 50, bananas: 3, regrowTimer: 0 },
+ { x: w * 0.85, y: groundTop + 50, bananas: 3, regrowTimer: 0 },
+ { x: w * 0.5, y: h - 70, bananas: 3, regrowTimer: 0 }
  ];
 
- // Anaconda King Minions
+ // Minions with Active AI & Venom Attacks
  minions = [];
  for (let i = 0; i < 5; i++) {
  minions.push({
- x: 80 + i * (w - 160) / 4,
+ x: 100 + i * (w - 200) / 4,
  y: groundTop + 60 + (i % 2) * 80,
- speed: 1.5 + Math.random() * 0.5,
- vx: (Math.random() < 0.5 ? 1 : -1) * 2,
+ speed: 1.4,
  health: 1,
  alive: true,
- anim: i
+ anim: i,
+ shootCooldown: 60 + Math.random() * 60
  });
  }
 
- anacondas = [];
- angryRocks = [];
  trees = [];
  }
  else if (level === 3) {
@@ -345,7 +365,6 @@
  { id: 3, x: w * 0.20, y: h * 0.82, active: false },
  { id: 4, x: w * 0.80, y: h * 0.82, active: false }
  ];
- minions = [];
  }
  }
 
@@ -369,9 +388,18 @@
  }
 
  function updatePhysics() {
+ if (gameState !== 'PLAYING') return;
+
  // Invincibility Timer Tick
- if (player.invincibleTimer > 0) {
- player.invincibleTimer--;
+ if (player.invincibleTimer > 0) player.invincibleTimer--;
+
+ // Anaconda 10-Second Squeeze Defeat Check
+ if (player.trappedBy === 'anaconda') {
+ player.squeezeTimer++;
+ if (player.squeezeTimer > 600) { // 10 seconds (600 frames @ 60fps)
+ gameState = 'GAMEOVER';
+ return;
+ }
  }
 
  // Movement Handling
@@ -392,7 +420,8 @@
  player.y += dy * player.speed;
 
  const margin = 20;
- const minY = canvas.height * 0.38;
+ // In Level 3 allow full vertical movement up to 12% screen height to enter the door
+ const minY = (currentLevel === 3) ? canvas.height * 0.12 : canvas.height * 0.38;
  const maxY = canvas.height - 20;
  player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
  player.y = Math.max(minY, Math.min(maxY, player.y));
@@ -419,15 +448,11 @@
  }
  });
 
- // Check Portal Spawn Condition (All Gold & Armor Collected)
- const allCoins = player.coinsCollected === coins.length;
- const allArmor = Object.values(player.armor).every(Boolean);
-
- if (allCoins && allArmor && !portal) {
- portal = { x: canvas.width / 2, y: canvas.height * 0.55, radius: 28, anim: 0 };
+ // Check Portal Spawn Condition
+ if (player.coinsCollected === coins.length && Object.values(player.armor).every(Boolean) && !portal) {
+ portal = { x: canvas.width / 2, y: canvas.height * 0.55, radius: 30, anim: 0 };
  }
 
- // Enter Portal -> Level 2
  if (portal) {
  portal.anim += 0.08;
  if (Math.hypot(player.x - portal.x, player.y - portal.y) < portal.radius) {
@@ -437,7 +462,7 @@
  }
  }
 
- // Anaconda Hazards (Disabled while invincible)
+ // Anaconda Hazards
  if (player.invincibleTimer === 0) {
  anacondas.forEach(snake => {
  snake.anim += 0.08;
@@ -458,25 +483,38 @@
  if (!player.trappedBy && dist < 18) {
  player.trappedBy = 'anaconda';
  player.trapProgress = 0;
+ player.squeezeTimer = 0;
  player.trappedEnemy = snake;
  }
  });
  }
 
- // Angry Rocks
+ // Angry Rocks Physics & Solid Collision (Only roll/hit player when UNTRAPPED)
  rockSpawnTimer++;
  if (rockSpawnTimer > 180) { spawnAngryRock(); rockSpawnTimer = 0; }
  for (let i = angryRocks.length - 1; i >= 0; i--) {
  const rock = angryRocks[i];
  rock.x += rock.vx;
  rock.angle += rock.vx * 0.08;
- if (Math.hypot(player.x - rock.x, player.y - rock.y) < rock.radius + 10) {
- player.x += rock.vx * 2;
+
+ const dist = Math.hypot(player.x - rock.x, player.y - rock.y);
+ const minDist = rock.radius + 12;
+
+ // Solid Collision: Boulders push Stickman firmly back when untrapped
+ if (dist < minDist) {
+ if (!player.trappedBy) {
+ const overlap = minDist - dist;
+ const nx = (player.x - rock.x) / (dist || 1);
+ const ny = (player.y - rock.y) / (dist || 1);
+ player.x += nx * (overlap + 4);
+ player.y += ny * (overlap + 4);
  }
+ }
+
  if (rock.x < -50 || rock.x > canvas.width + 50) angryRocks.splice(i, 1);
  }
 
- // Vine Traps (Disabled while invincible)
+ // Vine Traps
  if (player.invincibleTimer === 0) {
  trees.forEach(tree => {
  if (tree.hasVine) {
@@ -493,22 +531,27 @@
 
  // --- LEVEL 2 PHYSICS ---
  else if (currentLevel === 2) {
- // Pick Bananas from Trees
+ // Pick Bananas & Manage 10-Second Banana Tree Respawn
  bananaTrees.forEach(bt => {
- if (bt.bananas > 0 && Math.hypot(player.x - bt.x, player.y - bt.y) < 35) {
+ if (bt.bananas > 0) {
+ if (Math.hypot(player.x - bt.x, player.y - bt.y) < 35) {
  bt.bananas--;
  player.goldenBananas += 2;
+ if (bt.bananas === 0) bt.regrowTimer = 600; // 10s timer
+ }
+ } else {
+ bt.regrowTimer--;
+ if (bt.regrowTimer <= 0) bt.bananas = 3; // Respawn bananas!
  }
  });
 
- // Update thrown banana projectiles
+ // Update Thrown Banana Projectiles
  for (let i = bananaProjectiles.length - 1; i >= 0; i--) {
  const b = bananaProjectiles[i];
  b.x += b.vx;
  b.y += b.vy;
- b.rotation += 0.2;
+ b.rotation += 0.25;
 
- // Collision with Minions
  minions.forEach(m => {
  if (m.alive && Math.hypot(b.x - m.x, b.y - m.y) < 25) {
  m.alive = false;
@@ -519,19 +562,55 @@
  if (b.x < 0 || b.x > canvas.width) bananaProjectiles.splice(i, 1);
  }
 
- // Update Minions AI
+ // Minions AI & Venom Attack Logic
  minions.forEach(m => {
  if (m.alive) {
- m.x += m.vx;
  m.anim += 0.1;
- if (m.x < 50 || m.x > canvas.width - 50) m.vx *= -1;
+ const dist = Math.hypot(player.x - m.x, player.y - m.y);
+
+ // March towards player
+ if (dist > 15) {
+ m.x += ((player.x - m.x) / dist) * m.speed;
+ m.y += ((player.y - m.y) / dist) * m.speed;
+ }
+
+ // Spit close-range venom globs
+ m.shootCooldown--;
+ if (dist < 180 && m.shootCooldown <= 0) {
+ m.shootCooldown = 110;
+ const angle = Math.atan2(player.y - m.y, player.x - m.x);
+ venomProjectiles.push({
+ x: m.x,
+ y: m.y,
+ vx: Math.cos(angle) * 4,
+ vy: Math.sin(angle) * 4,
+ life: 50
+ });
+ }
  }
  });
 
+ // Update Venom Projectiles
+ for (let i = venomProjectiles.length - 1; i >= 0; i--) {
+ const v = venomProjectiles[i];
+ v.x += v.vx;
+ v.y += v.vy;
+ v.life--;
+
+ if (player.invincibleTimer === 0 && Math.hypot(player.x - v.x, player.y - v.y) < 16) {
+ // Venom pushback
+ player.x += v.vx * 3;
+ player.y += v.vy * 3;
+ venomProjectiles.splice(i, 1);
+ continue;
+ }
+
+ if (v.life <= 0) venomProjectiles.splice(i, 1);
+ }
+
  // Check Level 2 Victory (All Minions Defeated)
- const allDefeated = minions.every(m => !m.alive);
- if (allDefeated && !portal) {
- portal = { x: canvas.width / 2, y: canvas.height * 0.5, radius: 28, anim: 0 };
+ if (minions.every(m => !m.alive) && !portal) {
+ portal = { x: canvas.width / 2, y: canvas.height * 0.5, radius: 30, anim: 0 };
  }
 
  if (portal) {
@@ -546,16 +625,23 @@
 
  // --- LEVEL 3 PHYSICS ---
  else if (currentLevel === 3) {
- // Flip Levers when touched
  levers.forEach(l => {
- if (!l.active && Math.hypot(player.x - l.x, player.y - l.y) < 28) {
+ if (!l.active && Math.hypot(player.x - l.x, player.y - l.y) < 30) {
  l.active = true;
  }
  });
 
- // Unlock Boss Chamber Door when all 4 levers flipped
  if (levers.every(l => l.active)) {
  bossDoorOpen = true;
+ }
+
+ // Walk through Boss Chamber Door -> Game Victory!
+ if (bossDoorOpen) {
+ const doorCenterX = canvas.width / 2;
+ const doorCenterY = canvas.height * 0.14 + 60;
+ if (Math.hypot(player.x - doorCenterX, player.y - doorCenterY) < 55) {
+ gameState = 'VICTORY';
+ }
  }
  }
  }
@@ -567,14 +653,13 @@
  const groundTop = h * 0.38;
 
  if (currentLevel === 1) {
- // Far distance Aztec Pyramid
  const skyGrad = ctx.createLinearGradient(0, 0, 0, groundTop);
- skyGrad.addColorStop(0, '#1a3c40');
- skyGrad.addColorStop(1, '#2d5a27');
+ skyGrad.addColorStop(0, '#10303b');
+ skyGrad.addColorStop(1, '#1e5128');
  ctx.fillStyle = skyGrad;
  ctx.fillRect(0, 0, w, groundTop);
 
- // Pyramid Steps
+ // Pyramid
  const steps = 6;
  const stepHeight = 14;
  const pyramidBaseWidth = Math.min(320, w * 0.4);
@@ -584,24 +669,23 @@
  const stepY = groundTop - (i + 1) * stepHeight;
  const stepX = (w * 0.5) - currentWidth / 2;
  const goldGrad = ctx.createLinearGradient(stepX, stepY, stepX + currentWidth, stepY + stepHeight);
- goldGrad.addColorStop(0, '#b8860b');
+ goldGrad.addColorStop(0, '#d4af37');
  goldGrad.addColorStop(0.5, '#ffd700');
- goldGrad.addColorStop(1, '#996515');
+ goldGrad.addColorStop(1, '#aa7c11');
  ctx.fillStyle = goldGrad;
  ctx.fillRect(stepX, stepY, currentWidth, stepHeight);
- ctx.strokeStyle = '#5c4033';
+ ctx.strokeStyle = '#3d2600';
+ ctx.lineWidth = 1.5;
  ctx.strokeRect(stepX, stepY, currentWidth, stepHeight);
  currentWidth -= pyramidBaseWidth / (steps + 2);
  }
 
- // Jungle Ground
  const groundGrad = ctx.createLinearGradient(0, groundTop, 0, h);
- groundGrad.addColorStop(0, '#1e4620');
- groundGrad.addColorStop(1, '#0d280f');
+ groundGrad.addColorStop(0, '#2e7d32');
+ groundGrad.addColorStop(1, '#0e3a12');
  ctx.fillStyle = groundGrad;
  ctx.fillRect(0, groundTop, w, h - groundTop);
 
- // Flowers, Trees, Animals
  flowers.forEach(f => {
  ctx.fillStyle = f.color;
  ctx.beginPath(); ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2); ctx.fill();
@@ -610,16 +694,14 @@
  });
 
  trees.forEach(t => {
- ctx.fillStyle = '#4a2c11';
- ctx.fillRect(t.x - 7 * t.scale, t.y - 60 * t.scale, 14 * t.scale, 60 * t.scale);
- ctx.fillStyle = '#1b5e20';
- ctx.beginPath();
- ctx.arc(t.x, t.y - 70 * t.scale, 30 * t.scale, 0, Math.PI * 2);
- ctx.fill();
+ ctx.fillStyle = '#5c4033';
+ ctx.fillRect(t.x - 8 * t.scale, t.y - 60 * t.scale, 16 * t.scale, 60 * t.scale);
+ ctx.fillStyle = '#2b9348';
+ ctx.beginPath(); ctx.arc(t.x, t.y - 70 * t.scale, 32 * t.scale, 0, Math.PI * 2); ctx.fill();
 
  if (t.hasVine && t.vineCooldown === 0) {
- ctx.strokeStyle = '#2d6a4f';
- ctx.lineWidth = 3;
+ ctx.strokeStyle = '#55a630';
+ ctx.lineWidth = 4;
  ctx.beginPath();
  ctx.moveTo(t.x, t.y - 50 * t.scale);
  ctx.quadraticCurveTo(t.x + Math.sin(Date.now() * 0.003) * 6, t.y, t.x, t.y + t.vineLength);
@@ -628,44 +710,40 @@
  });
  } 
  else if (currentLevel === 2) {
- // Level 2: Temple Entrance Courtyard (Closer view of Giant Golden Temple Wall)
  const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
  skyGrad.addColorStop(0, '#3a1c02');
- skyGrad.addColorStop(1, '#0d280f');
+ skyGrad.addColorStop(1, '#1b4332');
  ctx.fillStyle = skyGrad;
  ctx.fillRect(0, 0, w, h);
 
- // Massive Temple Steps Backdrop
- ctx.fillStyle = '#b8860b';
- ctx.fillRect(w * 0.1, 0, w * 0.8, groundTop);
+ ctx.fillStyle = '#d4af37';
+ ctx.fillRect(w * 0.08, 0, w * 0.84, groundTop);
  ctx.strokeStyle = '#ffd700';
  ctx.lineWidth = 4;
- ctx.strokeRect(w * 0.1, 0, w * 0.8, groundTop);
+ ctx.strokeRect(w * 0.08, 0, w * 0.84, groundTop);
 
- // Banana Trees
  bananaTrees.forEach(bt => {
  ctx.fillStyle = '#5c4033';
- ctx.fillRect(bt.x - 10, bt.y - 40, 20, 40);
+ ctx.fillRect(bt.x - 12, bt.y - 45, 24, 45);
  ctx.fillStyle = '#2b9348';
- ctx.beginPath();
- ctx.arc(bt.x, bt.y - 50, 35, 0, Math.PI * 2);
- ctx.fill();
+ ctx.beginPath(); ctx.arc(bt.x, bt.y - 55, 38, 0, Math.PI * 2); ctx.fill();
 
- // Hanging Golden Bananas
  for (let i = 0; i < bt.bananas; i++) {
  ctx.fillStyle = '#ffd700';
- ctx.beginPath();
- ctx.arc(bt.x - 12 + i * 12, bt.y - 35, 6, 0, Math.PI);
- ctx.fill();
+ ctx.beginPath(); ctx.arc(bt.x - 12 + i * 12, bt.y - 40, 7, 0, Math.PI); ctx.fill();
+ }
+
+ if (bt.bananas === 0) {
+ ctx.fillStyle = '#ff4757';
+ ctx.font = 'bold 11px sans-serif';
+ ctx.fillText(`Regrow: ${(bt.regrowTimer/60).toFixed(0)}s`, bt.x - 28, bt.y - 75);
  }
  });
  } 
  else if (currentLevel === 3) {
- // Level 3: Inside Temple Room with Boss Door
- ctx.fillStyle = '#1a0f00';
+ ctx.fillStyle = '#1c1003';
  ctx.fillRect(0, 0, w, h);
 
- // Stone Wall Carvings
  ctx.strokeStyle = '#3d2600';
  ctx.lineWidth = 2;
  for (let x = 0; x < w; x += 60) {
@@ -674,90 +752,81 @@
  }
  }
 
- // Giant Boss Chamber Door at Top Center
- const doorW = 140;
+ const doorW = 150;
  const doorH = 120;
  const doorX = w / 2 - doorW / 2;
- const doorY = h * 0.15;
+ const doorY = h * 0.14;
 
- ctx.fillStyle = bossDoorOpen ? '#ffd700' : '#4a2c11';
+ ctx.fillStyle = bossDoorOpen ? '#7bed9f' : '#4a2c11';
  ctx.fillRect(doorX, doorY, doorW, doorH);
  ctx.strokeStyle = '#ffd700';
- ctx.lineWidth = 4;
+ ctx.lineWidth = 5;
  ctx.strokeRect(doorX, doorY, doorW, doorH);
 
  ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 14px "Courier New", monospace';
+ ctx.font = 'bold 14px "Fredoka", sans-serif';
  ctx.textAlign = 'center';
- ctx.fillText(bossDoorOpen ? "BOSS CHAMBER UNLOCKED!" : "LOCKED BOSS DOOR", w / 2, doorY + doorH / 2);
+ ctx.fillText(bossDoorOpen ? "CHAMBER OPEN! ENTER!" : "LOCKED BOSS DOOR", w / 2, doorY + doorH / 2);
  }
  }
 
  function drawEntities() {
- // Draw Portal if active
  if (portal) {
  ctx.save();
  ctx.translate(portal.x, portal.y);
  ctx.rotate(portal.anim);
  const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, portal.radius);
  grad.addColorStop(0, '#ffffff');
- grad.addColorStop(0.5, '#00f5d4');
- grad.addColorStop(1, '#ff007f');
+ grad.addColorStop(0.5, '#70a1ff');
+ grad.addColorStop(1, '#ff4757');
  ctx.fillStyle = grad;
- ctx.beginPath();
- ctx.arc(0, 0, portal.radius, 0, Math.PI * 2);
- ctx.fill();
+ ctx.beginPath(); ctx.arc(0, 0, portal.radius, 0, Math.PI * 2); ctx.fill();
  ctx.restore();
  }
 
- // Draw Thrown Golden Bananas (Level 2)
  bananaProjectiles.forEach(b => {
  ctx.save();
  ctx.translate(b.x, b.y);
  ctx.rotate(b.rotation);
  ctx.fillStyle = '#ffd700';
- ctx.beginPath();
- ctx.arc(0, 0, 8, 0, Math.PI);
- ctx.fill();
+ ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI); ctx.fill();
  ctx.restore();
  });
 
- // Draw Anaconda King Minions (Level 2)
+ venomProjectiles.forEach(v => {
+ ctx.fillStyle = '#2ed573';
+ ctx.beginPath(); ctx.arc(v.x, v.y, 6, 0, Math.PI * 2); ctx.fill();
+ ctx.fillStyle = '#ffffff';
+ ctx.beginPath(); ctx.arc(v.x - 2, v.y - 2, 2, 0, Math.PI * 2); ctx.fill();
+ });
+
  minions.forEach(m => {
  if (m.alive) {
  ctx.save();
  ctx.translate(m.x, m.y);
- ctx.strokeStyle = '#d00000';
- ctx.lineWidth = 6;
+ ctx.strokeStyle = '#ff4757';
+ ctx.lineWidth = 7;
  ctx.beginPath();
- ctx.moveTo(-15, 0);
- ctx.quadraticCurveTo(0, Math.sin(m.anim) * 10, 15, 0);
+ ctx.moveTo(-16, 0);
+ ctx.quadraticCurveTo(0, Math.sin(m.anim) * 10, 16, 0);
  ctx.stroke();
- // Minion Red Crown
  ctx.fillStyle = '#ffd700';
- ctx.beginPath();
- ctx.arc(12, -4, 5, 0, Math.PI * 2);
- ctx.fill();
+ ctx.beginPath(); ctx.arc(12, -4, 5, 0, Math.PI * 2); ctx.fill();
  ctx.restore();
  }
  });
 
- // Draw 4 Levers (Level 3)
  if (currentLevel === 3) {
  levers.forEach(l => {
- ctx.fillStyle = l.active ? '#52b788' : '#e63946';
- ctx.fillRect(l.x - 12, l.y - 12, 24, 24);
+ ctx.fillStyle = l.active ? '#2ed573' : '#ff4757';
+ ctx.fillRect(l.x - 14, l.y - 14, 28, 28);
  ctx.strokeStyle = '#ffd700';
- ctx.lineWidth = 2;
- ctx.strokeRect(l.x - 12, l.y - 12, 24, 24);
+ ctx.lineWidth = 3;
+ ctx.strokeRect(l.x - 14, l.y - 14, 28, 28);
 
- // Handle orientation
  ctx.strokeStyle = '#ffffff';
- ctx.lineWidth = 4;
- ctx.beginPath();
- ctx.moveTo(l.x, l.y);
- ctx.lineTo(l.x + (l.active ? 10 : -10), l.y - 15);
- ctx.stroke();
+ ctx.lineWidth = 5;
+ ctx.beginPath(); ctx.moveTo(l.x, l.y); ctx.lineTo(l.x + (l.active ? 12 : -12), l.y - 18); ctx.stroke();
  });
  }
  }
@@ -765,34 +834,34 @@
  function drawHazards() {
  if (currentLevel !== 1) return;
 
- // Anacondas
  anacondas.forEach(snake => {
  const isTrapping = player.trappedBy === 'anaconda' && player.trappedEnemy === snake;
  ctx.save();
  ctx.translate(snake.x, snake.y);
- ctx.strokeStyle = '#2d6a4f';
- ctx.lineWidth = 6;
+ ctx.strokeStyle = '#2ed573';
+ ctx.lineWidth = 7;
  ctx.beginPath();
  if (isTrapping) {
- ctx.arc(0, -10, 14, 0, Math.PI * 2);
+ ctx.arc(0, -10, 15, 0, Math.PI * 2);
  } else {
- ctx.moveTo(-20, 0);
- ctx.quadraticCurveTo(-10, Math.sin(snake.anim) * 8, 0, 0);
- ctx.quadraticCurveTo(10, Math.sin(snake.anim + 1.5) * 8, 20, 0);
+ ctx.moveTo(-22, 0);
+ ctx.quadraticCurveTo(-11, Math.sin(snake.anim) * 8, 0, 0);
+ ctx.quadraticCurveTo(11, Math.sin(snake.anim + 1.5) * 8, 22, 0);
  }
  ctx.stroke();
  ctx.restore();
  });
 
- // Angry Rocks
  angryRocks.forEach(rock => {
  ctx.save();
  ctx.translate(rock.x, rock.y);
  ctx.rotate(rock.angle);
- ctx.fillStyle = '#6c757d';
- ctx.beginPath(); ctx.arc(0, 0, rock.radius, 0, Math.PI * 2); ctx.fill();
- ctx.fillStyle = '#ff0000';
- ctx.beginPath(); ctx.arc(-5, -3, 3, 0, Math.PI * 2); ctx.arc(5, -3, 3, 0, Math.PI * 2); ctx.fill();
+ ctx.fillStyle = '#747d8c';
+ ctx.strokeStyle = '#2f3542';
+ ctx.lineWidth = 2;
+ ctx.beginPath(); ctx.arc(0, 0, rock.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ ctx.fillStyle = '#ff4757';
+ ctx.beginPath(); ctx.arc(-5, -3, 3.5, 0, Math.PI * 2); ctx.arc(5, -3, 3.5, 0, Math.PI * 2); ctx.fill();
  ctx.restore();
  });
  }
@@ -803,14 +872,18 @@
  coins.forEach(coin => {
  if (!coin.collected) {
  ctx.fillStyle = '#ffd700';
- ctx.beginPath(); ctx.arc(coin.x, coin.y, 6, 0, Math.PI * 2); ctx.fill();
+ ctx.strokeStyle = '#ffa500';
+ ctx.lineWidth = 2;
+ ctx.beginPath(); ctx.arc(coin.x, coin.y, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
  }
  });
 
  armorItems.forEach(item => {
  if (!item.collected) {
  ctx.fillStyle = '#ffd700';
- ctx.fillRect(item.x - 6, item.y - 6, 12, 12);
+ ctx.fillRect(item.x - 7, item.y - 7, 14, 14);
+ ctx.strokeStyle = '#ffffff';
+ ctx.strokeRect(item.x - 7, item.y - 7, 14, 14);
  }
  });
  }
@@ -818,57 +891,49 @@
  function drawStickman(x, y, facing, walkFrame) {
  ctx.strokeStyle = '#ffffff';
  ctx.fillStyle = '#ffffff';
- ctx.lineWidth = 1.8;
+ ctx.lineWidth = 2.2;
  ctx.lineCap = 'round';
 
- const headRadius = 5;
- const bodyLength = 15;
- const legLength = 11;
+ const headRadius = 6;
+ const bodyLength = 16;
+ const legLength = 12;
  const neckY = y - bodyLength;
  const headY = neckY - headRadius;
  const shoulderY = neckY + 4;
  const legSwing = Math.sin(walkFrame) * 6;
  const armSwing = Math.sin(walkFrame + Math.PI) * 4;
 
- // Invincibility Rainbow Aura Effect
  if (player.invincibleTimer > 0) {
  ctx.save();
- ctx.strokeStyle = `hsl(${(Date.now() / 5) % 360}, 100%, 50%)`;
- ctx.lineWidth = 3;
- ctx.beginPath();
- ctx.arc(x, y - 10, 24, 0, Math.PI * 2);
- ctx.stroke();
+ ctx.strokeStyle = `hsl(${(Date.now() / 4) % 360}, 100%, 50%)`;
+ ctx.lineWidth = 4;
+ ctx.beginPath(); ctx.arc(x, y - 10, 26, 0, Math.PI * 2); ctx.stroke();
  ctx.restore();
  }
 
- // Head
  ctx.beginPath(); ctx.arc(x, headY, headRadius, 0, Math.PI * 2); ctx.stroke();
 
- // Armor Overlay
  if (player.armor.helmet) {
  ctx.fillStyle = '#ffd700';
- ctx.beginPath(); ctx.arc(x, headY, headRadius + 1.5, Math.PI * 0.8, Math.PI * 2.2); ctx.fill();
+ ctx.beginPath(); ctx.arc(x, headY, headRadius + 2, Math.PI * 0.8, Math.PI * 2.2); ctx.fill();
  }
 
- // Torso
  ctx.beginPath(); ctx.moveTo(x, neckY); ctx.lineTo(x, y); ctx.stroke();
  if (player.armor.chestplate) {
- ctx.fillStyle = '#ffd700'; ctx.fillRect(x - 4, neckY + 2, 8, bodyLength - 3);
+ ctx.fillStyle = '#ffd700'; ctx.fillRect(x - 5, neckY + 2, 10, bodyLength - 3);
  }
 
- // Legs
  ctx.strokeStyle = player.armor.leggings ? '#ffd700' : '#ffffff';
  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - legSwing, y + legLength); ctx.stroke();
  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + legSwing, y + legLength); ctx.stroke();
 
- // Arms
  ctx.strokeStyle = '#ffffff';
  ctx.beginPath(); ctx.moveTo(x, shoulderY); ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6); ctx.stroke();
  ctx.beginPath(); ctx.moveTo(x, shoulderY); ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6); ctx.stroke();
 
  if (player.armor.shield) {
  ctx.fillStyle = '#ffd700';
- ctx.beginPath(); ctx.arc(x + facing * 8, shoulderY + 6, 6, 0, Math.PI * 2); ctx.fill();
+ ctx.beginPath(); ctx.arc(x + facing * 9, shoulderY + 6, 7, 0, Math.PI * 2); ctx.fill();
  }
  }
 
@@ -877,26 +942,22 @@
  const h = canvas.height;
 
  ctx.fillStyle = '#ffffff';
- ctx.font = '12px "Courier New", monospace';
+ ctx.font = 'bold 13px "Courier New", monospace';
  ctx.textAlign = 'left';
 
- // Invincibility HUD Indicator
  if (player.invincibleTimer > 0) {
- const secondsLeft = (player.invincibleTimer / 60).toFixed(1);
- ctx.fillStyle = '#00f5d4';
- ctx.font = 'bold 14px "Courier New", monospace';
- ctx.fillText(`INVINCIBLE SHIELD: ${secondsLeft}s`, 15, 80);
+ ctx.fillStyle = '#7bed9f';
+ ctx.fillText(`INVINCIBLE SHIELD: ${(player.invincibleTimer / 60).toFixed(1)}s`, 15, 80);
  }
 
- // Level Specific HUD Elements
  if (currentLevel === 1) {
  ctx.fillStyle = '#ffd700';
  ctx.fillText(`COINS: ${player.coinsCollected} / ${coins.length}`, 15, 25);
  const collectedArmorCount = Object.values(player.armor).filter(Boolean).length;
  ctx.fillText(`ARMOR: ${collectedArmorCount} / 4`, 15, 45);
  if (portal) {
- ctx.fillStyle = '#00f5d4';
- ctx.fillText("PORTAL OPEN! STEP INTO THE PORTAL!", 15, 62);
+ ctx.fillStyle = '#7bed9f';
+ ctx.fillText("PORTAL OPEN! STEP INTO THE PORTAL!", 15, 65);
  }
  } else if (currentLevel === 2) {
  ctx.fillStyle = '#ffd700';
@@ -909,17 +970,42 @@
  ctx.fillText(`LEVERS PULLED: ${activeLevers} / 4`, 15, 25);
  }
 
- // Trap Prompts
  if (player.trappedBy === 'anaconda') {
- ctx.fillStyle = '#ff4d4d';
- ctx.font = 'bold 18px "Courier New", monospace';
+ ctx.fillStyle = '#ff4757';
+ ctx.font = 'bold 18px sans-serif';
  ctx.textAlign = 'center';
  ctx.fillText('ANACONDA SQUEEZE! SPAM [W] AND [S] TO ESCAPE!', w / 2, h * 0.2);
+ ctx.fillStyle = '#ff6b81';
+ ctx.font = 'bold 14px sans-serif';
+ ctx.fillText(`Squeeze Time Left: ${(10 - player.squeezeTimer/60).toFixed(1)}s`, w / 2, h * 0.25);
  } else if (player.trappedBy === 'vine') {
- ctx.fillStyle = '#52b788';
- ctx.font = 'bold 18px "Courier New", monospace';
+ ctx.fillStyle = '#2ed573';
+ ctx.font = 'bold 18px sans-serif';
  ctx.textAlign = 'center';
  ctx.fillText('TANGLED IN VINES! SPAM [A] AND [D] TO CUT FREE!', w / 2, h * 0.2);
+ }
+
+ // Modal Screens for Defeat & Victory
+ if (gameState === 'GAMEOVER') {
+ ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+ ctx.fillRect(0, 0, w, h);
+ ctx.fillStyle = '#ff4757';
+ ctx.font = 'bold 32px sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText('GAME OVER - SQUEEZED BY ANACONDA!', w / 2, h * 0.42);
+ ctx.fillStyle = '#ffffff';
+ ctx.font = 'bold 16px sans-serif';
+ ctx.fillText('Click "Reset Game" button at the top to try again!', w / 2, h * 0.52);
+ } else if (gameState === 'VICTORY') {
+ ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+ ctx.fillRect(0, 0, w, h);
+ ctx.fillStyle = '#ffd700';
+ ctx.font = 'bold 36px sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText('VICTORY! AZTEC TEMPLE CONQUERED!', w / 2, h * 0.42);
+ ctx.fillStyle = '#7bed9f';
+ ctx.font = 'bold 18px sans-serif';
+ ctx.fillText('You unlocked the boss door and saved the jungle!', w / 2, h * 0.52);
  }
  }
 
