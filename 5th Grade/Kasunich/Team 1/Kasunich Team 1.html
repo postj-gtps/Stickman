@@ -10,7 +10,7 @@
  user-select: none;
  margin: 0;
  padding: 0;
- font-family: 'Courier New', Courier, monospace, sans-serif;
+ font-family: 'Fredoka', 'Chalkboard SE', 'Comic Sans MS', 'Trebuchet MS', sans-serif;
  }
 
  body {
@@ -22,7 +22,7 @@
  justify-content: flex-start;
  height: 100vh;
  overflow: hidden;
- padding: 12px;
+ padding: 10px;
  }
 
  #header {
@@ -32,8 +32,11 @@
  width: 100%;
  max-width: 1100px;
  margin-bottom: 8px;
- padding-bottom: 8px;
- border-bottom: 1px solid #444444;
+ padding: 8px 14px;
+ background: #181824;
+ border: 2px solid #ffcc00;
+ border-radius: 10px;
+ box-shadow: 0 4px 15px rgba(255, 204, 0, 0.2);
  }
 
  .title-group {
@@ -42,75 +45,116 @@
  }
 
  h1 {
- font-size: 18px;
- letter-spacing: 2px;
+ font-size: 20px;
+ letter-spacing: 1.5px;
  text-transform: uppercase;
- font-weight: bold;
- color: #ffffff;
+ font-weight: 900;
+ color: #ffcc00;
+ text-shadow: 2px 2px #ff3366;
  }
 
  #location-info {
  font-size: 13px;
- color: #ffcc00;
+ color: #00ffcc;
  margin-top: 2px;
  font-weight: bold;
+ text-shadow: 1px 1px #000000;
  }
 
- /* Key Inventory Badge Bar */
+ .hud-right {
+ display: flex;
+ align-items: center;
+ gap: 12px;
+ }
+
+ #hp-bar-container {
+ display: flex;
+ align-items: center;
+ gap: 6px;
+ background: #222233;
+ padding: 5px 10px;
+ border-radius: 20px;
+ border: 2px solid #ff4444;
+ font-size: 12px;
+ font-weight: bold;
+ color: #ff5555;
+ }
+
+ #hp-bar-outer {
+ width: 90px;
+ height: 12px;
+ background: #441111;
+ border-radius: 6px;
+ overflow: hidden;
+ border: 1px solid #ff6666;
+ }
+
+ #hp-bar-inner {
+ width: 100%;
+ height: 100%;
+ background: linear-gradient(90deg, #ff3333, #ff8800);
+ border-radius: 6px;
+ transition: width 0.15s ease;
+ }
+
  #key-inventory {
  display: flex;
  align-items: center;
- gap: 8px;
- background: #1a1a1a;
- padding: 4px 10px;
- border-radius: 4px;
- border: 1px solid #333333;
+ gap: 6px;
+ background: #222233;
+ padding: 5px 12px;
+ border-radius: 20px;
+ border: 2px solid #00d2ff;
  }
 
  .key-label {
- font-size: 11px;
+ font-size: 12px;
  font-weight: bold;
- color: #aaa;
+ color: #00d2ff;
  text-transform: uppercase;
  margin-right: 2px;
  }
 
  .key-badge {
  font-size: 10px;
- font-weight: bold;
- padding: 3px 8px;
- border-radius: 3px;
+ font-weight: 800;
+ padding: 4px 9px;
+ border-radius: 12px;
  text-transform: uppercase;
  transition: all 0.2s ease;
- opacity: 0.3;
- border: 1px solid transparent;
- color: #888888;
- background: #222222;
+ opacity: 0.35;
+ border: 2px solid transparent;
+ color: #aaaaaa;
+ background: #11111a;
  }
 
- .key-badge.active.red { opacity: 1; color: #ffffff; background: #c0392b; border-color: #e74c3c; box-shadow: 0 0 8px #e74c3c; }
- .key-badge.active.blue { opacity: 1; color: #ffffff; background: #2980b9; border-color: #3498db; box-shadow: 0 0 8px #3498db; }
- .key-badge.active.green { opacity: 1; color: #ffffff; background: #27ae60; border-color: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
- .key-badge.active.yellow { opacity: 1; color: #000000; background: #f1c40f; border-color: #f39c12; box-shadow: 0 0 8px #f1c40f; }
+ .key-badge.active.red { opacity: 1; color: #ffffff; background: #c0392b; border-color: #ff5555; box-shadow: 0 0 10px #ff5555; }
+ .key-badge.active.blue { opacity: 1; color: #ffffff; background: #2980b9; border-color: #33ffff; box-shadow: 0 0 10px #33ffff; }
+ .key-badge.active.green { opacity: 1; color: #ffffff; background: #27ae60; border-color: #55ff55; box-shadow: 0 0 10px #55ff55; }
+ .key-badge.active.yellow { opacity: 1; color: #000000; background: #f1c40f; border-color: #ffff55; box-shadow: 0 0 10px #ffff55; }
 
- .key-badge.unlocked { opacity: 0.5; text-decoration: line-through; background: #111111; border-color: #444444; color: #aaaaaa; box-shadow: none; }
+ .key-badge.unlocked { opacity: 0.5; text-decoration: line-through; background: #111111; border-color: #666666; color: #888888; box-shadow: none; }
 
  .btn-reset {
- background: transparent;
- color: #ffffff;
- border: 1px solid #ffffff;
+ background: #ffcc00;
+ color: #000000;
+ border: 2px solid #ffffff;
  padding: 6px 16px;
- font-size: 14px;
- font-weight: bold;
+ font-size: 13px;
+ font-weight: 900;
+ border-radius: 20px;
  cursor: pointer;
  text-transform: uppercase;
  letter-spacing: 1px;
  transition: all 0.15s ease-in-out;
+ box-shadow: 0 3px 0 #cc9900;
  }
 
  .btn-reset:hover {
  background: #ffffff;
  color: #000000;
+ transform: translateY(-2px);
+ box-shadow: 0 5px 0 #cccccc;
  }
 
  #canvas-wrapper {
@@ -125,17 +169,24 @@
 
  canvas {
  background-color: #000000;
- border: 1px solid #ffffff;
+ border: 3px solid #ffcc00;
+ border-radius: 12px;
  display: block;
  width: 100%;
  height: 100%;
+ box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
  }
 
  .instructions {
- margin-top: 8px;
- font-size: 11px;
- color: #888888;
+ margin-top: 6px;
+ font-size: 12px;
+ color: #ffcc00;
+ font-weight: bold;
  text-align: center;
+ background: #181824;
+ padding: 6px 16px;
+ border-radius: 20px;
+ border: 1px solid #444466;
  }
 
  #victory-modal {
@@ -144,26 +195,28 @@
  top: 50%;
  left: 50%;
  transform: translate(-50%, -50%);
- background: rgba(0, 0, 0, 0.95);
- border: 2px solid #ffcc00;
- padding: 24px 32px;
+ background: rgba(15, 10, 25, 0.96);
+ border: 4px solid #a855f7;
+ padding: 28px 36px;
  text-align: center;
- border-radius: 6px;
- box-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
+ border-radius: 16px;
+ box-shadow: 0 0 35px rgba(168, 85, 247, 0.8);
  z-index: 10;
  }
 
  #victory-modal h2 {
  color: #ffcc00;
- font-size: 22px;
+ font-size: 26px;
  margin-bottom: 10px;
  text-transform: uppercase;
+ text-shadow: 2px 2px #a855f7;
  }
 
  #victory-modal p {
- font-size: 13px;
+ font-size: 14px;
  color: #ffffff;
- margin-bottom: 16px;
+ margin-bottom: 20px;
+ font-weight: bold;
  }
  </style>
 </head>
@@ -173,6 +226,12 @@
  <div class="title-group">
  <h1>Stickman City Navigator</h1>
  <div id="location-info">Sector: Stadium</div>
+ </div>
+
+ <div class="hud-right">
+ <div id="hp-bar-container">
+ <span>❤️ HP</span>
+ <div id="hp-bar-outer"><div id="hp-bar-inner"></div></div>
  </div>
 
  <div id="key-inventory">
@@ -185,19 +244,20 @@
 
  <button class="btn-reset" onclick="resetGame()">Reset Game</button>
  </div>
+ </div>
 
  <div id="canvas-wrapper">
  <canvas id="simCanvas"></canvas>
  
  <div id="victory-modal">
- <h2>Goal Reached!</h2>
- <p>Stickman unlocked all 4 color walls and reached RYFFR!</p>
+ <h2 id="modal-title">Goal Reached!</h2>
+ <p id="modal-desc">Stickman defeated the Purple Building Boss and unlocked RYFFR!</p>
  <button class="btn-reset" onclick="resetGame()">Play Again</button>
  </div>
  </div>
 
  <div class="instructions">
- Movement: [WASD] Keys Only | Collect keys & touch matching walls at RYFFR to unlock them!
+ 🎮 Controls: [WASD] Walk | [ENTER] Shoot Ketchup Gun 🍅 | Defeat Cheeseburgers 🍔 to collect Keys 🔑 | Touch RYFFR Walls 🏰 to unlock them!
  </div>
 
  <script>
@@ -215,7 +275,8 @@
  PARK: 'Park',
  RESIDENTIAL: 'Residential District',
  INDUSTRIAL: 'Industrial Zone',
- RYFFR: 'Red & Yellow Fast Food Restaurant'
+ RYFFR: 'Red & Yellow Fast Food Restaurant',
+ PURPLE_BOSS: 'Purple Building Boss Arena'
  };
 
  const KEY_COLORS = {
@@ -230,6 +291,8 @@
  let currentGridY = CENTER;
  let ryffrX = 0;
  let ryffrY = 0;
+ let bossX = 1;
+ let bossY = 1;
  let hasWon = false;
 
  // RYFFR Wall & Key State
@@ -237,13 +300,27 @@
  let hasKey = { red: false, blue: false, green: false, yellow: false };
  let unlockedWalls = { red: false, blue: false, green: false, yellow: false };
 
- // BASELINE SIDE-VIEW STICKMAN
+ // Projectiles, Particles, Popups
+ let ketchupProjectiles = [];
+ let pickleProjectiles = [];
+ let particles = [];
+ let popups = [];
+
+ // Boss State
+ let purpleBoss = null;
+
+ // Player
  const player = {
  x: 0,
  y: 0,
  speed: 4.0,
  facing: 1,
- walkFrame: 0
+ walkFrame: 0,
+ hp: 100,
+ maxHp: 100,
+ isLifted: false,
+ liftTimer: 0,
+ liftSource: null
  };
 
  function seededRandom(seed) {
@@ -259,15 +336,40 @@
  return arr;
  }
 
+ function spawnPopup(x, y, text, color = '#ffffff') {
+ popups.push({ x, y, text, color, opacity: 1.0, vy: -1.2, life: 40 });
+ }
+
+ function spawnSplatParticles(x, y, color, count = 8) {
+ for (let i = 0; i < count; i++) {
+ const angle = Math.random() * Math.PI * 2;
+ const spd = 1 + Math.random() * 4;
+ particles.push({
+ x, y,
+ vx: Math.cos(angle) * spd,
+ vy: Math.sin(angle) * spd,
+ color,
+ radius: 2 + Math.random() * 3,
+ opacity: 1.0,
+ life: 25
+ });
+ }
+ }
+
  function generateCityMap() {
  hasKey = { red: false, blue: false, green: false, yellow: false };
  unlockedWalls = { red: false, blue: false, green: false, yellow: false };
  wallOrder = shuffleArray(['red', 'blue', 'green', 'yellow']);
  updateKeyInventoryUI();
 
+ ketchupProjectiles = [];
+ pickleProjectiles = [];
+ particles = [];
+ popups = [];
+
  cityGrid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null));
 
- cityGrid[CENTER][CENTER] = { type: TILE_TYPES.STADIUM, seed: Math.random() * 1000, key: null };
+ cityGrid[CENTER][CENTER] = { type: TILE_TYPES.STADIUM, seed: Math.random() * 1000, key: null, cheeseburger: null };
 
  const outerCoords = [];
  for (let x = 0; x < GRID_SIZE; x++) {
@@ -280,7 +382,13 @@
  const randomOuterIndex = Math.floor(Math.random() * outerCoords.length);
  ryffrX = outerCoords[randomOuterIndex].x;
  ryffrY = outerCoords[randomOuterIndex].y;
- cityGrid[ryffrX][ryffrY] = { type: TILE_TYPES.RYFFR, seed: Math.random() * 1000, key: null };
+ cityGrid[ryffrX][ryffrY] = { type: TILE_TYPES.RYFFR, seed: Math.random() * 1000, key: null, cheeseburger: null };
+
+ const bossCoords = outerCoords.filter(c => c.x !== ryffrX || c.y !== ryffrY);
+ const randomBossIndex = Math.floor(Math.random() * bossCoords.length);
+ bossX = bossCoords[randomBossIndex].x;
+ bossY = bossCoords[randomBossIndex].y;
+ cityGrid[bossX][bossY] = { type: TILE_TYPES.PURPLE_BOSS, seed: Math.random() * 1000, key: null, cheeseburger: null };
 
  const interveningTypes = [
  TILE_TYPES.DENSE_CITY,
@@ -295,32 +403,66 @@
  for (let y = 0; y < GRID_SIZE; y++) {
  if (!cityGrid[x][y]) {
  const randomType = interveningTypes[Math.floor(Math.random() * interveningTypes.length)];
- cityGrid[x][y] = { type: randomType, seed: Math.floor(Math.random() * 10000), key: null };
+ cityGrid[x][y] = { type: randomType, seed: Math.floor(Math.random() * 10000), key: null, cheeseburger: null };
  availableKeyTiles.push({ x, y });
  }
  }
  }
 
- // Scatter 4 keys onto 4 distinct map tiles somewhere on paved roads
  shuffleArray(availableKeyTiles);
  const colorKeys = ['red', 'blue', 'green', 'yellow'];
+
+ // 1. Assign 4 Key Cheeseburgers to distinct sectors
  for (let i = 0; i < 4 && i < availableKeyTiles.length; i++) {
  const pos = availableKeyTiles[i];
- const isHorizontal = Math.random() < 0.5;
- let xRatio, yRatio;
-
- if (isHorizontal) {
- xRatio = 0.12 + Math.random() * 0.76;
- yRatio = 0.40 + Math.random() * 0.20;
- } else {
- xRatio = 0.40 + Math.random() * 0.20;
- yRatio = 0.12 + Math.random() * 0.76;
- }
-
  cityGrid[pos.x][pos.y].key = colorKeys[i];
- cityGrid[pos.x][pos.y].keyXRatio = xRatio;
- cityGrid[pos.x][pos.y].keyYRatio = yRatio;
+ cityGrid[pos.x][pos.y].cheeseburger = {
+ colorKey: colorKeys[i],
+ xRatio: 0.20 + Math.random() * 0.60,
+ yRatio: 0.20 + Math.random() * 0.60,
+ hp: 4,
+ maxHp: 4,
+ isDefeated: false,
+ shootTimer: 0,
+ liftTimer: 0,
+ liftCooldown: 300 + Math.random() * 200,
+ floatOffset: Math.random() * Math.PI * 2
+ };
  }
+
+ // 2. Assign Patrolling Mini-Cheeseburgers to ALL other non-special sectors
+ for (let x = 0; x < GRID_SIZE; x++) {
+ for (let y = 0; y < GRID_SIZE; y++) {
+ const cell = cityGrid[x][y];
+ if (cell.type !== TILE_TYPES.STADIUM && cell.type !== TILE_TYPES.RYFFR && cell.type !== TILE_TYPES.PURPLE_BOSS && !cell.cheeseburger) {
+ cell.cheeseburger = {
+ colorKey: null,
+ xRatio: 0.25 + Math.random() * 0.50,
+ yRatio: 0.25 + Math.random() * 0.50,
+ hp: 3,
+ maxHp: 3,
+ isDefeated: false,
+ shootTimer: 0,
+ liftTimer: 0,
+ liftCooldown: 400 + Math.random() * 200,
+ floatOffset: Math.random() * Math.PI * 2
+ };
+ }
+ }
+ }
+
+ purpleBoss = {
+ hp: 25,
+ maxHp: 25,
+ isDefeated: false,
+ shootTimer: 0,
+ liftTimer: 0,
+ liftCooldown: 240,
+ floatOffset: 0
+ };
+
+ player.hp = player.maxHp;
+ updateHpUI();
  }
 
  function updateKeyInventoryUI() {
@@ -341,6 +483,12 @@
  });
  }
 
+ function updateHpUI() {
+ const inner = document.getElementById('hp-bar-inner');
+ const pct = Math.max(0, (player.hp / player.maxHp) * 100);
+ inner.style.width = pct + '%';
+ }
+
  function resizeCanvas() {
  const wrapper = document.getElementById('canvas-wrapper');
  canvas.width = wrapper.clientWidth;
@@ -353,7 +501,6 @@
 
  window.addEventListener('resize', resizeCanvas);
 
- // STRICT WASD CONTROLS (ARROW KEYS BLOCKED)
  window.addEventListener('keydown', (e) => {
  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
  e.preventDefault();
@@ -364,6 +511,11 @@
  e.preventDefault();
  keys[e.code] = true;
  }
+
+ if (e.code === 'Enter') {
+ e.preventDefault();
+ shootKetchup();
+ }
  });
 
  window.addEventListener('keyup', (e) => {
@@ -372,11 +524,28 @@
  }
  });
 
+ function shootKetchup() {
+ if (hasWon) return;
+ ketchupProjectiles.push({
+ x: player.x + player.facing * 14,
+ y: player.y - 14,
+ vx: player.facing * 9.5,
+ vy: (Math.random() - 0.5) * 1.5,
+ radius: 6,
+ life: 55
+ });
+ spawnPopup(player.x, player.y - 30, 'SQUIRT!', '#ff3366');
+ }
+
  function resetPlayerToCenter() {
  player.x = canvas.width / 2;
  player.y = canvas.height / 2;
  player.facing = 1;
  player.walkFrame = 0;
+ player.hp = player.maxHp;
+ player.isLifted = false;
+ player.liftTimer = 0;
+ updateHpUI();
  }
 
  function resetGame() {
@@ -410,7 +579,6 @@
  };
  }
 
- // WALKABILITY CHECK (WALLS BLOCK UNTIL EXPLICITLY TOUCHED AND UNLOCKED)
  function isWalkable(px, py) {
  const b = getRoadBounds();
  const currentTile = cityGrid[currentGridX][currentGridY];
@@ -425,7 +593,7 @@
  const inNorthExit = (px >= b.minX && px <= b.maxX && py <= b.minY);
  const inSouthExit = (px >= b.minX && px <= b.maxX && py >= b.maxY);
  const inWestExit = (py >= b.minY && py <= b.maxY && px <= b.minX);
- const inEastExit = (py >= b.minY && py <= b.maxY && px >= b.maxX);
+ const inEastExit = (py >= b.minY && py <= b.maxX && px >= b.maxX);
 
  return inStadiumField || inNorthExit || inSouthExit || inWestExit || inEastExit;
  } 
@@ -434,7 +602,6 @@
  const inVerticalRoad = (px >= b.minX && px <= b.maxX);
  if (!inHorizontalRoad && !inVerticalRoad) return false;
 
- // RYFFR Color Wall Blocking Logic
  const cx = canvas.width / 2;
  const cy = canvas.height / 2;
  const distFromCenter = Math.hypot(px - cx, py - cy);
@@ -448,7 +615,6 @@
  const pad = (4 - i) * 16;
  const wallRadius = baseBuildingRadius + pad;
 
- // Wall blocks passage until UNLOCKED (Holding key alone doesn't pass until touched)
  if (!unlockedWalls[colorKey] && distFromCenter < wallRadius + 6) {
  return false;
  }
@@ -475,6 +641,11 @@
  function updatePhysics() {
  if (hasWon) return;
 
+ const w = canvas.width;
+ const h = canvas.height;
+ const currentTile = cityGrid[currentGridX][currentGridY];
+
+ // Player Movement
  let dx = 0;
  let dy = 0;
 
@@ -488,40 +659,210 @@
  dy *= 0.7071;
  }
 
- const nextX = player.x + dx * player.speed;
- const nextY = player.y + dy * player.speed;
+ const moveSpeed = player.isLifted ? player.speed * 0.35 : player.speed;
+ const nextX = player.x + dx * moveSpeed;
+ const nextY = player.y + dy * moveSpeed;
 
- if (isWalkable(nextX, player.y)) {
- player.x = nextX;
+ if (isWalkable(nextX, player.y)) player.x = nextX;
+ if (isWalkable(player.x, nextY)) player.y = nextY;
+
+ if (dx !== 0 || dy !== 0) player.walkFrame += 0.25;
+ else player.walkFrame = 0;
+
+ if (player.isLifted) {
+ player.liftTimer--;
+ if (player.liftTimer <= 0) {
+ player.isLifted = false;
+ player.liftSource = null;
  }
- if (isWalkable(player.x, nextY)) {
- player.y = nextY;
  }
 
- if (dx !== 0 || dy !== 0) {
- player.walkFrame += 0.25;
- } else {
- player.walkFrame = 0;
+ // Popups & Particles
+ for (let i = popups.length - 1; i >= 0; i--) {
+ const p = popups[i];
+ p.y += p.vy;
+ p.life--;
+ p.opacity = p.life / 40;
+ if (p.life <= 0) popups.splice(i, 1);
  }
 
- const currentTile = cityGrid[currentGridX][currentGridY];
+ for (let i = particles.length - 1; i >= 0; i--) {
+ const pt = particles[i];
+ pt.x += pt.vx;
+ pt.y += pt.vy;
+ pt.life--;
+ pt.opacity = pt.life / 25;
+ if (pt.life <= 0) particles.splice(i, 1);
+ }
 
- // 1. Check Key Pickup Collision (Pick up key into inventory)
- if (currentTile.key && !hasKey[currentTile.key]) {
- const keyX = currentTile.keyXRatio * canvas.width;
- const keyY = currentTile.keyYRatio * canvas.height;
- const distToKey = Math.hypot(player.x - keyX, player.y - keyY);
- if (distToKey < 25) {
- hasKey[currentTile.key] = true;
+ // Ketchup Projectiles
+ for (let i = ketchupProjectiles.length - 1; i >= 0; i--) {
+ const kp = ketchupProjectiles[i];
+ kp.x += kp.vx;
+ kp.y += kp.vy;
+ kp.life--;
+
+ if (kp.life <= 0) {
+ ketchupProjectiles.splice(i, 1);
+ continue;
+ }
+
+ if (currentTile.cheeseburger && !currentTile.cheeseburger.isDefeated) {
+ const cb = currentTile.cheeseburger;
+ const cbX = cb.xRatio * w;
+ const cbY = cb.yRatio * h + Math.sin(cb.floatOffset) * 8;
+ const dist = Math.hypot(kp.x - cbX, kp.y - cbY);
+
+ if (dist < 30) {
+ cb.hp--;
+ spawnSplatParticles(kp.x, kp.y, '#ff0033', 10);
+ spawnPopup(cbX, cbY - 20, 'CRUNCH! -1 HP', '#ffcc00');
+ ketchupProjectiles.splice(i, 1);
+
+ if (cb.hp <= 0) {
+ cb.isDefeated = true;
+ if (cb.colorKey) {
+ hasKey[cb.colorKey] = true;
  updateKeyInventoryUI();
+ spawnPopup(cbX, cbY - 30, `+1 ${cb.colorKey.toUpperCase()} KEY! 🔑`, KEY_COLORS[cb.colorKey].hex);
+ } else {
+ spawnPopup(cbX, cbY - 30, 'CHEESEBURGER DEFEATED! 🍔', '#ffcc00');
+ }
+ }
+ continue;
  }
  }
 
- // 2. Check Wall Touch Unlocking at RYFFR Screen
+ if (currentTile.type === TILE_TYPES.PURPLE_BOSS && !purpleBoss.isDefeated) {
+ const bossXPos = w / 2;
+ const bossYPos = h * 0.38 + Math.sin(purpleBoss.floatOffset) * 10;
+ const dist = Math.hypot(kp.x - bossXPos, kp.y - bossYPos);
+
+ if (dist < 50) {
+ purpleBoss.hp--;
+ spawnSplatParticles(kp.x, kp.y, '#ff0033', 12);
+ spawnPopup(bossXPos, bossYPos - 40, 'BOSS SPLAT! -1 HP', '#ff3366');
+ ketchupProjectiles.splice(i, 1);
+
+ if (purpleBoss.hp <= 0) {
+ purpleBoss.isDefeated = true;
+ hasWon = true;
+ document.getElementById('modal-title').innerText = "BOSS DEFEATED!";
+ document.getElementById('modal-desc').innerText = "Stickman defeated the King Cheeseburger Boss and saved the city!";
+ document.getElementById('victory-modal').style.display = 'block';
+ }
+ continue;
+ }
+ }
+ }
+
+ // Pickle Projectiles
+ for (let i = pickleProjectiles.length - 1; i >= 0; i--) {
+ const pk = pickleProjectiles[i];
+
+ if (pk.isTeleporting) {
+ pk.teleportTimer = (pk.teleportTimer || 0) + 1;
+ if (pk.teleportTimer % 35 === 0) {
+ const angle = Math.atan2(player.y - pk.y, player.x - pk.x);
+ pk.x += Math.cos(angle) * 75;
+ pk.y += Math.sin(angle) * 75;
+ spawnSplatParticles(pk.x, pk.y, '#00ffcc', 6);
+ }
+ }
+
+ pk.x += pk.vx;
+ pk.y += pk.vy;
+ pk.life--;
+
+ const hitDist = Math.hypot(pk.x - player.x, pk.y - (player.y - 12));
+ if (hitDist < 18) {
+ player.hp -= 8;
+ updateHpUI();
+ spawnSplatParticles(player.x, player.y - 12, '#27ae60', 10);
+ spawnPopup(player.x, player.y - 30, 'OUCH! -8 HP', '#ff3333');
+ pickleProjectiles.splice(i, 1);
+
+ if (player.hp <= 0) {
+ spawnPopup(player.x, player.y, 'KNOCKED OUT!', '#ff0000');
+ resetPlayerToCenter();
+ }
+ continue;
+ }
+
+ if (pk.life <= 0) {
+ pickleProjectiles.splice(i, 1);
+ }
+ }
+
+ // Mini Cheeseburger AI
+ if (currentTile.cheeseburger && !currentTile.cheeseburger.isDefeated) {
+ const cb = currentTile.cheeseburger;
+ cb.floatOffset += 0.05;
+ const cbX = cb.xRatio * w;
+ const cbY = cb.yRatio * h;
+
+ cb.shootTimer++;
+ if (cb.shootTimer >= 65) {
+ cb.shootTimer = 0;
+ const angle = Math.atan2(player.y - cbY, player.x - cbX);
+ const isTeleport = Math.random() < 0.45;
+
+ pickleProjectiles.push({
+ x: cbX,
+ y: cbY,
+ vx: Math.cos(angle) * 4.8,
+ vy: Math.sin(angle) * 4.8,
+ isTeleporting: isTeleport,
+ life: 180
+ });
+ }
+
+ cb.liftCooldown--;
+ if (cb.liftCooldown <= 0 && !player.isLifted) {
+ cb.liftCooldown = 400 + Math.random() * 200;
+ player.isLifted = true;
+ player.liftTimer = 360;
+ player.liftSource = { x: cbX, y: cbY };
+ spawnPopup(player.x, player.y - 40, 'AIR LIFTED! 🛸', '#f1c40f');
+ }
+ }
+
+ // Purple Boss AI
+ if (currentTile.type === TILE_TYPES.PURPLE_BOSS && !purpleBoss.isDefeated) {
+ purpleBoss.floatOffset += 0.04;
+ const bX = w / 2;
+ const bY = h * 0.38;
+
+ purpleBoss.shootTimer++;
+ if (purpleBoss.shootTimer >= 40) {
+ purpleBoss.shootTimer = 0;
+ const angle = Math.atan2(player.y - bY, player.x - bX);
+
+ pickleProjectiles.push({
+ x: bX,
+ y: bY,
+ vx: Math.cos(angle) * 5.8,
+ vy: Math.sin(angle) * 5.8,
+ isTeleporting: true,
+ life: 200
+ });
+ }
+
+ purpleBoss.liftCooldown--;
+ if (purpleBoss.liftCooldown <= 0 && !player.isLifted) {
+ purpleBoss.liftCooldown = 350;
+ player.isLifted = true;
+ player.liftTimer = 450;
+ player.liftSource = { x: bX, y: bY };
+ spawnPopup(player.x, player.y - 40, 'BOSS TRACTOR BEAM! ⚡', '#a855f7');
+ }
+ }
+
+ // RYFFR Wall Unlocking & Victory
  if (currentTile.type === TILE_TYPES.RYFFR) {
  const b = getRoadBounds();
- const cx = canvas.width / 2;
- const cy = canvas.height / 2;
+ const cx = w / 2;
+ const cy = h / 2;
  const distFromCenter = Math.hypot(player.x - cx, player.y - cy);
 
  const bw = b.roadW * 0.85;
@@ -533,61 +874,36 @@
  const pad = (4 - i) * 16;
  const wallRadius = baseBuildingRadius + pad;
 
- // If Stickman holds matching key, hasn't unlocked wall yet, and touches the barrier:
  if (hasKey[colorKey] && !unlockedWalls[colorKey]) {
  if (Math.abs(distFromCenter - wallRadius) < 18) {
  unlockedWalls[colorKey] = true;
  updateKeyInventoryUI();
+ spawnPopup(player.x, player.y - 30, `${colorKey.toUpperCase()} WALL UNLOCKED! 🔓`, KEY_COLORS[colorKey].hex);
  }
  }
  }
 
- // Check RYFFR Goal Trigger
  const distToRYFFR = Math.hypot(player.x - cx, player.y - cy);
  if (distToRYFFR < 35) {
  hasWon = true;
+ document.getElementById('modal-title').innerText = "GOAL REACHED!";
+ document.getElementById('modal-desc').innerText = "Stickman unlocked all 4 color walls and reached RYFFR!";
  document.getElementById('victory-modal').style.display = 'block';
  }
  }
 
+ // Transitions
  const margin = 10;
- const w = canvas.width;
- const h = canvas.height;
-
  if (player.x < margin) {
- if (currentGridX > 0) {
- currentGridX--;
- player.x = w - margin - 5;
- updateLocationUI();
- } else {
- player.x = margin;
- }
+ if (currentGridX > 0) { currentGridX--; player.x = w - margin - 5; updateLocationUI(); } else player.x = margin;
  } else if (player.x > w - margin) {
- if (currentGridX < GRID_SIZE - 1) {
- currentGridX++;
- player.x = margin + 5;
- updateLocationUI();
- } else {
- player.x = w - margin;
- }
+ if (currentGridX < GRID_SIZE - 1) { currentGridX++; player.x = margin + 5; updateLocationUI(); } else player.x = w - margin;
  }
 
  if (player.y < margin) {
- if (currentGridY > 0) {
- currentGridY--;
- player.y = h - margin - 5;
- updateLocationUI();
- } else {
- player.y = margin;
- }
+ if (currentGridY > 0) { currentGridY--; player.y = h - margin - 5; updateLocationUI(); } else player.y = margin;
  } else if (player.y > h - margin) {
- if (currentGridY < GRID_SIZE - 1) {
- currentGridY++;
- player.y = margin + 5;
- updateLocationUI();
- } else {
- player.y = h - margin;
- }
+ if (currentGridY < GRID_SIZE - 1) { currentGridY++; player.y = h - margin - 5; updateLocationUI(); } else player.y = h - margin;
  }
  }
 
@@ -647,33 +963,229 @@
  }
  }
 
- function drawKeyItem(x, y, colorKey) {
- const colorHex = KEY_COLORS[colorKey].hex;
+ function drawCheeseburger(x, y, cb) {
  ctx.save();
- ctx.translate(x, y);
+ ctx.translate(x, y + Math.sin(cb.floatOffset) * 8);
 
- const pulse = Math.sin(Date.now() * 0.006) * 3;
-
- ctx.fillStyle = colorHex;
- ctx.strokeStyle = colorHex;
- ctx.shadowColor = colorHex;
- ctx.shadowBlur = 12 + pulse;
-
- ctx.lineWidth = 3;
+ ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
  ctx.beginPath();
- ctx.arc(-8, 0, 7, 0, Math.PI * 2);
- ctx.stroke();
+ ctx.ellipse(0, 22, 20, 6, 0, 0, Math.PI * 2);
+ ctx.fill();
 
+ ctx.fillStyle = '#d35400';
+ ctx.fillRect(-18, 8, 36, 7);
+
+ ctx.fillStyle = '#4a235a';
+ ctx.fillRect(-20, 3, 40, 7);
+
+ ctx.fillStyle = '#f1c40f';
  ctx.beginPath();
- ctx.moveTo(-1, 0); ctx.lineTo(12, 0);
- ctx.moveTo(6, 0); ctx.lineTo(6, 6);
- ctx.moveTo(10, 0); ctx.lineTo(10, 6);
- ctx.stroke();
+ ctx.moveTo(-20, 3);
+ ctx.lineTo(20, 3);
+ ctx.lineTo(16, 9);
+ ctx.lineTo(8, 4);
+ ctx.lineTo(-2, 10);
+ ctx.lineTo(-12, 4);
+ ctx.closePath();
+ ctx.fill();
+
+ ctx.fillStyle = '#2ecc71';
+ ctx.fillRect(-18, 0, 36, 4);
+
+ ctx.fillStyle = '#e67e22';
+ ctx.beginPath();
+ ctx.arc(0, 0, 20, Math.PI, 0);
+ ctx.fill();
+
+ ctx.fillStyle = '#ffffff';
+ ctx.fillRect(-9, -11, 3, 2);
+ ctx.fillRect(-2, -15, 3, 2);
+ ctx.fillRect(7, -9, 3, 2);
+
+ ctx.fillStyle = '#000000';
+ ctx.fillRect(-8, -5, 4, 5);
+ ctx.fillRect(4, -5, 4, 5);
+
+ if (cb.colorKey) {
+ const keyHex = KEY_COLORS[cb.colorKey].hex;
+ ctx.fillStyle = keyHex;
+ ctx.strokeStyle = keyHex;
+ ctx.shadowColor = keyHex;
+ ctx.shadowBlur = 10;
+ ctx.beginPath();
+ ctx.arc(0, -28, 6, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.fillRect(-1.5, -28, 3, 12);
+ ctx.shadowBlur = 0;
+ }
+
+ ctx.fillStyle = '#333333';
+ ctx.fillRect(-18, -36, 36, 5);
+ ctx.fillStyle = '#2ecc71';
+ ctx.fillRect(-18, -36, (cb.hp / cb.maxHp) * 36, 5);
 
  ctx.restore();
  }
 
- // ==================== SECTOR DRAWER FUNCTIONS ====================
+ function drawPurpleBossScreen(w, h) {
+ ctx.fillStyle = '#120024';
+ ctx.fillRect(0, 0, w, h);
+
+ drawPlusSignRoad(w, h);
+
+ const bX = w / 2;
+ const bY = h * 0.38 + Math.sin(purpleBoss.floatOffset) * 10;
+
+ ctx.fillStyle = '#4a154b';
+ ctx.fillRect(w / 2 - 85, 20, 170, h * 0.45);
+ ctx.strokeStyle = '#a855f7';
+ ctx.lineWidth = 4;
+ ctx.strokeRect(w / 2 - 85, 20, 170, h * 0.45);
+
+ ctx.fillStyle = '#ffcc00';
+ ctx.font = '900 13px sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText('PURPLE BOSS TOWER 🏰', w / 2, 42);
+
+ if (!purpleBoss.isDefeated) {
+ ctx.save();
+ ctx.translate(bX, bY);
+
+ ctx.fillStyle = '#d35400';
+ ctx.fillRect(-48, 20, 96, 18);
+
+ ctx.fillStyle = '#3b170b';
+ ctx.fillRect(-54, 2, 108, 18);
+
+ ctx.fillStyle = '#f1c40f';
+ ctx.fillRect(-52, -4, 104, 10);
+
+ ctx.fillStyle = '#e67e22';
+ ctx.beginPath();
+ ctx.arc(0, -4, 52, Math.PI, 0);
+ ctx.fill();
+
+ ctx.fillStyle = '#f1c40f';
+ ctx.beginPath();
+ ctx.moveTo(-22, -56);
+ ctx.lineTo(-11, -42);
+ ctx.lineTo(0, -62);
+ ctx.lineTo(11, -42);
+ ctx.lineTo(22, -56);
+ ctx.lineTo(28, -38);
+ ctx.lineTo(-28, -38);
+ ctx.closePath();
+ ctx.fill();
+
+ ctx.fillStyle = '#ff0055';
+ ctx.fillRect(-20, -20, 12, 10);
+ ctx.fillRect(8, -20, 12, 10);
+
+ ctx.restore();
+
+ const allKeysCollected = Object.values(hasKey).every(v => v);
+ ctx.fillStyle = '#000000';
+ ctx.fillRect(w / 2 - 130, 8, 260, 20);
+ ctx.strokeStyle = '#a855f7';
+ ctx.lineWidth = 2;
+ ctx.strokeRect(w / 2 - 130, 8, 260, 20);
+
+ ctx.fillStyle = allKeysCollected ? '#a855f7' : '#555555';
+ ctx.fillRect(w / 2 - 128, 10, (purpleBoss.hp / purpleBoss.maxHp) * 256, 16);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = 'bold 11px monospace';
+ ctx.fillText(allKeysCollected ? 'KING CHEESEBURGER BOSS 👑' : 'LOCKED - COLLECT ALL 4 KEYS 🔑', w / 2, 23);
+ }
+ }
+
+ function drawRYFFRScreen(w, h) {
+ ctx.fillStyle = '#111111';
+ ctx.fillRect(0, 0, w, h);
+
+ const b = getRoadBounds();
+ const quads = getQuadrants();
+
+ quads.forEach((q, qIdx) => {
+ ctx.strokeStyle = '#f1c40f';
+ ctx.lineWidth = 1;
+ const carCols = ['#e74c3c', '#2980b9', '#ecf0f1', '#34495e', '#f1c40f', '#9b59b6'];
+
+ for (let i = 0; i < 4; i++) {
+ const slotX = q.x + 10 + i * 26;
+ const slotY = q.id.includes('T') ? q.y + 10 : q.y + q.h - 40;
+ ctx.strokeRect(slotX, slotY, 20, 30);
+
+ if (seededRandom(qIdx * 10 + i) > 0.2) {
+ drawCar(slotX + 5, slotY + 4, carCols[i % carCols.length], false);
+ }
+ }
+ });
+
+ drawPlusSignRoad(w, h);
+
+ const bw = b.roadW * 0.85;
+ const bh = b.roadH * 0.85;
+ const bx = w / 2 - bw / 2;
+ const by = h / 2 - bh / 2;
+
+ for (let i = 0; i < 4; i++) {
+ const colorKey = wallOrder[i];
+ const colorHex = KEY_COLORS[colorKey].hex;
+ const isUnlocked = unlockedWalls[colorKey];
+
+ const pad = (4 - i) * 16;
+ const wx = bx - pad;
+ const wy = by - pad;
+ const ww = bw + pad * 2;
+ const wh = bh + pad * 2;
+
+ if (!isUnlocked) {
+ ctx.strokeStyle = colorHex;
+ ctx.lineWidth = 4;
+ ctx.shadowColor = colorHex;
+ ctx.shadowBlur = 12;
+ ctx.strokeRect(wx, wy, ww, wh);
+ ctx.shadowBlur = 0;
+
+ ctx.fillStyle = colorHex;
+ ctx.fillRect(wx + ww / 2 - 32, wy - 7, 64, 14);
+ ctx.fillStyle = (colorKey === 'yellow') ? '#000000' : '#ffffff';
+ ctx.font = 'bold 8px monospace';
+ ctx.textAlign = 'center';
+
+ if (hasKey[colorKey]) {
+ ctx.fillText('TOUCH TO UNLOCK', wx + ww / 2, wy + 3);
+ } else {
+ ctx.fillText('LOCKED', wx + ww / 2, wy + 3);
+ }
+ } else {
+ ctx.strokeStyle = colorHex;
+ ctx.lineWidth = 1.5;
+ ctx.setLineDash([4, 8]);
+ ctx.globalAlpha = 0.35;
+ ctx.strokeRect(wx, wy, ww, wh);
+ ctx.setLineDash([]);
+ ctx.globalAlpha = 1.0;
+ }
+ }
+
+ ctx.fillStyle = '#c0392b';
+ ctx.fillRect(bx, by, bw, bh);
+
+ ctx.strokeStyle = '#f1c40f';
+ ctx.lineWidth = 4;
+ ctx.strokeRect(bx, by, bw, bh);
+
+ ctx.fillStyle = '#f1c40f';
+ ctx.font = '900 28px sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText('M', w / 2, by + bh / 2 - 2);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = 'bold 10px monospace';
+ ctx.fillText('RYFFR FAST FOOD', w / 2, by + bh / 2 + 14);
+ }
 
  function drawStadium(w, h) {
  const b = getRoadBounds();
@@ -720,31 +1232,11 @@
  ctx.fillStyle = '#f1c40f';
  ctx.fillRect(b.minX, 0, 4, b.minY); ctx.fillRect(b.maxX - 4, 0, 4, b.minY);
  ctx.fillRect(b.minX, b.maxY, 4, h - b.maxY); ctx.fillRect(b.maxX - 4, b.maxY, 4, h - b.maxY);
- ctx.fillRect(0, b.minY, b.minX, 4); ctx.fillRect(0, b.maxY - 4, b.minX, 4);
- ctx.fillRect(b.maxX, b.minY, w - b.maxX, 4); ctx.fillRect(b.maxX, b.maxY - 4, w - b.maxX, 4);
-
- ctx.fillStyle = '#111';
- ctx.fillRect(cx - 35, b.minY - 14, 70, 12);
- ctx.fillRect(cx - 35, b.maxY + 2, 70, 12);
- ctx.fillStyle = '#00ffcc';
- ctx.font = 'bold 9px monospace';
- ctx.textAlign = 'center';
- ctx.fillText('NORTH EXIT', cx, b.minY - 5);
- ctx.fillText('SOUTH EXIT', cx, b.maxY + 11);
 
  ctx.fillStyle = '#a04000';
  ctx.beginPath();
  ctx.ellipse(cx, cy, w * 0.38, h * 0.38, 0, 0, Math.PI * 2);
  ctx.fill();
-
- ctx.strokeStyle = '#ffffff';
- ctx.lineWidth = 1;
- ctx.stroke();
-
- ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
- ctx.beginPath();
- ctx.ellipse(cx, cy, w * 0.35, h * 0.35, 0, 0, Math.PI * 2);
- ctx.stroke();
 
  ctx.fillStyle = '#27ae60';
  ctx.beginPath();
@@ -759,51 +1251,6 @@
  ctx.lineTo(x, cy + h * 0.2);
  ctx.stroke();
  }
-
- ctx.beginPath();
- ctx.arc(cx, cy, 22, 0, Math.PI * 2);
- ctx.stroke();
- ctx.fillStyle = '#f1c40f';
- ctx.font = 'bold 16px sans-serif';
- ctx.fillText('★', cx, cy + 5);
-
- ctx.strokeStyle = '#f1c40f';
- ctx.lineWidth = 2;
- const gxW = cx - w * 0.24;
- ctx.beginPath(); ctx.moveTo(gxW, cy - 14); ctx.lineTo(gxW, cy + 14); ctx.stroke();
- ctx.beginPath(); ctx.moveTo(gxW, cy); ctx.lineTo(gxW - 8, cy); ctx.stroke();
- const gxE = cx + w * 0.24;
- ctx.beginPath(); ctx.moveTo(gxE, cy - 14); ctx.lineTo(gxE, cy + 14); ctx.stroke();
- ctx.beginPath(); ctx.moveTo(gxE, cy); ctx.lineTo(gxE + 8, cy); ctx.stroke();
-
- ctx.fillStyle = '#34495e';
- ctx.fillRect(cx - 30, cy - h * 0.26, 60, 5);
- ctx.fillRect(cx - 30, cy + h * 0.25, 60, 5);
- ctx.fillStyle = '#2980b9';
- ctx.fillRect(cx - 38, cy - h * 0.27, 5, 7);
- ctx.fillRect(cx + 33, cy + h * 0.24, 5, 7);
-
- ctx.fillStyle = '#000000';
- ctx.fillRect(cx - 70, 8, 140, 22);
- ctx.strokeStyle = '#f1c40f';
- ctx.lineWidth = 2;
- ctx.strokeRect(cx - 70, 8, 140, 22);
- ctx.fillStyle = '#f1c40f';
- ctx.font = 'bold 10px monospace';
- ctx.fillText('HOME 24 - GUEST 21 | Q4 01:45', cx, 23);
-
- const towers = [
- { x: 20, y: 20 }, { x: w - 20, y: 20 },
- { x: 20, y: h - 20 }, { x: w - 20, y: h - 20 }
- ];
- towers.forEach(t => {
- ctx.fillStyle = '#7f8c8d';
- ctx.fillRect(t.x - 6, t.y - 6, 12, 12);
- ctx.fillStyle = '#ffffff';
- ctx.beginPath();
- ctx.arc(t.x, t.y, 4, 0, Math.PI * 2);
- ctx.fill();
- });
  }
 
  function drawDenseCity(w, h, seed) {
@@ -879,7 +1326,7 @@
  const bx = q.x + q.w * 0.4, by = q.y + q.h * 0.4;
  ctx.fillStyle = '#d35400';
  ctx.beginPath(); ctx.arc(bx, by, 22, 0, Math.PI * 2); ctx.fill();
- ctx.fillStyle = '#27ae60';
+ ctx.fillStyle = '#2980b9';
  ctx.beginPath(); ctx.arc(bx, by, 14, 0, Math.PI * 2); ctx.fill();
  } else if (qIdx === 1) {
  const px = q.x + q.w * 0.5, py = q.y + q.h * 0.5;
@@ -898,7 +1345,7 @@
  ctx.fillRect(q.x + 25, q.y + 25, 18, 10); ctx.fillRect(q.x + 55, q.y + 40, 18, 10);
  }
 
- for (let i = 0; i < 28; i++) {
+ for (let i = 0; i < 24; i++) {
  const tx = q.x + 10 + seededRandom(seed + qIdx * 30 + i) * (q.w - 20);
  const ty = q.y + 10 + seededRandom(seed + qIdx * 30 + i + 50) * (q.h - 20);
 
@@ -1026,11 +1473,6 @@
  ctx.fillStyle = 'rgba(200, 200, 200, 0.4)';
  ctx.beginPath(); ctx.arc(smX + 3, smY - 16, 4, 0, Math.PI * 2); ctx.fill();
 
- const siloX = q.x + q.w - 30;
- const siloY = q.y + 18;
- ctx.fillStyle = '#bdc3c7';
- ctx.beginPath(); ctx.arc(siloX, siloY, 10, 0, Math.PI * 2); ctx.fill();
-
  const truckY = q.y + fh + 18;
  const truckX = q.x + 12;
  ctx.fillStyle = '#e74c3c';
@@ -1039,13 +1481,6 @@
  ctx.fillRect(truckX + 12, truckY - 2, 40, 20);
  ctx.strokeStyle = '#000';
  ctx.strokeRect(truckX + 12, truckY - 2, 40, 20);
-
- const forkX = q.x + q.w - 45;
- const forkY = q.y + q.h - 30;
- ctx.fillStyle = '#f1c40f';
- ctx.fillRect(forkX, forkY, 14, 10);
- ctx.fillStyle = '#000';
- ctx.fillRect(forkX - 5, forkY + 2, 5, 2);
 
  let cSeed = seed + qIdx * 12;
  for (let r = 0; r < 2; r++) {
@@ -1066,111 +1501,20 @@
  drawPlusSignRoad(w, h);
  }
 
- function drawRYFFRScreen(w, h) {
- ctx.fillStyle = '#111111';
- ctx.fillRect(0, 0, w, h);
-
- const b = getRoadBounds();
- const quads = getQuadrants();
-
- quads.forEach((q, qIdx) => {
- ctx.strokeStyle = '#f1c40f';
- ctx.lineWidth = 1;
- const carCols = ['#e74c3c', '#2980b9', '#ecf0f1', '#34495e', '#f1c40f', '#9b59b6'];
-
- for (let i = 0; i < 4; i++) {
- const slotX = q.x + 10 + i * 26;
- const slotY = q.id.includes('T') ? q.y + 10 : q.y + q.h - 40;
- ctx.strokeRect(slotX, slotY, 20, 30);
-
- if (seededRandom(qIdx * 10 + i) > 0.2) {
- drawCar(slotX + 5, slotY + 4, carCols[i % carCols.length], false);
- }
- }
- });
-
- drawPlusSignRoad(w, h);
-
- const bw = b.roadW * 0.85;
- const bh = b.roadH * 0.85;
- const bx = w / 2 - bw / 2;
- const by = h / 2 - bh / 2;
-
- for (let i = 0; i < 4; i++) {
- const colorKey = wallOrder[i];
- const colorHex = KEY_COLORS[colorKey].hex;
- const isUnlocked = unlockedWalls[colorKey];
-
- const pad = (4 - i) * 16;
- const wx = bx - pad;
- const wy = by - pad;
- const ww = bw + pad * 2;
- const wh = bh + pad * 2;
-
- if (!isUnlocked) {
- ctx.strokeStyle = colorHex;
- ctx.lineWidth = 4;
- ctx.shadowColor = colorHex;
- ctx.shadowBlur = 10;
- ctx.strokeRect(wx, wy, ww, wh);
- ctx.shadowBlur = 0;
-
- ctx.fillStyle = colorHex;
- ctx.fillRect(wx + ww / 2 - 28, wy - 6, 56, 12);
- ctx.fillStyle = (colorKey === 'yellow') ? '#000000' : '#ffffff';
- ctx.font = 'bold 7px monospace';
- ctx.textAlign = 'center';
-
- // Status on wall badge (LOCKED vs TOUCH TO UNLOCK)
- if (hasKey[colorKey]) {
- ctx.fillText('TOUCH TO UNLOCK', wx + ww / 2, wy + 3);
- } else {
- ctx.fillText('LOCKED', wx + ww / 2, wy + 3);
- }
- } else {
- ctx.strokeStyle = colorHex;
- ctx.lineWidth = 1.5;
- ctx.setLineDash([4, 8]);
- ctx.globalAlpha = 0.3;
- ctx.strokeRect(wx, wy, ww, wh);
- ctx.setLineDash([]);
- ctx.globalAlpha = 1.0;
- }
- }
-
- ctx.fillStyle = '#c0392b';
- ctx.fillRect(bx, by, bw, bh);
-
- ctx.strokeStyle = '#f1c40f';
- ctx.lineWidth = 4;
- ctx.strokeRect(bx, by, bw, bh);
-
- ctx.fillStyle = '#f1c40f';
- ctx.font = '900 26px sans-serif';
- ctx.textAlign = 'center';
- ctx.fillText('M', w / 2, by + bh / 2 - 2);
-
- ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 10px monospace';
- ctx.fillText('RYFFR FAST FOOD', w / 2, by + bh / 2 + 14);
-
- ctx.fillStyle = '#333333';
- ctx.fillRect(b.maxX + 10, b.minY + 10, 16, 22);
- ctx.fillStyle = '#f1c40f';
- ctx.fillRect(b.maxX + 12, b.minY + 12, 12, 10);
- }
-
  function drawStickman(x, y, facing, walkFrame) {
+ ctx.save();
+
+ const renderY = player.isLifted ? y - 38 : y;
+
  ctx.strokeStyle = '#ffffff';
  ctx.fillStyle = '#ffffff';
- ctx.lineWidth = 1.8;
+ ctx.lineWidth = 2.2;
  ctx.lineCap = 'round';
- ctx.lineJoin = 'round';
 
- const headRadius = 5;
+ const headRadius = 5.5;
  const bodyLength = 15;
  const legLength = 11;
- const neckY = y - bodyLength;
+ const neckY = renderY - bodyLength;
  const headY = neckY - headRadius;
  const shoulderY = neckY + 4;
 
@@ -1179,23 +1523,23 @@
  ctx.stroke();
 
  ctx.beginPath();
- ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2);
+ ctx.arc(x + facing * 2, headY - 0.5, 1, 0, Math.PI * 2);
  ctx.fill();
 
  ctx.beginPath();
  ctx.moveTo(x, neckY);
- ctx.lineTo(x, y);
+ ctx.lineTo(x, renderY);
  ctx.stroke();
 
  const legSwing = Math.sin(walkFrame) * 6;
  ctx.beginPath();
- ctx.moveTo(x, y);
- ctx.lineTo(x - legSwing, y + legLength);
+ ctx.moveTo(x, renderY);
+ ctx.lineTo(x - legSwing, renderY + legLength);
  ctx.stroke();
 
  ctx.beginPath();
- ctx.moveTo(x, y);
- ctx.lineTo(x + legSwing, y + legLength);
+ ctx.moveTo(x, renderY);
+ ctx.lineTo(x + legSwing, renderY + legLength);
  ctx.stroke();
 
  const armSwing = Math.sin(walkFrame + Math.PI) * 4;
@@ -1204,10 +1548,125 @@
  ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
  ctx.stroke();
 
+ ctx.fillStyle = '#ff0033';
+ ctx.fillRect(x + facing * 6, shoulderY + 2, facing * 8, 4);
+
+ ctx.restore();
+ }
+
+ function drawCombatElements() {
+ ketchupProjectiles.forEach(kp => {
+ ctx.fillStyle = '#ff0033';
+ ctx.shadowColor = '#ff0033';
+ ctx.shadowBlur = 8;
  ctx.beginPath();
- ctx.moveTo(x, shoulderY);
- ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
+ ctx.arc(kp.x, kp.y, kp.radius, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.shadowBlur = 0;
+ });
+
+ pickleProjectiles.forEach(pk => {
+ ctx.save();
+ ctx.translate(pk.x, pk.y);
+
+ if (pk.isTeleporting) {
+ ctx.shadowColor = '#00ffcc';
+ ctx.shadowBlur = 12;
+ ctx.fillStyle = '#00ffaa';
+ } else {
+ ctx.fillStyle = '#27ae60';
+ }
+
+ ctx.beginPath();
+ ctx.ellipse(0, 0, 8, 4.5, Math.PI / 4, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.restore();
+ });
+
+ particles.forEach(pt => {
+ ctx.save();
+ ctx.globalAlpha = pt.opacity;
+ ctx.fillStyle = pt.color;
+ ctx.beginPath();
+ ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.restore();
+ });
+
+ popups.forEach(p => {
+ ctx.save();
+ ctx.globalAlpha = p.opacity;
+ ctx.fillStyle = p.color;
+ ctx.font = '900 12px sans-serif';
+ ctx.textAlign = 'center';
+ ctx.strokeStyle = '#000000';
+ ctx.lineWidth = 3;
+ ctx.strokeText(p.text, p.x, p.y);
+ ctx.fillText(p.text, p.x, p.y);
+ ctx.restore();
+ });
+
+ if (player.isLifted && player.liftSource) {
+ ctx.save();
+ ctx.strokeStyle = 'rgba(241, 196, 15, 0.5)';
+ ctx.fillStyle = 'rgba(241, 196, 15, 0.2)';
+ ctx.lineWidth = 3;
+
+ ctx.beginPath();
+ ctx.moveTo(player.liftSource.x - 22, player.liftSource.y);
+ ctx.lineTo(player.x - 18, player.y);
+ ctx.lineTo(player.x + 18, player.y);
+ ctx.lineTo(player.liftSource.x + 22, player.liftSource.y);
+ ctx.closePath();
+ ctx.fill();
  ctx.stroke();
+
+ ctx.fillStyle = '#f1c40f';
+ ctx.font = 'bold 10px monospace';
+ ctx.textAlign = 'center';
+ ctx.fillText('AIR LIFTED!', player.x, player.y - 55);
+ ctx.restore();
+ }
+ }
+
+ function drawMiniRadar(w, h) {
+ const size = 60;
+ const padding = 12;
+ const rx = w - size - padding;
+ const ry = padding;
+
+ ctx.save();
+ ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+ ctx.strokeStyle = '#ffcc00';
+ ctx.lineWidth = 2;
+ ctx.fillRect(rx, ry, size, size);
+ ctx.strokeRect(rx, ry, size, size);
+
+ const cellW = size / GRID_SIZE;
+ const cellH = size / GRID_SIZE;
+
+ for (let gx = 0; gx < GRID_SIZE; gx++) {
+ for (let gy = 0; gy < GRID_SIZE; gy++) {
+ const tile = cityGrid[gx][gy];
+ const cx = rx + gx * cellW;
+ const cy = ry + gy * cellH;
+
+ if (gx === currentGridX && gy === currentGridY) {
+ ctx.fillStyle = '#ffffff';
+ ctx.fillRect(cx + 1, cy + 1, cellW - 2, cellH - 2);
+ } else if (tile.type === TILE_TYPES.RYFFR) {
+ ctx.fillStyle = '#ff0055';
+ ctx.fillRect(cx + 1, cy + 1, cellW - 2, cellH - 2);
+ } else if (tile.type === TILE_TYPES.PURPLE_BOSS) {
+ ctx.fillStyle = '#a855f7';
+ ctx.fillRect(cx + 1, cy + 1, cellW - 2, cellH - 2);
+ } else if (tile.cheeseburger && !tile.cheeseburger.isDefeated && tile.cheeseburger.colorKey) {
+ ctx.fillStyle = KEY_COLORS[tile.cheeseburger.colorKey].hex;
+ ctx.fillRect(cx + 1, cy + 1, cellW - 2, cellH - 2);
+ }
+ }
+ }
+ ctx.restore();
  }
 
  function drawEnvironment() {
@@ -1216,36 +1675,28 @@
  const h = canvas.height;
 
  switch (currentTile.type) {
- case TILE_TYPES.STADIUM:
- drawStadium(w, h);
- break;
- case TILE_TYPES.DENSE_CITY:
- drawDenseCity(w, h, currentTile.seed);
- break;
- case TILE_TYPES.PARK:
- drawPark(w, h, currentTile.seed);
- break;
- case TILE_TYPES.RESIDENTIAL:
- drawResidential(w, h, currentTile.seed);
- break;
- case TILE_TYPES.INDUSTRIAL:
- drawIndustrial(w, h, currentTile.seed);
- break;
- case TILE_TYPES.RYFFR:
- drawRYFFRScreen(w, h);
- break;
+ case TILE_TYPES.STADIUM: drawStadium(w, h); break;
+ case TILE_TYPES.DENSE_CITY: drawDenseCity(w, h, currentTile.seed); break;
+ case TILE_TYPES.PARK: drawPark(w, h, currentTile.seed); break;
+ case TILE_TYPES.RESIDENTIAL: drawResidential(w, h, currentTile.seed); break;
+ case TILE_TYPES.INDUSTRIAL: drawIndustrial(w, h, currentTile.seed); break;
+ case TILE_TYPES.RYFFR: drawRYFFRScreen(w, h); break;
+ case TILE_TYPES.PURPLE_BOSS: drawPurpleBossScreen(w, h); break;
  }
 
- if (currentTile.key && !hasKey[currentTile.key]) {
- const keyX = currentTile.keyXRatio * w;
- const keyY = currentTile.keyYRatio * h;
- drawKeyItem(keyX, keyY, currentTile.key);
+ // CORRECTED RENDER COORDINATES FOR CHEESEBURGER (cb.xRatio * w)
+ if (currentTile.cheeseburger && !currentTile.cheeseburger.isDefeated) {
+ const cb = currentTile.cheeseburger;
+ drawCheeseburger(cb.xRatio * w, cb.yRatio * h, cb);
  }
+
+ drawMiniRadar(w, h);
  }
 
  function draw() {
  ctx.clearRect(0, 0, canvas.width, canvas.height);
  drawEnvironment();
+ drawCombatElements();
  drawStickman(player.x, player.y, player.facing, player.walkFrame);
  }
 
