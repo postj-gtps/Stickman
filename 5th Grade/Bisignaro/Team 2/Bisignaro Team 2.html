@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Stickman Engine - Top-Down School Edition</title>
+ <title>Stickman Engine - Bisignaro Team 2: School Invasion</title>
  <style>
  * {
  box-sizing: border-box;
@@ -22,7 +22,7 @@
  justify-content: flex-start;
  height: 100vh;
  overflow: hidden;
- padding: 16px;
+ padding: 12px;
  }
 
  /* Header Bar */
@@ -32,34 +32,59 @@
  align-items: center;
  width: 100%;
  max-width: 1200px;
- margin-bottom: 12px;
- padding-bottom: 8px;
- border-bottom: 2px solid #ffffff;
+ margin-bottom: 8px;
+ padding-bottom: 6px;
+ border-bottom: 3px solid #ff0055;
  }
 
  h1 {
- font-size: 20px;
- letter-spacing: 2px;
+ font-size: 18px;
+ letter-spacing: 1px;
  text-transform: uppercase;
  font-weight: bold;
+ color: #00e5ff;
+ text-shadow: 0 0 8px rgba(0,229,255,0.4);
+ }
+
+ .hud-panel {
+ display: flex;
+ align-items: center;
+ gap: 16px;
+ }
+
+ .hearts-container {
+ font-size: 20px;
+ letter-spacing: 2px;
+ color: #ff1744;
+ }
+
+ .level-badge {
+ background: #ffea00;
+ color: #000000;
+ padding: 4px 10px;
+ font-weight: bold;
+ font-size: 13px;
+ border-radius: 4px;
+ border: 2px solid #000;
  }
 
  .btn-reset {
- background: transparent;
+ background: #ff1744;
  color: #ffffff;
  border: 2px solid #ffffff;
- padding: 8px 20px;
- font-size: 14px;
+ padding: 6px 16px;
+ font-size: 13px;
  font-weight: bold;
  cursor: pointer;
  text-transform: uppercase;
  letter-spacing: 1px;
  transition: all 0.15s ease-in-out;
+ border-radius: 4px;
  }
 
  .btn-reset:hover {
  background: #ffffff;
- color: #000000;
+ color: #ff1744;
  }
 
  /* Canvas Container */
@@ -75,17 +100,19 @@
 
  canvas {
  background-color: #1e3a1e;
- border: 2px solid #ffffff;
+ border: 3px solid #ffffff;
  display: block;
  width: 100%;
  height: 100%;
+ border-radius: 6px;
  }
 
  .instructions {
- margin-top: 8px;
+ margin-top: 6px;
  font-size: 12px;
- color: #aaaaaa;
+ color: #00e5ff;
  text-align: center;
+ font-weight: bold;
  letter-spacing: 1px;
  }
  </style>
@@ -94,8 +121,12 @@
 
  <!-- Header Section -->
  <div id="header">
- <h1>Stickman Engine - Bisignaro Team 2</h1>
- <button class="btn-reset" onclick="resetSimulation()">Generate New School</button>
+ <h1>Stickman vs Evil Supplies</h1>
+ <div class="hud-panel">
+ <div class="level-badge" id="levelDisplay">LEVEL 1</div>
+ <div class="hearts-container" id="heartsDisplay">❤️❤️❤️❤️❤️❤️</div>
+ <button class="btn-reset" onclick="resetSimulation()">New School</button>
+ </div>
  </div>
 
  <!-- Canvas Container -->
@@ -104,7 +135,7 @@
  </div>
 
  <div class="instructions">
- [WASD] Move (Arrow keys disabled) | Solid Collision Active | Top-Down View
+ [WASD] Move (Arrow Keys Disabled) | [SPACE] Swing Ruler | Clear Detention & Evil Supplies!
  </div>
 
  <script>
@@ -120,16 +151,26 @@
  y: 0,
  radius: 14,
  speed: 5.5,
- angle: 0, // Facing direction in radians
+ angle: 0,
  walkFrame: 0,
- isMoving: false
+ isMoving: false,
+ health: 6, // 6 Hearts max
+ maxHealth: 6,
+ iframeTimer: 0,
+ isAttacking: false,
+ attackTimer: 0,
+ attackAngle: 0
  };
 
+ // GAME STATE
+ let currentLevel = 1;
+ let enemies = [];
+ let projectiles = [];
+ let puddles = [];
+ let particleEffects = [];
+
  // CAMERA STATE
- const camera = {
- x: 0,
- y: 0
- };
+ const camera = { x: 0, y: 0 };
 
  // MAP & GEOMETRY DEFINITIONS
  const ROOM_DEFINITIONS = [
@@ -148,7 +189,7 @@
  ];
 
  let rooms = [];
- let colliders = []; // Array of solid AABB obstacles: {x1, y1, x2, y2}
+ let colliders = [];
  let hallway = { x: 0, y: -160, w: 0, h: 320 };
  let totalSchoolWidth = 0;
 
@@ -161,6 +202,15 @@
  return arr;
  }
 
+ function updateHUD() {
+ let heartsHtml = "";
+ for (let i = 0; i < player.maxHealth; i++) {
+ heartsHtml += i < player.health ? "❤️" : "🖤";
+ }
+ document.getElementById('heartsDisplay').innerHTML = heartsHtml;
+ document.getElementById('levelDisplay').innerText = `LEVEL ${currentLevel}`;
+ }
+
  function generateSchool() {
  const shuffled = shuffleArray(ROOM_DEFINITIONS);
  const topPool = shuffled.slice(0, 6);
@@ -168,6 +218,10 @@
 
  rooms = [];
  colliders = [];
+ enemies = [];
+ projectiles = [];
+ puddles = [];
+ particleEffects = [];
 
  const hallYTop = -160;
  const hallYBottom = 160;
@@ -178,14 +232,7 @@
  // Layout Top Rooms
  let xTop = startPadding;
  topPool.forEach(r => {
- const rm = {
- ...r,
- x: xTop,
- y: hallYTop - r.h,
- side: 'top',
- doorX: xTop + r.w / 2,
- doorW: doorWidth
- };
+ const rm = { ...r, x: xTop, y: hallYTop - r.h, side: 'top', doorX: xTop + r.w / 2, doorW: doorWidth };
  rooms.push(rm);
  xTop += r.w + roomGap;
  });
@@ -193,14 +240,7 @@
  // Layout Bottom Rooms
  let xBottom = startPadding;
  bottomPool.forEach(r => {
- const rm = {
- ...r,
- x: xBottom,
- y: hallYBottom,
- side: 'bottom',
- doorX: xBottom + r.w / 2,
- doorW: doorWidth
- };
+ const rm = { ...r, x: xBottom, y: hallYBottom, side: 'bottom', doorX: xBottom + r.w / 2, doorW: doorWidth };
  rooms.push(rm);
  xBottom += r.w + roomGap;
  });
@@ -209,37 +249,99 @@
  hallway.x = 0;
  hallway.w = totalSchoolWidth;
 
- // Spawn Stickman in middle of hallway
+ // Spawn Player
  player.x = totalSchoolWidth / 2;
  player.y = 0;
  player.angle = 0;
+ player.health = player.maxHealth;
+ player.iframeTimer = 0;
 
  // BUILD SOLID COLLIDERS
  const wallThickness = 16;
-
- // 1. Room Perimeter Colliders
  rooms.forEach(r => {
  if (r.side === 'top') {
  colliders.push({ x1: r.x - wallThickness, y1: r.y - wallThickness, x2: r.x + r.w + wallThickness, y2: r.y });
  } else {
  colliders.push({ x1: r.x - wallThickness, y1: r.y + r.h, x2: r.x + r.w + wallThickness, y2: r.y + r.h + wallThickness });
  }
-
- // Left & Right Room Walls
  colliders.push({ x1: r.x - wallThickness, y1: r.y, x2: r.x, y2: r.y + r.h });
  colliders.push({ x1: r.x + r.w, y1: r.y, x2: r.x + r.w + wallThickness, y2: r.y + r.h });
 
- // Door Wall
  const doorWallY = r.side === 'top' ? r.y + r.h : r.y - wallThickness;
  colliders.push({ x1: r.x - wallThickness, y1: doorWallY, x2: r.doorX - r.doorW / 2, y2: doorWallY + wallThickness });
  colliders.push({ x1: r.doorX + r.doorW / 2, y1: doorWallY, x2: r.x + r.w + wallThickness, y2: doorWallY + wallThickness });
 
- // Add Room Furniture Colliders
  addRoomFurnitureColliders(r);
  });
 
- // 2. Hallway Exterior Walls & Lockers
  buildHallwayWallsAndLockers(topPool, bottomPool, wallThickness);
+ spawnSchoolEnemies();
+ updateHUD();
+ }
+
+ function spawnSchoolEnemies() {
+ const detentionRoom = rooms.find(r => r.id === 'detention');
+ 
+ // 1. DETENTION DUNGEON: Exactly 10 enemies (including the Evil Pen Boss)
+ if (detentionRoom) {
+ const dx = detentionRoom.x + detentionRoom.w / 2;
+ const dy = detentionRoom.y + detentionRoom.h / 2;
+
+ // Evil Pen Boss
+ enemies.push(createEnemy('pen', dx, dy));
+
+ // 9 Other Enemies in Detention (10 Total in Detention)
+ const detentionTypes = ['sharpener', 'eraser', 'mouse', 'mop', 'eraser', 'sharpener', 'mouse', 'mop', 'eraser'];
+ detentionTypes.forEach((t, idx) => {
+ const offsetAngle = (idx / 9) * Math.PI * 2;
+ const dist = 160;
+ enemies.push(createEnemy(t, dx + Math.cos(offsetAngle) * dist, dy + Math.sin(offsetAngle) * dist));
+ });
+ }
+
+ // 2. EVIL ERASERS: Exactly 2 * level across the school
+ const numErasers = 2 * currentLevel;
+ for (let i = 0; i < numErasers; i++) {
+ const room = rooms[i % rooms.length];
+ if (room.id !== 'detention') {
+ enemies.push(createEnemy('eraser', room.x + 200 + (i * 120) % (room.w - 400), room.y + 200));
+ }
+ }
+
+ // 3. OTHER SCHOOL ENEMIES
+ rooms.forEach(r => {
+ if (r.id !== 'detention') {
+ if (r.type === 'gym' || r.type === 'math') enemies.push(createEnemy('sharpener', r.x + r.w / 2, r.y + r.h / 2));
+ if (r.type === 'science' || r.type === 'secretary') enemies.push(createEnemy('mouse', r.x + r.w / 2, r.y + r.h / 2));
+ if (r.type === 'bathrooms' || r.type === 'cafeteria') enemies.push(createEnemy('mop', r.x + r.w / 2, r.y + r.h / 2));
+ }
+ });
+ }
+
+ function createEnemy(type, x, y) {
+ const base = {
+ id: Math.random(),
+ type: type,
+ x: x,
+ y: y,
+ angle: 0,
+ timer: 0,
+ animFrame: 0,
+ isHit: 0
+ };
+
+ if (type === 'pen') {
+ return { ...base, radius: 22, hp: 12, maxHp: 12, speed: 3.2, shootCooldown: 0, dashTimer: 0 };
+ } else if (type === 'sharpener') {
+ return { ...base, radius: 18, hp: 5, maxHp: 5, speed: 2.8, revTimer: 0 };
+ } else if (type === 'eraser') {
+ return { ...base, radius: 16, hp: 4, maxHp: 4, speed: 1.8, shootTimer: 0 };
+ } else if (type === 'mouse') {
+ return { ...base, radius: 15, hp: 3, maxHp: 3, speed: 4.2 };
+ } else if (type === 'mop') {
+ return { ...base, radius: 20, hp: 6, maxHp: 6, speed: 2.2, puddleTimer: 0 };
+ }
+ return base;
  }
 
  function addRoomFurnitureColliders(r) {
@@ -248,84 +350,42 @@
 
  switch (r.type) {
  case 'ela':
- // Bookshelf
  colliders.push({ x1: rx + r.w - 220, y1: ry + 60, x2: rx + r.w - 60, y2: ry + 110 });
- // Teacher Desk
  colliders.push({ x1: rx + 80, y1: ry + 80, x2: rx + 240, y2: ry + 150 });
- // Student Desk Rows
- for (let x = rx + 120; x < rx + r.w - 120; x += 180) {
- for (let y = ry + 240; y < ry + r.h - 140; y += 140) {
- colliders.push({ x1: x, y1: y, x2: x + 90, y2: y + 60 });
- }
- }
  break;
-
  case 'math':
  case 'history':
- // Teacher Desk
  colliders.push({ x1: rx + 80, y1: ry + 80, x2: rx + 240, y2: ry + 150 });
- // Student Desk Rows
- for (let x = rx + 120; x < rx + r.w - 120; x += 180) {
- for (let y = ry + 240; y < ry + r.h - 140; y += 140) {
- colliders.push({ x1: x, y1: y, x2: x + 90, y2: y + 60 });
- }
- }
  break;
-
  case 'science':
  colliders.push({ x1: rx + 120, y1: ry + 200, x2: rx + r.w - 120, y2: ry + 260 });
  colliders.push({ x1: rx + 120, y1: ry + 420, x2: rx + r.w - 120, y2: ry + 480 });
- colliders.push({ x1: rx + 80, y1: ry + 60, x2: rx + 300, y2: ry + 120 });
  break;
-
  case 'gym':
- // Bleachers along top wall
  colliders.push({ x1: rx + 100, y1: ry + 30, x2: rx + r.w - 100, y2: ry + 120 });
- // Equipment Ball Racks
  colliders.push({ x1: rx + 50, y1: ry + 250, x2: rx + 110, y2: ry + 450 });
  colliders.push({ x1: rx + r.w - 110, y1: ry + 250, x2: rx + r.w - 50, y2: ry + 450 });
- // Basketball Hoops
- colliders.push({ x1: rx + 60, y1: ry + r.h / 2 - 25, x2: rx + 75, y2: ry + r.h / 2 + 25 });
- colliders.push({ x1: rx + r.w - 75, y1: ry + r.h / 2 - 25, x2: rx + r.w - 60, y2: ry + r.h / 2 + 25 });
  break;
-
  case 'bathrooms':
- // Sink Counter
  colliders.push({ x1: rx + 80, y1: ry + 60, x2: rx + r.w - 80, y2: ry + 120 });
- // Toilet Stall Rows
  colliders.push({ x1: rx + 100, y1: ry + 250, x2: rx + r.w - 100, y2: ry + 320 });
  break;
-
  case 'cafeteria':
  colliders.push({ x1: rx + 100, y1: ry + 80, x2: rx + r.w - 100, y2: ry + 150 });
- colliders.push({ x1: rx + 120, y1: ry + 280, x2: rx + r.w - 120, y2: ry + 360 });
- colliders.push({ x1: rx + 120, y1: ry + 480, x2: rx + r.w - 120, y2: ry + 560 });
  break;
-
  case 'auditorium':
  colliders.push({ x1: rx + 120, y1: ry + 50, x2: rx + r.w - 120, y2: ry + 240 });
- colliders.push({ x1: rx + 150, y1: ry + 360, x2: rx + r.w / 2 - 40, y2: ry + 600 });
- colliders.push({ x1: rx + r.w / 2 + 40, y1: ry + 360, x2: rx + r.w - 150, y2: ry + 600 });
  break;
-
  case 'secretary':
  case 'principal':
  colliders.push({ x1: rx + r.w / 2 - 140, y1: ry + 150, x2: rx + r.w / 2 + 140, y2: ry + 230 });
- colliders.push({ x1: rx + 60, y1: ry + 50, x2: rx + 240, y2: ry + 110 });
- colliders.push({ x1: rx + r.w - 240, y1: ry + 50, x2: rx + r.w - 60, y2: ry + 110 });
  break;
-
  case 'supply':
  colliders.push({ x1: rx + 50, y1: ry + 50, x2: rx + r.w - 50, y2: ry + 120 });
- colliders.push({ x1: rx + 50, y1: ry + 200, x2: rx + 150, y2: ry + r.h - 50 });
- colliders.push({ x1: rx + r.w - 150, y1: ry + 200, x2: rx + r.w - 50, y2: ry + r.h - 50 });
  break;
-
  case 'detention':
  colliders.push({ x1: rx + 80, y1: ry + 80, x2: rx + r.w - 80, y2: ry + 140 });
  colliders.push({ x1: rx + r.w / 2 - 100, y1: ry + r.h / 2 - 30, x2: rx + r.w / 2 + 100, y2: ry + r.h / 2 + 30 });
- colliders.push({ x1: rx + 120, y1: ry + r.h - 180, x2: rx + 180, y2: ry + r.h - 120 });
- colliders.push({ x1: rx + r.w - 180, y1: ry + r.h - 180, x2: rx + r.w - 120, y2: ry + r.h - 120 });
  break;
  }
  }
@@ -335,41 +395,10 @@
  const hallYBottom = 160;
  const exitDoorHeight = 160;
 
- // Left Hallway End Wall
  colliders.push({ x1: -wallThickness, y1: hallYTop, x2: 0, y2: -exitDoorHeight / 2 });
  colliders.push({ x1: -wallThickness, y1: exitDoorHeight / 2, x2: 0, y2: hallYBottom });
-
- // Right Hallway End Wall
  colliders.push({ x1: totalSchoolWidth, y1: hallYTop, x2: totalSchoolWidth + wallThickness, y2: -exitDoorHeight / 2 });
  colliders.push({ x1: totalSchoolWidth, y1: exitDoorHeight / 2, x2: totalSchoolWidth + wallThickness, y2: hallYBottom });
-
- // Lockers along top wall
- let currentX = 0;
- rooms.filter(r => r.side === 'top').forEach(r => {
- if (r.x > currentX) {
- colliders.push({ x1: currentX, y1: hallYTop - wallThickness, x2: r.x, y2: hallYTop });
- colliders.push({ x1: currentX + 10, y1: hallYTop, x2: r.x - 10, y2: hallYTop + 24 });
- }
- currentX = r.x + r.w;
- });
- if (currentX < totalSchoolWidth) {
- colliders.push({ x1: currentX, y1: hallYTop - wallThickness, x2: totalSchoolWidth, y2: hallYTop });
- colliders.push({ x1: currentX + 10, y1: hallYTop, x2: totalSchoolWidth - 10, y2: hallYTop + 24 });
- }
-
- // Lockers along bottom wall
- currentX = 0;
- rooms.filter(r => r.side === 'bottom').forEach(r => {
- if (r.x > currentX) {
- colliders.push({ x1: currentX, y1: hallYBottom, x2: r.x, y2: hallYBottom + wallThickness });
- colliders.push({ x1: currentX + 10, y1: hallYBottom - 24, x2: r.x - 10, y2: hallYBottom });
- }
- currentX = r.x + r.w;
- });
- if (currentX < totalSchoolWidth) {
- colliders.push({ x1: currentX, y1: hallYBottom, x2: totalSchoolWidth, y2: hallYBottom + wallThickness });
- colliders.push({ x1: currentX + 10, y1: hallYBottom - 24, x2: totalSchoolWidth - 10, y2: hallYBottom });
- }
  }
 
  function resizeCanvas() {
@@ -382,7 +411,7 @@
 
  // STRICT WASD CONTROLS
  window.addEventListener('keydown', (e) => {
- if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+ if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
  e.preventDefault();
  return;
  }
@@ -390,6 +419,11 @@
  if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
  e.preventDefault();
  keys[e.code] = true;
+ }
+
+ if (e.code === 'Space') {
+ e.preventDefault();
+ performRulerAttack();
  }
  });
 
@@ -403,7 +437,49 @@
  generateSchool();
  }
 
- // COLLISION DETECTION AND MOVEMENT PHYSICS
+ function performRulerAttack() {
+ if (!player.isAttacking) {
+ player.isAttacking = true;
+ player.attackTimer = 12;
+ player.attackAngle = player.angle;
+
+ const attackReach = 55;
+ const hitArc = Math.PI / 1.5;
+
+ enemies.forEach(e => {
+ const dist = Math.hypot(e.x - player.x, e.y - player.y);
+ if (dist < attackReach + e.radius) {
+ const angleToEnemy = Math.atan2(e.y - player.y, e.x - player.x);
+ let diff = Math.abs(angleToEnemy - player.attackAngle);
+ if (diff > Math.PI) diff = Math.PI * 2 - diff;
+
+ if (diff < hitArc) {
+ e.hp -= 2;
+ e.isHit = 10;
+ // Knockback with Wall Check
+ const kbX = Math.cos(angleToEnemy) * 20;
+ const kbY = Math.sin(angleToEnemy) * 20;
+ e.x += kbX;
+ e.y += kbY;
+ createSparks(e.x, e.y, '#ffea00');
+ }
+ }
+ });
+ }
+ }
+
+ function createSparks(x, y, color) {
+ for (let i = 0; i < 8; i++) {
+ particleEffects.push({
+ x: x, y: y,
+ vx: (Math.random() - 0.5) * 8,
+ vy: (Math.random() - 0.5) * 8,
+ color: color,
+ life: 15
+ });
+ }
+ }
+
  function circleAABBIntersect(px, py, r, box) {
  const closestX = Math.max(box.x1, Math.min(px, box.x2));
  const closestY = Math.max(box.y1, Math.min(py, box.y2));
@@ -412,10 +488,33 @@
  return (distX * distX + distY * distY) < (r * r);
  }
 
+ function damagePlayer(amount) {
+ if (player.iframeTimer > 0) return;
+ player.health = Math.max(0, player.health - amount);
+ player.iframeTimer = 45;
+ updateHUD();
+ createSparks(player.x, player.y, '#ff1744');
+
+ if (player.health <= 0) {
+ alert("Game Over! The Evil School Supplies Won! Resetting...");
+ generateSchool();
+ }
+ }
+
  function updatePhysics() {
+ if (player.iframeTimer > 0) player.iframeTimer--;
+ if (player.isAttacking) {
+ player.attackTimer--;
+ if (player.attackTimer <= 0) player.isAttacking = false;
+ }
+
+ // Slippery Mop Puddle Traction
+ let currentSpeed = player.speed;
+ const onPuddle = puddles.some(p => Math.hypot(player.x - p.x, player.y - p.y) < p.radius);
+ if (onPuddle) currentSpeed *= 0.6;
+
  let dx = 0;
  let dy = 0;
-
  if (keys['KeyW']) dy -= 1;
  if (keys['KeyS']) dy += 1;
  if (keys['KeyA']) dx -= 1;
@@ -424,16 +523,14 @@
  if (dx !== 0 || dy !== 0) {
  player.isMoving = true;
  const len = Math.hypot(dx, dy);
- dx /= len;
- dy /= len;
+ dx /= len; dy /= len;
 
  player.angle = Math.atan2(dy, dx);
  player.walkFrame += 0.25;
 
- const stepX = dx * player.speed;
- const stepY = dy * player.speed;
+ const stepX = dx * currentSpeed;
+ const stepY = dy * currentSpeed;
 
- // Horizontal Movement & Solid Collision
  player.x += stepX;
  for (const c of colliders) {
  if (circleAABBIntersect(player.x, player.y, player.radius, c)) {
@@ -442,7 +539,6 @@
  }
  }
 
- // Vertical Movement & Solid Collision
  player.y += stepY;
  for (const c of colliders) {
  if (circleAABBIntersect(player.x, player.y, player.radius, c)) {
@@ -455,6 +551,148 @@
  player.walkFrame = 0;
  }
 
+ // UPDATE ENEMIES WITH WALL COLLISION ENFORCEMENT
+ enemies.forEach(e => {
+ if (e.isHit > 0) e.isHit--;
+ e.timer++;
+
+ const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
+ const angleToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
+
+ let moveSpeed = e.speed;
+ let moveAngle = e.angle;
+ let shouldMove = true;
+
+ switch (e.type) {
+ case 'pen': // EVIL PEN BOSS
+ e.angle = angleToPlayer;
+ e.dashTimer = (e.dashTimer + 1) % 40;
+ if (e.dashTimer < 15) {
+ moveSpeed = e.speed * 1.8;
+ moveAngle = angleToPlayer;
+ } else {
+ shouldMove = false;
+ }
+
+ // Tip attack -> 2 Hearts loss
+ if (distToPlayer < e.radius + player.radius + 10) {
+ damagePlayer(2);
+ }
+
+ e.shootCooldown++;
+ if (e.shootCooldown > 180) {
+ e.shootCooldown = 0;
+ createSparks(e.x, e.y, '#000000');
+ if (enemies.length < 30) {
+ enemies.push(createEnemy('mouse', e.x + Math.cos(e.angle + 1) * 30, e.y + Math.sin(e.angle + 1) * 30));
+ }
+ }
+ break;
+
+ case 'sharpener': // PENCIL SHARPENER
+ e.angle = angleToPlayer;
+ e.revTimer = (e.revTimer + 1) % 60;
+ moveSpeed = e.speed * (e.revTimer > 40 ? 1.8 : 0.8);
+ moveAngle = angleToPlayer;
+
+ if (distToPlayer < e.radius + player.radius) damagePlayer(1);
+ break;
+
+ case 'eraser': // EVIL ERASER
+ e.angle = angleToPlayer;
+ shouldMove = distToPlayer > 180;
+ moveAngle = angleToPlayer;
+
+ // Shoot Eraser Projectiles every 2s
+ e.shootTimer++;
+ if (e.shootTimer >= 120) {
+ e.shootTimer = 0;
+ projectiles.push({
+ x: e.x, y: e.y,
+ vx: Math.cos(angleToPlayer) * 6,
+ vy: Math.sin(angleToPlayer) * 6,
+ radius: 6,
+ type: 'eraser_top'
+ });
+ }
+
+ if (distToPlayer < e.radius + player.radius) damagePlayer(1);
+ break;
+
+ case 'mouse': // COMPUTER MOUSE
+ if (e.timer % 30 === 0) e.angle = angleToPlayer + (Math.random() - 0.5);
+ moveAngle = e.angle;
+ moveSpeed = e.speed;
+
+ if (distToPlayer < e.radius + player.radius) damagePlayer(1);
+ break;
+
+ case 'mop': // JANITOR MOP
+ e.angle = angleToPlayer;
+ moveAngle = angleToPlayer;
+ moveSpeed = e.speed;
+
+ e.puddleTimer++;
+ if (e.puddleTimer > 150) {
+ e.puddleTimer = 0;
+ puddles.push({ x: e.x, y: e.y, radius: 40, life: 300 });
+ }
+
+ if (distToPlayer < e.radius + player.radius + 10) damagePlayer(1);
+ break;
+ }
+
+ // ENFORCE SOLID WALL & OBJECT COLLISION FOR ALL ENEMIES
+ if (shouldMove) {
+ const stepX = Math.cos(moveAngle) * moveSpeed;
+ const stepY = Math.sin(moveAngle) * moveSpeed;
+
+ e.x += stepX;
+ for (const c of colliders) {
+ if (circleAABBIntersect(e.x, e.y, e.radius, c)) {
+ if (stepX > 0) e.x = c.x1 - e.radius;
+ else if (stepX < 0) e.x = c.x2 + e.radius;
+ }
+ }
+
+ e.y += stepY;
+ for (const c of colliders) {
+ if (circleAABBIntersect(e.x, e.y, e.radius, c)) {
+ if (stepY > 0) e.y = c.y1 - e.radius;
+ else if (stepY < 0) e.y = c.y2 + e.radius;
+ }
+ }
+ }
+ });
+
+ // UPDATE PROJECTILES & CHECK WALL IMPACT
+ projectiles.forEach(p => {
+ p.x += p.vx;
+ p.y += p.vy;
+
+ // Destroy projectile if it hits a wall/collider
+ for (const c of colliders) {
+ if (circleAABBIntersect(p.x, p.y, p.radius, c)) {
+ p.hit = true;
+ createSparks(p.x, p.y, '#ff4081');
+ break;
+ }
+ }
+
+ if (!p.hit) {
+ const distToPlayer = Math.hypot(player.x - p.x, player.y - p.y);
+ if (distToPlayer < p.radius + player.radius) {
+ damagePlayer(1); // Lose 1 life on hit
+ p.hit = true;
+ }
+ }
+ });
+
+ enemies = enemies.filter(e => e.hp > 0);
+ particleEffects.forEach(p => { p.x += p.vx; p.y += p.vy; p.life--; });
+ particleEffects = particleEffects.filter(p => p.life > 0);
+ projectiles = projectiles.filter(p => !p.hit);
+
  // Smooth Camera Follow
  const targetCamX = player.x - canvas.width / 2;
  const targetCamY = player.y - canvas.height / 2;
@@ -462,114 +700,37 @@
  camera.y += (targetCamY - camera.y) * 0.12;
  }
 
- // RENDER FUNCTIONS
+ // RENDERING FUNCTIONS
  function drawInfiniteField(camX, camY) {
- ctx.fillStyle = '#224718';
+ ctx.fillStyle = '#1b381e';
  ctx.fillRect(camX, camY, canvas.width, canvas.height);
-
- ctx.strokeStyle = '#2b5420';
- ctx.lineWidth = 1.5;
- const step = 80;
- const startX = Math.floor(camX / step) * step - step;
- const endX = camX + canvas.width + step;
- const startY = Math.floor(camY / step) * step - step;
- const endY = camY + canvas.height + step;
-
- for (let x = startX; x < endX; x += step) {
- for (let y = startY; y < endY; y += step) {
- if (x < -100 || x > totalSchoolWidth + 100 || y < -1200 || y > 1200) {
- const ox = Math.abs((x * 7 + y * 13) % 40);
- const oy = Math.abs((x * 11 + y * 5) % 40);
-
- ctx.beginPath();
- ctx.moveTo(x + ox, y + oy);
- ctx.lineTo(x + ox - 3, y + oy - 8);
- ctx.moveTo(x + ox, y + oy);
- ctx.lineTo(x + ox + 4, y + oy - 10);
- ctx.stroke();
- }
- }
- }
  }
 
  function drawHallway() {
  ctx.fillStyle = '#cfd8dc';
  ctx.fillRect(hallway.x, hallway.y, hallway.w, hallway.h);
-
  ctx.strokeStyle = '#b0bec5';
  ctx.lineWidth = 1.5;
  for (let x = hallway.x; x < hallway.x + hallway.w; x += 50) {
- ctx.beginPath();
- ctx.moveTo(x, hallway.y);
- ctx.lineTo(x, hallway.y + hallway.h);
- ctx.stroke();
+ ctx.beginPath(); ctx.moveTo(x, hallway.y); ctx.lineTo(x, hallway.y + hallway.h); ctx.stroke();
  }
- for (let y = hallway.y; y < hallway.y + hallway.h; y += 50) {
- ctx.beginPath();
- ctx.moveTo(hallway.x, y);
- ctx.lineTo(hallway.x + hallway.w, y);
- ctx.stroke();
- }
-
- ctx.strokeStyle = '#fbc02d';
- ctx.lineWidth = 3;
- ctx.setLineDash([15, 15]);
- ctx.beginPath();
- ctx.moveTo(hallway.x, 0);
- ctx.lineTo(hallway.x + hallway.w, 0);
- ctx.stroke();
- ctx.setLineDash([]);
  }
 
  function drawLockersAndExits() {
  const hallYTop = -160;
  const hallYBottom = 160;
-
  colliders.forEach(c => {
  if (c.y1 === hallYTop && c.y2 === hallYTop + 24) {
- drawLockerBank(c.x1, c.y1, c.x2 - c.x1, 24, 'top');
+ ctx.fillStyle = '#37474f'; ctx.fillRect(c.x1, c.y1, c.x2 - c.x1, 24);
  } else if (c.y1 === hallYBottom - 24 && c.y2 === hallYBottom) {
- drawLockerBank(c.x1, c.y1, c.x2 - c.x1, 24, 'bottom');
+ ctx.fillStyle = '#37474f'; ctx.fillRect(c.x1, c.y1, c.x2 - c.x1, 24);
  }
  });
-
- drawExitDoor(0, -80, 20, 160, "WEST EXIT");
- drawExitDoor(totalSchoolWidth - 20, -80, 20, 160, "EAST EXIT");
- }
-
- function drawLockerBank(x, y, w, h, side) {
- ctx.fillStyle = '#37474f';
- ctx.fillRect(x, y, w, h);
- ctx.strokeStyle = '#102027';
- ctx.lineWidth = 2;
- ctx.strokeRect(x, y, w, h);
-
- const lockerW = 20;
- for (let lx = x; lx < x + w - lockerW; lx += lockerW) {
- ctx.strokeStyle = '#263238';
- ctx.strokeRect(lx, y, lockerW, h);
- ctx.fillStyle = '#eceff1';
- ctx.fillRect(lx + 8, y + (side === 'top' ? 14 : 4), 4, 5);
- }
- }
-
- function drawExitDoor(x, y, w, h, label) {
- ctx.fillStyle = '#0288d1';
- ctx.fillRect(x, y, w, h);
- ctx.strokeStyle = '#ffffff';
- ctx.lineWidth = 3;
- ctx.strokeRect(x, y, w, h);
-
- ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 12px monospace';
- ctx.textAlign = 'center';
- ctx.fillText("EXIT", x + w / 2, y + h / 2);
  }
 
  function drawRoom(r) {
  ctx.fillStyle = r.floor;
  ctx.fillRect(r.x, r.y, r.w, r.h);
-
  ctx.strokeStyle = r.wall;
  ctx.lineWidth = 12;
  ctx.strokeRect(r.x, r.y, r.w, r.h);
@@ -578,300 +739,82 @@
  ctx.fillStyle = r.floor;
  ctx.fillRect(r.doorX - r.doorW / 2, doorY - 8, r.doorW, 16);
 
- ctx.save();
- ctx.translate(r.x, r.y);
- drawRoomFurnitureGraphic(r);
- ctx.restore();
-
- ctx.fillStyle = r.type === 'detention' ? '#ff5252' : '#ffffff';
- ctx.font = r.type === 'detention' ? 'bold 18px monospace' : 'bold 16px monospace';
+ ctx.fillStyle = r.type === 'detention' ? '#ff1744' : '#ffffff';
+ ctx.font = 'bold 16px monospace';
  ctx.textAlign = 'center';
- const textY = r.side === 'top' ? r.y + 40 : r.y + r.h - 30;
- ctx.fillText(r.name.toUpperCase(), r.x + r.w / 2, textY);
+ ctx.fillText(r.name.toUpperCase(), r.x + r.w / 2, r.side === 'top' ? r.y + 40 : r.y + r.h - 30);
  }
 
- function drawRoomFurnitureGraphic(r) {
- const w = r.w;
- const h = r.h;
+ function drawPuddlesAndProjectiles() {
+ puddles.forEach(p => {
+ ctx.fillStyle = 'rgba(0, 229, 255, 0.4)';
+ ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
+ ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+ });
 
- switch (r.type) {
- case 'ela':
- drawClassroomBase(w, h, "#90caf9", "BOOKS & LITERATURE");
- ctx.fillStyle = '#4e3629';
- ctx.fillRect(w - 220, 60, 160, 50);
- ctx.fillStyle = '#e0e0e0';
- ctx.font = '12px monospace';
- ctx.fillText("BOOKSHELF", w - 140, 90);
- break;
-
- case 'math':
- drawClassroomBase(w, h, "#a5d6a7", "ALGEBRA & GEOMETRY");
- ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 14px monospace';
- ctx.fillText("π ≈ 3.14159   a² + b² = c²   E = mc²", w / 2, 80);
- break;
-
- case 'science':
- drawClassroomBase(w, h, "#80deea", "LAB ROTATIONS");
- ctx.fillStyle = '#37474f';
- ctx.fillRect(80, 60, 220, 60);
- ctx.strokeStyle = '#102027';
- ctx.lineWidth = 2;
- ctx.strokeRect(80, 60, 220, 60);
- ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 11px monospace';
- ctx.fillText("PREP STATION", 190, 95);
-
- ctx.fillStyle = '#263238';
- ctx.fillRect(120, 200, w - 240, 60);
- ctx.fillRect(120, 420, w - 240, 60);
- ctx.fillStyle = '#00e676';
- ctx.beginPath(); ctx.arc(180, 230, 12, 0, Math.PI * 2); ctx.fill();
+ projectiles.forEach(p => {
  ctx.fillStyle = '#ff4081';
- ctx.beginPath(); ctx.arc(w - 180, 450, 12, 0, Math.PI * 2); ctx.fill();
- break;
+ ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
+ ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke();
+ });
+ }
 
- case 'history':
- drawClassroomBase(w, h, "#ffe082", "WORLD HISTORY");
+ function drawEnemy(e) {
+ ctx.save();
+ ctx.translate(e.x, e.y);
+ ctx.rotate(e.angle);
+
+ if (e.isHit > 0) {
+ ctx.fillStyle = '#ffffff';
+ }
+
+ switch (e.type) {
+ case 'pen': // EVIL PEN WITH MAD FACE
  ctx.fillStyle = '#1565c0';
- ctx.fillRect(w / 2 - 150, 40, 300, 60);
- ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 12px monospace';
- ctx.fillText("WORLD MAP", w / 2, 75);
+ ctx.fillRect(-25, -8, 40, 16);
+ ctx.fillStyle = '#c0c0c0';
+ ctx.beginPath(); ctx.moveTo(15, -8); ctx.lineTo(32, 0); ctx.lineTo(15, 8); ctx.fill();
+ ctx.fillStyle = '#ffea00';
+ ctx.font = 'bold 10px sans-serif';
+ ctx.fillText(">:)", -10, 4);
  break;
 
- case 'gym':
- ctx.strokeStyle = '#ffffff';
- ctx.lineWidth = 4;
- ctx.strokeRect(60, 60, w - 120, h - 120);
- ctx.beginPath();
- ctx.arc(w / 2, h / 2, 80, 0, Math.PI * 2);
- ctx.moveTo(w / 2, 60); ctx.lineTo(w / 2, h - 60);
- ctx.stroke();
-
- ctx.fillStyle = '#ff6d00';
- ctx.fillRect(60, h / 2 - 25, 15, 50);
- ctx.fillRect(w - 75, h / 2 - 25, 15, 50);
-
- ctx.fillStyle = '#5d4037';
- ctx.fillRect(100, 30, w - 200, 90);
- ctx.strokeStyle = '#3e2723';
- ctx.lineWidth = 2;
- ctx.strokeRect(100, 30, w - 200, 90);
- ctx.strokeStyle = '#8d6e63';
- for (let by = 55; by < 120; by += 25) {
- ctx.beginPath(); ctx.moveTo(100, by); ctx.lineTo(w - 100, by); ctx.stroke();
- }
- ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 12px monospace';
- ctx.textAlign = 'center';
- ctx.fillText("SPECTATOR BLEACHERS", w / 2, 48);
-
- ctx.fillStyle = '#37474f';
- ctx.fillRect(50, 250, 60, 200);
- ctx.strokeStyle = '#102027';
- ctx.lineWidth = 2;
- ctx.strokeRect(50, 250, 60, 200);
- ctx.fillStyle = '#ff6d00';
- for (let ry = 275; ry <= 425; ry += 30) {
- ctx.beginPath(); ctx.arc(80, ry, 10, 0, Math.PI * 2); ctx.fill();
- }
-
- ctx.fillStyle = '#37474f';
- ctx.fillRect(w - 110, 250, 60, 200);
- ctx.strokeStyle = '#102027';
- ctx.lineWidth = 2;
- ctx.strokeRect(w - 110, 250, 60, 200);
- ctx.fillStyle = '#ff6d00';
- for (let ry = 275; ry <= 425; ry += 30) {
- ctx.beginPath(); ctx.arc(w - 80, ry, 10, 0, Math.PI * 2); ctx.fill();
- }
- break;
-
- case 'bathrooms':
- ctx.strokeStyle = '#00838f';
- ctx.lineWidth = 1;
- for (let x = 0; x < w; x += 40) {
- ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
- }
-
- ctx.fillStyle = '#e0e0e0';
- ctx.fillRect(80, 60, w - 160, 60);
- ctx.strokeStyle = '#263238';
- ctx.lineWidth = 2;
- ctx.strokeRect(80, 60, w - 160, 60);
-
- for (let sx = 120; sx < w - 120; sx += 80) {
- ctx.fillStyle = '#b0bec5';
- ctx.beginPath(); ctx.arc(sx, 90, 15, 0, Math.PI * 2); ctx.fill();
- ctx.strokeStyle = '#37474f'; ctx.stroke();
- }
-
- ctx.fillStyle = '#00796b';
- ctx.font = 'bold 14px monospace';
- ctx.textAlign = 'center';
- ctx.fillText("RESTROOM SINKS", w / 2, 45);
-
- const stallX = 100;
- const stallW = w - 200;
- const stallH = 70;
- const stallY = 250;
-
- ctx.fillStyle = '#004d40';
- ctx.fillRect(stallX, stallY, stallW, stallH);
- ctx.strokeStyle = '#00251a';
- ctx.lineWidth = 3;
- ctx.strokeRect(stallX, stallY, stallW, stallH);
-
- const numStalls = Math.floor(stallW / 110);
- const stepW = stallW / numStalls;
- for (let i = 0; i < numStalls; i++) {
- const curX = stallX + i * stepW;
- ctx.strokeStyle = '#00251a';
- ctx.strokeRect(curX, stallY, stepW, stallH);
-
- ctx.fillStyle = '#ffffff';
- ctx.beginPath();
- ctx.arc(curX + stepW / 2, stallY + 35, 12, 0, Math.PI * 2);
- ctx.fill();
- ctx.fillStyle = '#b0bec5';
- ctx.fillRect(curX + stepW / 2 - 10, stallY + 10, 20, 12);
- }
- break;
-
- case 'cafeteria':
- ctx.fillStyle = '#d84315';
- ctx.fillRect(100, 80, w - 200, 70);
- ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 14px monospace';
- ctx.fillText("LUNCH SERVING LINE", w / 2, 120);
- ctx.fillStyle = '#4e3629';
- ctx.fillRect(120, 280, w - 240, 80);
- ctx.fillRect(120, 480, w - 240, 80);
- break;
-
- case 'auditorium':
- ctx.fillStyle = '#b71c1c';
- ctx.fillRect(120, 50, w - 240, 190);
- ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 18px monospace';
- ctx.fillText("MAIN STAGE", w / 2, 150);
- ctx.fillStyle = '#880e4f';
- ctx.fillRect(150, 360, w / 2 - 190, 240);
- ctx.fillRect(w / 2 + 40, 360, w / 2 - 190, 240);
- break;
-
- case 'secretary':
- ctx.fillStyle = '#37474f';
- ctx.fillRect(w / 2 - 140, 150, 280, 80);
- ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 12px monospace';
- ctx.fillText("RECEPTION DESK", w / 2, 195);
-
- ctx.fillStyle = '#263238';
- ctx.fillRect(60, 50, 180, 60);
- ctx.fillRect(w - 240, 50, 180, 60);
- ctx.fillStyle = '#cfd8dc';
- ctx.font = 'bold 11px monospace';
- ctx.fillText("FILING CABINETS", 150, 85);
- ctx.fillText("FILING CABINETS", w - 150, 85);
- break;
-
- case 'principal':
- ctx.fillStyle = '#2d1f15';
- ctx.fillRect(w / 2 - 140, 150, 280, 80);
- ctx.fillStyle = '#d4af37';
- ctx.font = 'bold 12px monospace';
- ctx.fillText("PRINCIPAL'S MAHOGANY DESK", w / 2, 195);
-
- ctx.fillStyle = '#1b120c';
- ctx.fillRect(60, 50, 180, 60);
- ctx.fillRect(w - 240, 50, 180, 60);
- ctx.fillStyle = '#d4af37';
- ctx.font = 'bold 11px monospace';
- ctx.fillText("BOOKSHELVES", 150, 85);
- ctx.fillText("BOOKSHELVES", w - 150, 85);
- break;
-
- case 'supply':
- ctx.fillStyle = '#424242';
- ctx.fillRect(50, 50, w - 100, 70);
- ctx.fillRect(50, 200, 100, h - 250);
- ctx.fillRect(w - 150, 200, 100, h - 250);
- ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 12px monospace';
- ctx.fillText("STORAGE SHELVES & SUPPLIES", w / 2, 90);
- break;
-
- case 'detention':
- ctx.strokeStyle = '#2a2d3d';
- ctx.lineWidth = 2;
- for (let gx = 20; gx < w; gx += 40) {
- ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
- }
- for (let gy = 20; gy < h; gy += 40) {
- ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
- }
-
- ctx.strokeStyle = '#78909c';
- ctx.lineWidth = 6;
- ctx.strokeRect(80, 80, w - 160, 60);
- for (let bx = 100; bx < w - 100; bx += 20) {
- ctx.beginPath(); ctx.moveTo(bx, 80); ctx.lineTo(bx, 140); ctx.stroke();
- }
-
- ctx.fillStyle = '#3e2723';
- ctx.fillRect(w / 2 - 100, h / 2 - 30, 200, 60);
+ case 'sharpener': // PENCIL SHARPENER WITH LEGS
+ ctx.fillStyle = '#78909c';
+ ctx.fillRect(-15, -12, 30, 24);
+ ctx.strokeStyle = '#37474f'; ctx.lineWidth = 2; ctx.strokeRect(-15, -12, 30, 24);
  ctx.fillStyle = '#000000';
- ctx.beginPath(); ctx.arc(w / 2 - 50, h / 2, 12, 0, Math.PI * 2); ctx.fill();
- ctx.beginPath(); ctx.arc(w / 2, h / 2, 16, 0, Math.PI * 2); ctx.fill();
- ctx.beginPath(); ctx.arc(w / 2 + 50, h / 2, 12, 0, Math.PI * 2); ctx.fill();
+ ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
+ const legMove = Math.sin(e.timer * 0.4) * 6;
+ ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+ ctx.beginPath(); ctx.moveTo(-8, 12); ctx.lineTo(-8, 18 + legMove); ctx.stroke();
+ ctx.beginPath(); ctx.moveTo(8, 12); ctx.lineTo(8, 18 - legMove); ctx.stroke();
+ break;
 
- ctx.fillStyle = '#37474f';
- ctx.fillRect(120, h - 180, 60, 60);
- ctx.fillRect(w - 180, h - 180, 60, 60);
- ctx.strokeStyle = '#263238';
- ctx.lineWidth = 3;
- ctx.strokeRect(120, h - 180, 60, 60);
- ctx.strokeRect(w - 180, h - 180, 60, 60);
+ case 'eraser': // EVIL ERASER
+ ctx.fillStyle = '#ff80ab';
+ ctx.fillRect(-16, -10, 32, 20);
+ ctx.strokeStyle = '#f50057'; ctx.lineWidth = 2; ctx.strokeRect(-16, -10, 32, 20);
+ ctx.fillStyle = '#000000';
+ ctx.beginPath(); ctx.arc(4, -3, 2, 0, Math.PI * 2); ctx.arc(4, 3, 2, 0, Math.PI * 2); ctx.fill();
+ break;
 
- const time = Date.now() * 0.006;
- const glowRadius = 45 + Math.sin(time * 2) * 8;
+ case 'mouse': // COMPUTER MOUSE
+ ctx.fillStyle = '#e0e0e0';
+ ctx.beginPath(); ctx.ellipse(0, 0, 16, 11, 0, 0, Math.PI * 2); ctx.fill();
+ ctx.fillStyle = '#ff1744';
+ ctx.fillRect(2, -2, 5, 4);
+ break;
 
- const drawTorch = (tx, ty) => {
- const torchGrad = ctx.createRadialGradient(tx, ty, 4, tx, ty, glowRadius);
- torchGrad.addColorStop(0, 'rgba(255, 140, 0, 0.9)');
- torchGrad.addColorStop(0.5, 'rgba(255, 60, 0, 0.4)');
- torchGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
- ctx.fillStyle = torchGrad;
- ctx.beginPath(); ctx.arc(tx, ty, glowRadius, 0, Math.PI * 2); ctx.fill();
- };
-
- drawTorch(60, 60);
- drawTorch(w - 60, 60);
- drawTorch(60, h - 60);
- drawTorch(w - 60, h - 60);
+ case 'mop': // JANITOR MOP
+ ctx.strokeStyle = '#8d6e63'; ctx.lineWidth = 4;
+ ctx.beginPath(); ctx.moveTo(-25, 0); ctx.lineTo(5, 0); ctx.stroke();
+ ctx.fillStyle = '#eceff1';
+ ctx.beginPath(); ctx.arc(10, 0, 14, 0, Math.PI * 2); ctx.fill();
  break;
  }
- }
 
- function drawClassroomBase(w, h, accentColor, label) {
- ctx.fillStyle = '#4e3629';
- ctx.fillRect(80, 80, 160, 70);
- ctx.fillStyle = accentColor;
- ctx.font = 'bold 11px monospace';
- ctx.textAlign = 'center';
- ctx.fillText(label, 160, 120);
-
- for (let x = 120; x < w - 120; x += 180) {
- for (let y = 240; y < h - 140; y += 140) {
- ctx.fillStyle = '#6d4c41';
- ctx.fillRect(x, y, 90, 60);
- ctx.strokeStyle = '#3e2723';
- ctx.lineWidth = 2;
- ctx.strokeRect(x, y, 90, 60);
- }
- }
+ ctx.restore();
  }
 
  function drawStickmanTopDown(x, y, angle, walkFrame) {
@@ -879,47 +822,30 @@
  ctx.translate(x, y);
  ctx.rotate(angle);
 
+ if (player.iframeTimer % 4 > 2) {
+ ctx.restore();
+ return;
+ }
+
  ctx.strokeStyle = '#ffffff';
  ctx.fillStyle = '#ffffff';
  ctx.lineWidth = 3;
  ctx.lineCap = 'round';
 
  const legSwing = Math.sin(walkFrame) * 10;
- const armSwing = Math.sin(walkFrame + Math.PI) * 8;
 
- // Feet
- ctx.beginPath();
- ctx.arc(-6 + legSwing, -12, 4, 0, Math.PI * 2);
- ctx.arc(-6 - legSwing, 12, 4, 0, Math.PI * 2);
- ctx.fill();
+ ctx.beginPath(); ctx.arc(-6 + legSwing, -12, 4, 0, Math.PI * 2); ctx.arc(-6 - legSwing, 12, 4, 0, Math.PI * 2); ctx.fill();
+ ctx.beginPath(); ctx.moveTo(-3, -16); ctx.lineTo(-3, 16); ctx.stroke();
+ ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.fillStyle = '#111111'; ctx.fill(); ctx.stroke();
 
- // Upper Body
- ctx.beginPath();
- ctx.moveTo(-3, -16);
- ctx.lineTo(-3, 16);
- ctx.stroke();
-
- // Arms
- ctx.beginPath();
- ctx.moveTo(-3, -14);
- ctx.lineTo(8 + armSwing, -16);
- ctx.moveTo(-3, 14);
- ctx.lineTo(8 - armSwing, 16);
- ctx.stroke();
-
- // Head
- ctx.beginPath();
- ctx.arc(0, 0, 11, 0, Math.PI * 2);
- ctx.fillStyle = '#111111';
- ctx.fill();
- ctx.stroke();
-
- // Direction Indicator
- ctx.fillStyle = '#ffffff';
- ctx.beginPath();
- ctx.arc(6, -3, 2, 0, Math.PI * 2);
- ctx.arc(6, 3, 2, 0, Math.PI * 2);
- ctx.fill();
+ if (player.isAttacking) {
+ ctx.save();
+ ctx.rotate(Math.sin((12 - player.attackTimer) * 0.3) * 1.5);
+ ctx.fillStyle = '#ffb300';
+ ctx.fillRect(5, -4, 45, 8);
+ ctx.strokeStyle = '#ff6f00'; ctx.lineWidth = 1; ctx.strokeRect(5, -4, 45, 8);
+ ctx.restore();
+ }
 
  ctx.restore();
  }
@@ -934,6 +860,15 @@
  drawHallway();
  rooms.forEach(drawRoom);
  drawLockersAndExits();
+ drawPuddlesAndProjectiles();
+
+ enemies.forEach(drawEnemy);
+
+ particleEffects.forEach(p => {
+ ctx.fillStyle = p.color;
+ ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
+ });
+
  drawStickmanTopDown(player.x, player.y, player.angle, player.walkFrame);
 
  ctx.restore();
