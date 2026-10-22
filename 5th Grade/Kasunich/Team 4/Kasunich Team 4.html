@@ -3,18 +3,18 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Stickman Beast Run - Full Maze Patrol Ostrich</title>
+ <title>Stickman Beast Run - Updated Edition</title>
  <style>
  * {
  box-sizing: border-box;
  user-select: none;
  margin: 0;
  padding: 0;
- font-family: 'Courier New', Courier, monospace, sans-serif;
+ font-family: 'Fredoka', 'Nunito', 'Courier New', Courier, monospace, sans-serif;
  }
 
  body {
- background-color: #060612;
+ background-color: #050510;
  color: #ffffff;
  display: flex;
  flex-direction: column;
@@ -33,28 +33,28 @@
  width: 100%;
  max-width: 1100px;
  margin-bottom: 8px;
- padding: 10px 16px;
- background: #121228;
- border: 2px solid #ff007f;
- border-radius: 10px;
- box-shadow: 0 0 15px rgba(255, 0, 127, 0.3);
+ padding: 10px 18px;
+ background: #12122c;
+ border: 3px solid #ff007f;
+ border-radius: 12px;
+ box-shadow: 0 0 20px rgba(255, 0, 127, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.2);
  }
 
  h1 {
- font-size: 18px;
+ font-size: 20px;
  letter-spacing: 2px;
  text-transform: uppercase;
- font-weight: bold;
+ font-weight: 900;
  color: #00ffff;
- text-shadow: 0 0 8px #00ffff;
+ text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
  }
 
  .stats-container {
  display: flex;
  gap: 16px;
  align-items: center;
- font-size: 14px;
- font-weight: bold;
+ font-size: 13px;
+ font-weight: 800;
  text-transform: uppercase;
  }
 
@@ -62,44 +62,57 @@
  display: flex;
  align-items: center;
  gap: 6px;
+ background: #08081a;
+ padding: 5px 12px;
+ border-radius: 8px;
+ border: 1px solid #333366;
+ }
+
+ .hearts-display {
+ color: #ff3366;
+ font-size: 14px;
+ letter-spacing: 1px;
+ text-shadow: 0 0 6px #ff3366;
  }
 
  .egg-status {
- padding: 6px 12px;
- border-radius: 6px;
+ padding: 6px 14px;
+ border-radius: 8px;
  font-size: 12px;
- font-weight: bold;
- background: #332200;
+ font-weight: 900;
+ background: #281a00;
  border: 2px solid #ffd700;
  color: #ffd700;
- text-shadow: 0 0 4px #ffd700;
+ text-shadow: 0 0 6px #ffd700;
+ box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
  }
 
  .egg-status.collected {
- background: #004411;
+ background: #003815;
  border-color: #00ff66;
  color: #00ff66;
  text-shadow: 0 0 8px #00ff66;
+ box-shadow: 0 0 12px rgba(0, 255, 102, 0.4);
  }
 
  .btn-reset {
- background: #ff0055;
+ background: linear-gradient(135deg, #ff0055, #ff3388);
  color: #ffffff;
- border: none;
- padding: 8px 16px;
- font-size: 12px;
- font-weight: bold;
+ border: 2px solid #ffffff;
+ padding: 8px 18px;
+ font-size: 13px;
+ font-weight: 900;
  cursor: pointer;
  text-transform: uppercase;
  letter-spacing: 1px;
- border-radius: 6px;
- box-shadow: 0 0 10px #ff0055;
+ border-radius: 8px;
+ box-shadow: 0 0 12px #ff0055;
  transition: all 0.15s ease-in-out;
  }
 
  .btn-reset:hover {
- background: #ff3388;
- transform: scale(1.05);
+ transform: scale(1.06);
+ box-shadow: 0 0 18px #ff3388;
  }
 
  /* Main Canvas Wrapper */
@@ -114,10 +127,10 @@
  }
 
  canvas {
- background-color: #08081a;
+ background-color: #070716;
  border: 3px solid #00ffff;
- border-radius: 10px;
- box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
+ border-radius: 12px;
+ box-shadow: 0 0 30px rgba(0, 255, 255, 0.35);
  display: block;
  width: 100%;
  height: 100%;
@@ -125,15 +138,17 @@
 
  .instructions {
  margin-top: 6px;
- font-size: 12px;
- font-weight: bold;
+ font-size: 13px;
+ font-weight: 800;
  color: #00ffff;
  text-align: center;
  letter-spacing: 1px;
+ text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
  }
 
  .highlight {
  color: #ffff00;
+ font-weight: 900;
  }
  </style>
 </head>
@@ -144,7 +159,7 @@
  <h1>Stickman Beast Run</h1>
  <div class="stats-container">
  <div class="stat-box">LEVEL: <span id="level-display" style="color: #00ffff;">1</span></div>
- <div class="stat-box">HP: <span id="hp-display" style="color: #ff3366;">❤️❤️❤️</span></div>
+ <div class="stat-box">HP: <span id="hp-display" class="hearts-display"></span></div>
  <div id="egg-status" class="egg-status">🥚 GOLDEN EGG NEEDED!</div>
  </div>
  <button class="btn-reset" onclick="resetGame()">Reset Game</button>
@@ -173,26 +188,26 @@
  let currentLevel = 1;
 
  const LEVEL_COLORS = [
- '#00FFFF', // Cyan
- '#FF007F', // Neon Pink
- '#00FF66', // Bright Green
- '#FF9900', // Neon Orange
- '#B537F7', // Electric Purple
+ '#00FFFF', // Electric Cyan
+ '#FF007F', // Hot Pink
+ '#00FF66', // Bright Lime Green
+ '#FF9900', // Vibrant Neon Orange
+ '#B537F7', // Deep Purple
  '#FFFF00', // Yellow
- '#FF3333'  // Crimson Red
+ '#FF3333'  // Bright Crimson Red
  ];
 
- // GAME STATE
- let playerHp = 3;
+ // GAME STATE (10 Hearts initial health)
+ let playerHp = 10;
  let invincibilityTimer = 0;
  let hasGoldenEgg = false;
  let eggsLaidCount = 0;
- let goldenEggTargetIndex = 1; // Chosen randomly between 1 and 10
+ let goldenEggTargetIndex = 1;
 
  // ENTITIES & PARTICLES
- let eggs = [];       // Ostrich eggs
- let projectiles = [];// Pizza mozzarella shots
- let particles = [];  // Visual explosion particles
+ let eggs = [];       
+ let projectiles = [];
+ let particles = [];  
 
  // STICKMAN PLAYER
  const player = {
@@ -204,10 +219,10 @@
  walkFrame: 0
  };
 
- // OSTRICH FULL-MAZE PATROL
+ // OSTRICH FULL-MAZE PATROL (Speed reduced by 50%: 4.56 -> 2.28)
  const ostrich = {
  x: 0, y: 0,
- speed: 4.8,       // Rapid running speed through corridors
+ speed: 2.28,      // 50% Speed Reduction
  radius: 15,
  eggTimer: 180,    // Lays egg every 3 seconds (180 frames)
  path: [],         // Full patrol waypoint array
@@ -215,17 +230,19 @@
  angle: Math.PI    // Orientation angle for drawing
  };
 
+ // KANGAROO (1-Wall Jump Limit & Doubled Cooldown Timer: 96 frames / 1.6s)
  const kangaroo = {
  x: 0, y: 0,
  radius: 16,
  speed: 1.8,
- state: 'pursue', // pursue, preparing, jumping, recharging
+ state: 'pursue',  // pursue, preparing, jumping, recharging
  stateTimer: 0,
  jumpStartX: 0, jumpStartY: 0,
  targetX: 0, targetY: 0,
  rechargeTimer: 0
  };
 
+ // PIZZA SLICE (Safe Spawning & Teleporting)
  const pizza = {
  x: 0, y: 0,
  radius: 16,
@@ -242,7 +259,7 @@
  document.getElementById('level-display').textContent = currentLevel;
  document.getElementById('level-display').style.color = getLevelColor();
 
- // Hearts display
+ // Hearts display for 10 HP
  let hearts = '';
  for (let i = 0; i < playerHp; i++) hearts += '❤️';
  if (playerHp <= 0) hearts = '💀 DEAD';
@@ -337,7 +354,7 @@
  const nr = r + d.dr;
  if (!cell.walls[d.name] && (nc !== parentC || nr !== parentR)) {
  dfs(nc, nr, c, r);
- path.push({ c, r }); // Return step back to parent cell
+ path.push({ c, r }); // Return step back
  }
  }
  }
@@ -346,11 +363,30 @@
  return path;
  }
 
+ // SAFE PIZZA POSITION FINDER (Guarantees spawn away from Stickman)
+ function getSafePizzaPosition() {
+ const cw = canvas.width / COLS;
+ const ch = canvas.height / ROWS;
+ let posX, posY, dist;
+ let attempts = 0;
+
+ do {
+ const randomCol = Math.floor(Math.random() * COLS);
+ const randomRow = Math.floor(Math.random() * ROWS);
+ posX = (randomCol + 0.5) * cw;
+ posY = (randomRow + 0.5) * ch;
+ dist = Math.hypot(player.x - posX, player.y - posY);
+ attempts++;
+ } while (dist < 180 && attempts < 50);
+
+ return { x: posX, y: posY };
+ }
+
  function initLevel() {
  maze = generateMaze(COLS, ROWS);
  hasGoldenEgg = false;
  eggsLaidCount = 0;
- goldenEggTargetIndex = Math.floor(Math.random() * 10) + 1; // Golden Egg chosen randomly between #1 and #10
+ goldenEggTargetIndex = Math.floor(Math.random() * 10) + 1; // Golden Egg between #1 and #10
 
  eggs = [];
  projectiles = [];
@@ -365,7 +401,7 @@
  player.facing = 1;
  player.walkFrame = 0;
 
- // Generate Ostrich Full Patrol Path starting at top-right cell
+ // Generate Ostrich Full Patrol Path
  ostrich.path = generateOstrichPatrolPath(maze, COLS - 1, 0);
  ostrich.pathIndex = 0;
  ostrich.x = (COLS - 0.5) * cw;
@@ -380,9 +416,10 @@
  kangaroo.stateTimer = 0;
  kangaroo.rechargeTimer = 0;
 
- // Pizza starts in middle corridor
- pizza.x = Math.floor(COLS / 2) * cw + cw * 0.5;
- pizza.y = Math.floor(ROWS / 2) * ch + ch * 0.5;
+ // Safe Pizza Position (Never on top of Stickman)
+ const safePizza = getSafePizzaPosition();
+ pizza.x = safePizza.x;
+ pizza.y = safePizza.y;
  pizza.shotsFired = 0;
  pizza.shootTimer = 90;
 
@@ -391,7 +428,7 @@
 
  function resetGame() {
  currentLevel = 1;
- playerHp = 3;
+ playerHp = 10; // Reset to 10 Hearts
  invincibilityTimer = 0;
  initLevel();
  }
@@ -439,7 +476,7 @@
  }
  });
 
- // WALL COLLISION HANDLING FOR STICKMAN & OTHER ENTITIES
+ // WALL COLLISION HANDLING
  function clampToSegment(px, py, x1, y1, x2, y2, radius) {
  const dx = x2 - x1;
  const dy = y2 - y1;
@@ -511,7 +548,7 @@
  invincibilityTimer = 90; // ~1.5s invincibility
  updateUI();
 
- createExplosion(player.x, player.y, '#ff0055', 15);
+ createExplosion(player.x, player.y, '#ff0055', 18);
 
  if (playerHp <= 0) {
  setTimeout(() => {
@@ -560,13 +597,13 @@
  if (dx !== 0 || dy !== 0) player.walkFrame += 0.25;
  else player.walkFrame = 0;
 
- // 2. OSTRICH ENGINE (Full Maze Patrol Circuit)
+ // 2. OSTRICH ENGINE (Full Maze Patrol Circuit - 50% Slower)
  updateOstrich();
 
- // 3. KANGAROO ENGINE (Always pursues Stickman, jumps walls, 2s recharge)
+ // 3. KANGAROO ENGINE (1-Wall Jump Limit & Doubled Cooldown: 96 frames / 1.6s)
  updateKangaroo();
 
- // 4. PIZZA ENGINE (Mozzarella fire & Teleport every 5 shots)
+ // 4. PIZZA ENGINE (Mozzarella fire & Safe Teleport)
  updatePizza();
 
  // 5. EGGS ENGINE
@@ -597,12 +634,10 @@
  const dist = Math.hypot(dx, dy);
 
  if (dist <= ostrich.speed) {
- // Reached cell center waypoint: snap to exact center & advance to next waypoint
  ostrich.x = targetX;
  ostrich.y = targetY;
  ostrich.pathIndex = (ostrich.pathIndex + 1) % ostrich.path.length;
  } else {
- // Move along center corridor toward waypoint
  const vx = (dx / dist) * ostrich.speed;
  const vy = (dy / dist) * ostrich.speed;
  ostrich.x += vx;
@@ -610,12 +645,10 @@
  ostrich.angle = Math.atan2(vy, vx);
  }
 
- // Touch damage to player
  if (Math.hypot(player.x - ostrich.x, player.y - ostrich.y) < player.radius + ostrich.radius) {
  hurtPlayer('Ostrich Peck Power!');
  }
 
- // Lay egg every 3 seconds (180 frames)
  ostrich.eggTimer--;
  if (ostrich.eggTimer <= 0) {
  ostrich.eggTimer = 180;
@@ -646,9 +679,9 @@
  }
 
  kangaroo.stateTimer++;
- if (kangaroo.stateTimer > 120) {
+ if (kangaroo.stateTimer > 110) {
  kangaroo.state = 'preparing';
- kangaroo.stateTimer = 20;
+ kangaroo.stateTimer = 18;
  }
  } else if (kangaroo.state === 'preparing') {
  kangaroo.stateTimer--;
@@ -656,13 +689,22 @@
  kangaroo.state = 'jumping';
  kangaroo.jumpStartX = kangaroo.x;
  kangaroo.jumpStartY = kangaroo.y;
- kangaroo.targetX = player.x;
- kangaroo.targetY = player.y;
- kangaroo.stateTimer = 40;
+
+ // LIMIT JUMP TO MAXIMUM 1 WALL DISTANCE (~1 cell size)
+ const cw = canvas.width / COLS;
+ const ch = canvas.height / ROWS;
+ const maxJumpDist = Math.min(cw, ch) * 1.25;
+
+ const angle = Math.atan2(player.y - kangaroo.y, player.x - kangaroo.x);
+ const actualDist = Math.min(Math.hypot(player.x - kangaroo.x, player.y - kangaroo.y), maxJumpDist);
+
+ kangaroo.targetX = kangaroo.x + Math.cos(angle) * actualDist;
+ kangaroo.targetY = kangaroo.y + Math.sin(angle) * actualDist;
+ kangaroo.stateTimer = 35; // Flight duration
  }
  } else if (kangaroo.state === 'jumping') {
  kangaroo.stateTimer--;
- const progress = 1 - (kangaroo.stateTimer / 40);
+ const progress = 1 - (kangaroo.stateTimer / 35);
 
  kangaroo.x = kangaroo.jumpStartX + (kangaroo.targetX - kangaroo.jumpStartX) * progress;
  kangaroo.y = kangaroo.jumpStartY + (kangaroo.targetY - kangaroo.jumpStartY) * progress;
@@ -673,8 +715,9 @@
  hurtPlayer('Kangaroo Landed On You!');
  }
 
+ // DOUBLED COOLDOWN TIMER: 96 frames (1.6 Seconds)
  kangaroo.state = 'recharging';
- kangaroo.rechargeTimer = 120; // 2.0 Seconds
+ kangaroo.rechargeTimer = 96; 
  }
  } else if (kangaroo.state === 'recharging') {
  kangaroo.rechargeTimer--;
@@ -704,17 +747,14 @@
 
  pizza.shotsFired++;
 
+ // TELEPORT AFTER 5 SHOTS (Always to a safe position away from Stickman)
  if (pizza.shotsFired >= 5) {
  pizza.shotsFired = 0;
  createExplosion(pizza.x, pizza.y, '#ffcc00', 15);
 
- const randomCol = Math.floor(Math.random() * COLS);
- const randomRow = Math.floor(Math.random() * ROWS);
- const cw = canvas.width / COLS;
- const ch = canvas.height / ROWS;
-
- pizza.x = (randomCol + 0.5) * cw;
- pizza.y = (randomRow + 0.5) * ch;
+ const safePizza = getSafePizzaPosition();
+ pizza.x = safePizza.x;
+ pizza.y = safePizza.y;
 
  createExplosion(pizza.x, pizza.y, '#00ffff', 15);
  }
@@ -874,7 +914,7 @@
  ctx.stroke();
 
  ctx.fillStyle = '#ffffff';
- ctx.font = 'bold 10px "Courier New", monospace';
+ ctx.font = 'bold 10px "Fredoka", monospace';
  ctx.textAlign = 'center';
  ctx.textBaseline = 'middle';
  ctx.fillText(hasGoldenEgg ? 'EXIT!' : 'LOCKED', goalX, goalY);
@@ -893,10 +933,10 @@
  ctx.save();
  ctx.strokeStyle = '#ffffff';
  ctx.fillStyle = '#ffffff';
- ctx.lineWidth = 2;
+ ctx.lineWidth = 2.2;
  ctx.lineCap = 'round';
 
- const headRadius = 4.5;
+ const headRadius = 4.8;
  const bodyLength = 12;
  const legLength = 10;
  const centerY = y + 2;
@@ -905,7 +945,7 @@
 
  // Head
  ctx.beginPath(); ctx.arc(x, headY, headRadius, 0, Math.PI * 2); ctx.stroke();
- ctx.beginPath(); ctx.arc(x + facing * 2, headY - 0.5, 0.8, 0, Math.PI * 2); ctx.fill();
+ ctx.beginPath(); ctx.arc(x + facing * 2, headY - 0.5, 0.9, 0, Math.PI * 2); ctx.fill();
 
  // Torso
  ctx.beginPath(); ctx.moveTo(x, neckY); ctx.lineTo(x, centerY); ctx.stroke();
@@ -928,13 +968,11 @@
  ctx.translate(ostrich.x, ostrich.y);
  ctx.rotate(ostrich.angle);
 
- // Ostrich Body
  ctx.fillStyle = '#e6ccb2';
  ctx.beginPath();
  ctx.ellipse(0, 0, 14, 10, 0, 0, Math.PI * 2);
  ctx.fill();
 
- // Neck
  ctx.strokeStyle = '#e6ccb2';
  ctx.lineWidth = 4;
  ctx.beginPath();
@@ -942,22 +980,18 @@
  ctx.lineTo(12, -10);
  ctx.stroke();
 
- // Head
  ctx.fillStyle = '#ff9900';
  ctx.beginPath();
  ctx.arc(12, -10, 4, 0, Math.PI * 2);
  ctx.fill();
 
- // Beak
  ctx.beginPath();
  ctx.moveTo(15, -12); ctx.lineTo(21, -9); ctx.lineTo(15, -6);
  ctx.fill();
 
- // Eye
  ctx.fillStyle = '#000000';
  ctx.beginPath(); ctx.arc(13, -11, 1, 0, Math.PI * 2); ctx.fill();
 
- // Legs
  ctx.strokeStyle = '#ff9900';
  ctx.lineWidth = 2;
  ctx.beginPath();
@@ -975,8 +1009,8 @@
  let shadowY = kangaroo.y + 12;
 
  if (kangaroo.state === 'jumping') {
- const progress = 1 - (kangaroo.stateTimer / 40);
- const height = Math.sin(progress * Math.PI) * 45;
+ const progress = 1 - (kangaroo.stateTimer / 35);
+ const height = Math.sin(progress * Math.PI) * 35;
  drawY -= height;
  }
 
@@ -1008,14 +1042,14 @@
 
  if (kangaroo.state === 'recharging') {
  ctx.fillStyle = '#00ffff';
- ctx.font = 'bold 9px monospace';
+ ctx.font = 'bold 9px "Fredoka", monospace';
  ctx.textAlign = 'center';
- ctx.fillText('⚡2s RECHARGE', 0, -26);
+ ctx.fillText('⚡1.6s COOLDOWN', 0, -26);
  } else if (kangaroo.state === 'preparing') {
  ctx.fillStyle = '#ff0000';
- ctx.font = 'bold 10px monospace';
+ ctx.font = 'bold 10px "Fredoka", monospace';
  ctx.textAlign = 'center';
- ctx.fillText('❗JUMPING!', 0, -26);
+ ctx.fillText('❗1-WALL LEAP!', 0, -26);
  }
 
  ctx.restore();
@@ -1046,7 +1080,7 @@
 
  ctx.rotate(-pizza.angle);
  ctx.fillStyle = '#00ffff';
- ctx.font = 'bold 9px monospace';
+ ctx.font = 'bold 9px "Fredoka", monospace';
  ctx.textAlign = 'center';
  ctx.fillText(`SHOTS: ${pizza.shotsFired}/5`, 0, -22);
 
@@ -1059,7 +1093,7 @@
  if (egg.isGolden) {
  const pulse = Math.sin(Date.now() * 0.008) * 2;
  ctx.shadowColor = '#ffd700';
- ctx.shadowBlur = 12;
+ ctx.shadowBlur = 14;
  ctx.fillStyle = '#ffd700';
  ctx.beginPath();
  ctx.ellipse(egg.x, egg.y, 7 + pulse, 10 + pulse, 0, 0, Math.PI * 2);
@@ -1107,7 +1141,7 @@
  }
 
  function draw() {
- ctx.fillStyle = '#08081a';
+ ctx.fillStyle = '#070716';
  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
  drawMaze();
