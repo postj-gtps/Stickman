@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman vs Evil Supplies: Detention Escape</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Font Inter / Press Start 2P style -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: #0d1117;
+      color: #ffffff;
+      overflow: hidden;
+    }
+    .font-display {
+      font-family: 'Fredoka', cursive, sans-serif;
+    }
+    canvas {
+      display: block;
+      image-rendering: pixelated;
+    }
+    /* Pulse glow effects */
+    @keyframes pulse-gold {
+      0%, 100% { box-shadow: 0 0 15px rgba(234, 179, 8, 0.6); }
+      50% { box-shadow: 0 0 25px rgba(250, 204, 21, 0.9); }
+    }
+    .glow-gold {
+      animation: pulse-gold 2s infinite;
+    }
+    /* Custom scrollbar for instructions if needed */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between items-center p-2 sm:p-4 bg-slate-950 text-slate-100">
+
+  <!-- TOP HUD HEADER -->
+  <header class="w-full max-w-6xl bg-slate-900/90 border-2 border-amber-400 rounded-xl p-3 shadow-lg flex flex-wrap justify-between items-center gap-2 mb-2 z-10 backdrop-blur-md">
+    <!-- Title & Badge -->
+    <div class="flex items-center gap-3">
+      <div class="bg-amber-400 text-slate-950 px-3 py-1 rounded-lg font-display font-bold text-lg sm:text-xl tracking-wide shadow">
+        DETENTION ESCAPE
+      </div>
+      <span class="text-xs sm:text-sm font-semibold bg-slate-800 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-md">
+        WASD CONTROLS
+      </span>
+    </div>
+
+    <!-- Stats & Objective Tracker -->
+    <div class="flex flex-wrap items-center gap-3 sm:gap-6 text-sm font-bold">
+      <!-- Hearts HP -->
+      <div class="flex items-center gap-1.5 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-rose-500/30">
+        <span class="text-rose-400 font-display">HP:</span>
+        <div id="heartsContainer" class="flex gap-1 text-xl text-rose-500">
+          ♥♥♥♥♥♥
+        </div>
+      </div>
+
+      <!-- Golden Pencils -->
+      <div class="flex items-center gap-2 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-amber-500/40">
+        <span class="text-amber-400 text-lg">✏️</span>
+        <span class="text-slate-300">Pencils:</span>
+        <span id="pencilCount" class="text-amber-300 font-display text-base">0 / 5</span>
+      </div>
+
+      <!-- Boss Status -->
+      <div class="flex items-center gap-2 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-purple-500/40">
+        <span class="text-purple-400 text-lg">✒️</span>
+        <span class="text-slate-300">Boss:</span>
+        <span id="bossStatus" class="text-rose-400 font-display text-base">ALIVE</span>
+      </div>
+
+      <!-- Exit Status -->
+      <div class="flex items-center gap-2 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-emerald-500/40">
+        <span class="text-emerald-400 text-lg">🚪</span>
+        <span id="exitStatus" class="text-rose-400 font-display text-base">LOCKED</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-2">
+      <button id="soundToggleBtn" onclick="toggleAudio()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+        🔊 Sound: ON
+      </button>
+      <button onclick="resetGame()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs uppercase tracking-wider transition shadow-md active:scale-95">
+        Restart
+      </button>
+    </div>
+  </header>
+
+  <!-- CANVAS WRAPPER -->
+  <main id="canvasWrapper" class="relative w-full max-w-6xl flex-grow bg-black rounded-xl border-2 border-slate-800 overflow-hidden shadow-2xl flex justify-center items-center">
+    <canvas id="gameCanvas" class="w-full h-full"></canvas>
+
+    <!-- FLOATING SHIELD / NOTIFICATION BANNER -->
+    <div id="statusBanner" class="absolute top-4 left-1/2 -translate-x-1/2 bg-sky-500/90 text-white font-display px-6 py-2 rounded-full shadow-2xl border-2 border-sky-200 text-sm sm:text-base tracking-wide flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-4">
+      <span id="statusBannerText">🛡️ SPAWN SHIELD ACTIVE! (3.5s)</span>
+    </div>
+
+    <!-- WARNING PROMPT FOR LOCKED DOORS -->
+    <div id="doorWarningModal" class="absolute top-16 left-1/2 -translate-x-1/2 bg-rose-950/95 border-2 border-rose-500 text-rose-100 font-display px-6 py-3 rounded-xl shadow-2xl text-center transition-all duration-200 opacity-0 pointer-events-none transform scale-90 max-w-md">
+      <div class="text-lg text-rose-400 font-bold mb-1">⚠️ DOORS LOCKED!</div>
+      <div id="doorWarningText" class="text-xs sm:text-sm text-slate-200">
+        You must collect all 5 Golden Pencils AND defeat the Evil Pen Boss in Detention to open the exits!
+      </div>
+    </div>
+
+    <!-- START / OVERLAY SCREEN -->
+    <div id="overlayModal" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col justify-center items-center p-6 text-center z-20">
+      <h1 class="text-3xl sm:text-5xl font-display font-extrabold text-amber-400 mb-2 tracking-wide drop-shadow-md">
+        STICKMAN VS EVIL SUPPLIES
+      </h1>
+      <p class="text-slate-300 max-w-xl text-sm sm:text-base mb-6">
+        You've been locked in the <span class="text-purple-400 font-bold">Detention Dungeon</span>! The school supplies have gone rogue under the command of the <span class="text-rose-400 font-bold">Evil Pen Boss</span>.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg w-full text-left bg-slate-900/80 p-4 rounded-xl border border-slate-800 mb-6 text-xs sm:text-sm">
+        <div class="flex items-start gap-2">
+          <span class="text-amber-400 text-lg">⌨️</span>
+          <div>
+            <strong class="text-amber-300">Controls:</strong><br>
+            <span class="text-slate-300"><kbd class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 font-mono">W</kbd> <kbd class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 font-mono">A</kbd> <kbd class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 font-mono">S</kbd> <kbd class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 font-mono">D</kbd> to Move</span><br>
+            <span class="text-slate-400"><kbd class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 font-mono">SPACE</kbd> or <kbd class="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 font-mono">CLICK</kbd> to Swing Wooden Ruler</span>
+          </div>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-amber-400 text-lg">🛡️</span>
+          <div>
+            <strong class="text-amber-300">Spawn Grace Period:</strong><br>
+            <span class="text-slate-300">3.5s Blue Shield on spawn protects you from the 10 Detention Dungeon enemies!</span>
+          </div>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-amber-400 text-lg">✏️</span>
+          <div>
+            <strong class="text-amber-300">Golden Pencils:</strong><br>
+            <span class="text-slate-300">Find 5 Golden Pencils hidden across classrooms.</span>
+          </div>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-amber-400 text-lg">🚪</span>
+          <div>
+            <strong class="text-amber-300">Dual Objective Exit:</strong><br>
+            <span class="text-slate-300">Defeat Boss + Collect 5 Pencils to unlock Exit doors!</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="startBtn" onclick="startGame()" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-display text-xl px-8 py-3 rounded-xl font-bold shadow-lg transform transition hover:scale-105 active:scale-95 glow-gold">
+        ENTER SCHOOL & ESCAPE!
+      </button>
+    </div>
+  </main>
+
+  <!-- CONTROLS INSTRUCTIONS FOOTER -->
+  <footer class="w-full max-w-6xl mt-2 flex justify-between items-center text-xs text-slate-400 font-mono px-2">
+    <div>[WASD] Move Stickman | [SPACE / LEFT CLICK] Attack with Ruler</div>
+    <div>Arrow keys disabled | 100% Solid Wall & Furniture Collisions</div>
+  </footer>
+
+  <!-- GAME ENGINE SCRIPT -->
+  <script>
+    /* =========================================================================
+       AUDIO SYSTEM (Web Audio API)
+       ========================================================================= */
+    let audioCtx = null;
+    let audioMuted = false;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function toggleAudio() {
+      audioMuted = !audioMuted;
+      const btn = document.getElementById('soundToggleBtn');
+      btn.innerText = audioMuted ? "🔇 Sound: OFF" : "🔊 Sound: ON";
+    }
+
+    function playSound(type) {
+      if (audioMuted) return;
+      try {
+        initAudio();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'swing') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(60, now + 0.12);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } else if (type === 'hit') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+          gain.gain.setValueAtTime(0.4, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        } else if (type === 'hurt') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(150, now);
+          osc.frequency.linearRampToValueAtTime(50, now + 0.25);
+          gain.gain.setValueAtTime(0.5, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'pencil') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+          osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+          osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } else if (type === 'shield') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(300, now);
+          osc.frequency.exponentialRampToValueAtTime(800, now + 0.3);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (type === 'eraserShoot') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(120, now + 0.1);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+          osc.start(now);
+          osc.stop(now + 0.1);
+        } else if (type === 'bossDeath') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(200, now);
+          osc.frequency.linearRampToValueAtTime(40, now + 0.6);
+          gain.gain.setValueAtTime(0.6, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+          osc.start(now);
+          osc.stop(now + 0.6);
+        } else if (type === 'unlock') {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.type = 'triangle';
+            o.frequency.value = freq;
+            o.connect(g);
+            g.connect(audioCtx.destination);
+            const startTime = now + idx * 0.08;
+            g.gain.setValueAtTime(0.3, startTime);
+            g.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+            o.start(startTime);
+            o.stop(startTime + 0.5);
+          });
+        }
+      } catch (e) {
+        console.warn("Audio playback error:", e);
+      }
+    }
+
+    /* =========================================================================
+       CANVAS & GAME ENGINE SETUP
+       ========================================================================= */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const ROOM_WIDTH = 500;
+    const ROOM_HEIGHT = 380;
+    const MAP_COLS = 4;
+    const MAP_ROWS = 3;
+    const WORLD_WIDTH = MAP_COLS * ROOM_WIDTH;   // 2000 px
+    const WORLD_HEIGHT = MAP_ROWS * ROOM_HEIGHT; // 1140 px
+
+    // KEYBOARD INPUT MANAGEMENT
+    const keys = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
+    let spacePressed = false;
+    let spaceHandled = false;
+
+    // INTERCEPT ARROW KEYS AND STRICTLY MAP WASD ONLY
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+        return;
+      }
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        keys[e.code] = true;
+      }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (!spaceHandled) {
+          spacePressed = true;
+          spaceHandled = true;
+        }
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        keys[e.code] = false;
+      }
+      if (e.code === 'Space') {
+        spacePressed = false;
+        spaceHandled = false;
+      }
+    });
+
+    function clearInputs() {
+      keys.KeyW = false;
+      keys.KeyA = false;
+      keys.KeyS = false;
+      keys.KeyD = false;
+      spacePressed = false;
+      spaceHandled = false;
+    }
+    window.addEventListener('blur', clearInputs);
+    window.addEventListener('mouseleave', clearInputs);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) clearInputs();
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+      initAudio();
+      if (gameState === 'PLAYING') {
+        triggerPlayerAttack();
+      }
+    });
+
+    /* =========================================================================
+       GAME STATE & WORLD MAP DEFINITION
+       ========================================================================= */
+    let gameState = 'START';
+    let camera = { x: 0, y: 0, width: 800, height: 600 };
+    let warningTimer = 0;
+
+    const player = {
+      x: 0,
+      y: 0,
+      radius: 14,
+      speed: 4.2,
+      maxHp: 6,
+      hp: 6,
+      facingAngle: 0,
+      walkFrame: 0,
+      iframeTimer: 0,
+      attackTimer: 0,
+      attackAngle: 0,
+      attackArc: Math.PI / 1.5,
+      attackRange: 48,
+      attackDamage: 1.5,
+      puddlesSlippery: 0
+    };
+
+    let goldenPencilsCollected = 0;
+    const TOTAL_PENCILS = 5;
+    let bossDefeated = false;
+    let exitsUnlocked = false;
+
+    let rooms = [];
+    let staticWalls = [];
+    let furnitureHitboxes = [];
+    let goldenPencils = [];
+    let exitDoors = [];
+    let enemies = [];
+    let projectiles = [];
+    let puddles = [];
+
+    /* -------------------------------------------------------------------------
+       SPAWN POSITION VALIDATION HELPERS
+       ------------------------------------------------------------------------- */
+    function checkCircleRectCollision(cx, cy, r, rx, ry, rw, rh) {
+      const closestX = Math.max(rx, Math.min(cx, rx + rw));
+      const closestY = Math.max(ry, Math.min(cy, ry + rh));
+
+      const dx = cx - closestX;
+      const dy = cy - closestY;
+      const distSq = dx * dx + dy * dy;
+
+      if (distSq < r * r) {
+        const dist = Math.sqrt(distSq);
+        const overlap = r - dist;
+        let nx = 0;
+        let ny = 0;
+        if (dist > 0.0001) {
+          nx = dx / dist;
+          ny = dy / dist;
+        } else {
+          ny = -1;
+        }
+        return { hit: true, nx, ny, overlap };
+      }
+      return { hit: false };
+    }
+
+    function isPositionValidForSpawn(x, y, radius = 18) {
+      const safetyMargin = radius + 12;
+      for (const wall of staticWalls) {
+        if (checkCircleRectCollision(x, y, safetyMargin, wall.x, wall.y, wall.w, wall.h).hit) {
+          return false;
+        }
+      }
+      for (const furn of furnitureHitboxes) {
+        if (checkCircleRectCollision(x, y, safetyMargin, furn.x, furn.y, furn.w, furn.h).hit) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function getValidFloorPositionForRoom(room, itemRadius = 18) {
+      const padding = 60;
+      const minX = room.x + padding;
+      const maxX = room.x + room.w - padding;
+      const minY = room.y + padding;
+      const maxY = room.y + room.h - padding;
+
+      for (let attempt = 0; attempt < 250; attempt++) {
+        const candidateX = minX + Math.random() * (maxX - minX);
+        const candidateY = minY + Math.random() * (maxY - minY);
+        if (isPositionValidForSpawn(candidateX, candidateY, itemRadius)) {
+          return { x: candidateX, y: candidateY };
+        }
+      }
+      return { x: room.x + room.w / 2, y: room.y + room.h / 2 };
+    }
+
+    /* -------------------------------------------------------------------------
+       MAP BUILDER
+       ------------------------------------------------------------------------- */
+    function buildSchoolMap() {
+      rooms = [];
+      staticWalls = [];
+      furnitureHitboxes = [];
+      goldenPencils = [];
+      exitDoors = [];
+      enemies = [];
+      projectiles = [];
+      puddles = [];
+
+      const wallThick = 20;
+      const doorGap = 120;
+
+      const roomNames = [
+        "West Exit Corridor", "Math Classroom", "Science Lab", "East Exit Corridor",
+        "Gymnasium", "DETENTION DUNGEON", "Art Classroom", "Cafeteria",
+        "Principal's Office", "Restrooms", "Storage Closet", "Auditorium"
+      ];
+
+      const roomColors = [
+        "#1e293b", "#1e3a8a", "#065f46", "#1e293b",
+        "#854d0e", "#4c1d95", "#831843", "#9a3412",
+        "#701a75", "#15803d", "#3f3f46", "#312e81"
+      ];
+
+      for (let r = 0; r < MAP_ROWS; r++) {
+        for (let c = 0; c < MAP_COLS; c++) {
+          const idx = r * MAP_COLS + c;
+          const rx = c * ROOM_WIDTH;
+          const ry = r * ROOM_HEIGHT;
+
+          rooms.push({
+            id: idx,
+            col: c,
+            row: r,
+            x: rx,
+            y: ry,
+            w: ROOM_WIDTH,
+            h: ROOM_HEIGHT,
+            name: roomNames[idx],
+            color: roomColors[idx]
+          });
+        }
+      }
+
+      const westDoorY = 0 * ROOM_HEIGHT + ROOM_HEIGHT / 2 - doorGap / 2;
+      const eastDoorY = 0 * ROOM_HEIGHT + ROOM_HEIGHT / 2 - doorGap / 2;
+
+      staticWalls.push({ x: 0, y: 0, w: WORLD_WIDTH, h: wallThick });
+      staticWalls.push({ x: 0, y: WORLD_HEIGHT - wallThick, w: WORLD_WIDTH, h: wallThick });
+
+      staticWalls.push({ x: 0, y: 0, w: wallThick, h: westDoorY });
+      staticWalls.push({ x: 0, y: westDoorY + doorGap, w: wallThick, h: WORLD_HEIGHT - (westDoorY + doorGap) });
+
+      staticWalls.push({ x: WORLD_WIDTH - wallThick, y: 0, w: wallThick, h: eastDoorY });
+      staticWalls.push({ x: WORLD_WIDTH - wallThick, y: eastDoorY + doorGap, w: wallThick, h: WORLD_HEIGHT - (eastDoorY + doorGap) });
+
+      exitDoors.push({ side: 'WEST', x: 0, y: westDoorY, w: wallThick + 10, h: doorGap });
+      exitDoors.push({ side: 'EAST', x: WORLD_WIDTH - wallThick - 10, y: eastDoorY, w: wallThick + 10, h: doorGap });
+
+      for (let c = 1; c < MAP_COLS; c++) {
+        const wx = c * ROOM_WIDTH - wallThick / 2;
+        for (let r = 0; r < MAP_ROWS; r++) {
+          const ry = r * ROOM_HEIGHT;
+          const midY = ry + ROOM_HEIGHT / 2;
+          staticWalls.push({ x: wx, y: ry, w: wallThick, h: ROOM_HEIGHT / 2 - doorGap / 2 });
+          staticWalls.push({ x: wx, y: midY + doorGap / 2, w: wallThick, h: ROOM_HEIGHT / 2 - doorGap / 2 });
+        }
+      }
+
+      for (let r = 1; r < MAP_ROWS; r++) {
+        const wy = r * ROOM_HEIGHT - wallThick / 2;
+        for (let c = 0; c < MAP_COLS; c++) {
+          const rx = c * ROOM_WIDTH;
+          const midX = rx + ROOM_WIDTH / 2;
+          staticWalls.push({ x: rx, y: wy, w: ROOM_WIDTH / 2 - doorGap / 2, h: wallThick });
+          staticWalls.push({ x: midX + doorGap / 2, y: wy, w: ROOM_WIDTH / 2 - doorGap / 2, h: wallThick });
+        }
+      }
+
+      /* -----------------------------------------------------------------------
+         ADD FURNITURE HITBOXES FOR ALL 12 ROOMS
+         ----------------------------------------------------------------------- */
+      function addFurniture(x, y, w, h, type, color, label) {
+        furnitureHitboxes.push({ x, y, w, h, type, color, label });
+      }
+
+      const dungeon = rooms[5];
+      addFurniture(dungeon.x + 80, dungeon.y + 80, 40, 40, 'PILLAR', '#334155', 'Pillar');
+      addFurniture(dungeon.x + dungeon.w - 120, dungeon.y + 80, 40, 40, 'PILLAR', '#334155', 'Pillar');
+      addFurniture(dungeon.x + 80, dungeon.y + dungeon.h - 120, 40, 40, 'PILLAR', '#334155', 'Pillar');
+      addFurniture(dungeon.x + dungeon.w - 120, dungeon.y + dungeon.h - 120, 40, 40, 'PILLAR', '#334155', 'Pillar');
+      addFurniture(dungeon.x + dungeon.w / 2 - 100, dungeon.y + 35, 200, 15, 'BARS', '#475569', 'Jail Cell');
+
+      const mathRoom = rooms[1];
+      addFurniture(mathRoom.x + 80, mathRoom.y + 80, 60, 40, 'DESK', '#b45309', 'Desk');
+      addFurniture(mathRoom.x + 200, mathRoom.y + 80, 60, 40, 'DESK', '#b45309', 'Desk');
+      addFurniture(mathRoom.x + 80, mathRoom.y + 200, 60, 40, 'DESK', '#b45309', 'Desk');
+      addFurniture(mathRoom.x + 200, mathRoom.y + 200, 60, 40, 'DESK', '#b45309', 'Desk');
+      addFurniture(mathRoom.x + mathRoom.w - 140, mathRoom.y + 140, 80, 50, 'DESK_BIG', '#78350f', 'Teacher');
+
+      const sciLab = rooms[2];
+      addFurniture(sciLab.x + 80, sciLab.y + 90, 160, 45, 'BENCH', '#0f766e', 'Lab Bench');
+      addFurniture(sciLab.x + 80, sciLab.y + 220, 160, 45, 'BENCH', '#0f766e', 'Lab Bench');
+      addFurniture(sciLab.x + 300, sciLab.y + 120, 120, 120, 'DEMO_ISLAND', '#115e59', 'Chemical Island');
+
+      const gym = rooms[4];
+      addFurniture(gym.x + 40, gym.y + 40, 240, 45, 'BLEACHERS', '#a16207', 'Bleachers');
+      addFurniture(gym.x + 40, gym.y + gym.h - 80, 240, 45, 'BLEACHERS', '#a16207', 'Bleachers');
+      addFurniture(gym.x + gym.w - 90, gym.y + gym.h / 2 - 40, 40, 80, 'BALL_RACK', '#854d0e', 'Ball Rack');
+
+      const artRoom = rooms[6];
+      addFurniture(artRoom.x + 90, artRoom.y + 90, 80, 80, 'TABLE', '#be185d', 'Art Table');
+      addFurniture(artRoom.x + 250, artRoom.y + 90, 80, 80, 'TABLE', '#be185d', 'Art Table');
+      addFurniture(artRoom.x + 170, artRoom.y + 230, 100, 60, 'EASELS', '#9d174d', 'Easels');
+
+      const cafe = rooms[7];
+      addFurniture(cafe.x + 60, cafe.y + 80, 220, 50, 'CAFE_TABLE', '#c2410c', 'Cafeteria Table');
+      addFurniture(cafe.x + 60, cafe.y + 220, 220, 50, 'CAFE_TABLE', '#c2410c', 'Cafeteria Table');
+      addFurniture(cafe.x + cafe.w - 120, cafe.y + 80, 60, 200, 'FOOD_COUNTER', '#9a3412', 'Lunch Line');
+
+      const office = rooms[8];
+      addFurniture(office.x + 140, office.y + 120, 140, 70, 'MAHOGANY', '#581c87', 'Executive Desk');
+      addFurniture(office.x + 60, office.y + 60, 50, 100, 'CABINET', '#3b0764', 'Filing Cabinets');
+
+      const bath = rooms[9];
+      addFurniture(bath.x + 60, bath.y + 40, 220, 35, 'SINKS', '#047857', 'Sinks & Mirrors');
+      addFurniture(bath.x + 60, bath.y + bath.h - 75, 240, 40, 'STALLS', '#065f46', 'Stall Partition');
+
+      const storage = rooms[10];
+      addFurniture(storage.x + 50, storage.y + 50, 40, 180, 'SHELF', '#27272a', 'Supply Rack');
+      addFurniture(storage.x + storage.w - 90, storage.y + 50, 40, 180, 'SHELF', '#27272a', 'Supply Rack');
+
+      const audit = rooms[11];
+      addFurniture(audit.x + 60, audit.y + 40, 220, 60, 'STAGE', '#3730a3', 'Auditorium Stage');
+      addFurniture(audit.x + 60, audit.y + 180, 260, 45, 'SEATS', '#312e81', 'Seat Row A');
+      addFurniture(audit.x + 60, audit.y + 260, 260, 45, 'SEATS', '#312e81', 'Seat Row B');
+
+      /* -----------------------------------------------------------------------
+         SPAWN GOLDEN PENCILS (STRICT COLLISION VALIDATION - NO FURNITURE OVERLAP)
+         ----------------------------------------------------------------------- */
+      const pencilRooms = [mathRoom, sciLab, gym, cafe, artRoom];
+      pencilRooms.forEach(rm => {
+        const pos = getValidFloorPositionForRoom(rm, 16);
+        goldenPencils.push({ x: pos.x, y: pos.y, collected: false });
+      });
+      goldenPencilsCollected = 0;
+
+      /* -----------------------------------------------------------------------
+         SPAWN ENEMIES: 10 ENEMIES IN DETENTION DUNGEON (BOSS + 9 MINIONS)
+         ----------------------------------------------------------------------- */
+      const cx = dungeon.x + dungeon.w / 2;
+      const cy = dungeon.y + dungeon.h / 2;
+
+      enemies.push({
+        id: 'BOSS',
+        type: 'EVIL_PEN',
+        x: cx,
+        y: cy - 20,
+        radius: 22,
+        hp: 24,
+        maxHp: 24,
+        speed: 2.2,
+        damage: 2,
+        shootTimer: 0,
+        vx: 0,
+        vy: 0,
+        color: '#8b5cf6'
+      });
+
+      const minionTypes = ['SHARPENER', 'ERASER', 'MOUSE', 'MOP'];
+      for (let i = 0; i < 9; i++) {
+        const angle = (i / 9) * Math.PI * 2;
+        const dist = 110 + (i % 2) * 35;
+        const type = minionTypes[i % minionTypes.length];
+        
+        let hp = 3;
+        let speed = 2.0;
+        let color = '#ef4444';
+
+        if (type === 'SHARPENER') { hp = 4; speed = 1.8; color = '#f97316'; }
+        if (type === 'ERASER') { hp = 3; speed = 1.5; color = '#ec4899'; }
+        if (type === 'MOUSE') { hp = 2; speed = 2.8; color = '#06b6d4'; }
+        if (type === 'MOP') { hp = 4; speed = 1.6; color = '#0ea5e9'; }
+
+        enemies.push({
+          id: 'MINION_' + i,
+          type: type,
+          x: cx + Math.cos(angle) * dist,
+          y: cy + Math.sin(angle) * dist,
+          radius: 14,
+          hp: hp,
+          maxHp: hp,
+          speed: speed,
+          damage: 1,
+          shootTimer: Math.random() * 60,
+          vx: 0,
+          vy: 0,
+          color: color
+        });
+      }
+
+      enemies.push({
+        id: 'MINION_OUTSIDE_1',
+        type: 'SHARPENER',
+        x: rooms[0].x + 200,
+        y: rooms[0].y + 180,
+        radius: 14,
+        hp: 3,
+        maxHp: 3,
+        speed: 1.8,
+        damage: 1,
+        color: '#f97316',
+        vx: 0, vy: 0
+      });
+
+      enemies.push({
+        id: 'MINION_OUTSIDE_2',
+        type: 'ERASER',
+        x: rooms[3].x + 200,
+        y: rooms[3].y + 180,
+        radius: 14,
+        hp: 3,
+        maxHp: 3,
+        speed: 1.5,
+        damage: 1,
+        color: '#ec4899',
+        vx: 0, vy: 0
+      });
+    }
+
+    /* -------------------------------------------------------------------------
+       SPAWN / RESET PLAYER IN DETENTION DUNGEON WITH GRACE PERIOD
+       ------------------------------------------------------------------------- */
+    function spawnPlayerInDetention() {
+      const dungeon = rooms[5];
+      player.x = dungeon.x + dungeon.w / 2;
+      player.y = dungeon.y + dungeon.h / 2 + 50;
+      player.hp = player.maxHp;
+      player.iframeTimer = 3.5 * 60;
+      player.puddlesSlippery = 0;
+
+      showStatusBanner("🛡️ SPAWN SHIELD ACTIVE! (3.5s)", true);
+      playSound('shield');
+    }
+
+    function showStatusBanner(text, show) {
+      const banner = document.getElementById('statusBanner');
+      const textEl = document.getElementById('statusBannerText');
+      textEl.innerText = text;
+      if (show) {
+        banner.classList.remove('opacity-0', '-translate-y-4', 'pointer-events-none');
+        banner.classList.add('opacity-100', 'translate-y-0');
+      } else {
+        banner.classList.add('opacity-0', '-translate-y-4', 'pointer-events-none');
+        banner.classList.remove('opacity-100', 'translate-y-0');
+      }
+    }
+
+    function showDoorWarning(text) {
+      const modal = document.getElementById('doorWarningModal');
+      const textEl = document.getElementById('doorWarningText');
+      textEl.innerText = text;
+      modal.classList.remove('opacity-0', 'scale-90', 'pointer-events-none');
+      modal.classList.add('opacity-100', 'scale-100');
+      warningTimer = 120;
+    }
+
+    /* =========================================================================
+       COLLISION LOGIC FOR PLAYER & ENEMIES AGAINST WALLS & FURNITURE
+       ========================================================================= */
+    function resolveEntityMapCollisions(entity) {
+      let r = entity.radius;
+
+      for (let wall of staticWalls) {
+        const res = checkCircleRectCollision(entity.x, entity.y, r, wall.x, wall.y, wall.w, wall.h);
+        if (res.hit) {
+          entity.x += res.nx * res.overlap;
+          entity.y += res.ny * res.overlap;
+        }
+      }
+
+      for (let furn of furnitureHitboxes) {
+        const res = checkCircleRectCollision(entity.x, entity.y, r, furn.x, furn.y, furn.w, furn.h);
+        if (res.hit) {
+          entity.x += res.nx * res.overlap;
+          entity.y += res.ny * res.overlap;
+        }
+      }
+    }
+
+    /* =========================================================================
+       GAME LOOP & UPDATES
+       ========================================================================= */
+    function triggerPlayerAttack() {
+      if (player.attackTimer <= 0) {
+        player.attackTimer = 15;
+        player.attackAngle = player.facingAngle;
+        playSound('swing');
+
+        enemies.forEach(enemy => {
+          const dx = enemy.x - player.x;
+          const dy = enemy.y - player.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist <= player.attackRange + enemy.radius) {
+            let angleToEnemy = Math.atan2(dy, dx);
+            let angleDiff = Math.abs(angleToEnemy - player.attackAngle);
+            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+            angleDiff = Math.abs(angleDiff);
+
+            if (angleDiff <= player.attackArc / 2) {
+              enemy.hp -= player.attackDamage;
+              playSound('hit');
+
+              const kb = 18;
+              enemy.x += Math.cos(angleToEnemy) * kb;
+              enemy.y += Math.sin(angleToEnemy) * kb;
+
+              if (enemy.hp <= 0) {
+                if (enemy.type === 'EVIL_PEN') {
+                  bossDefeated = true;
+                  playSound('bossDeath');
+                  checkObjectiveCompletion();
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    function checkObjectiveCompletion() {
+      if (goldenPencilsCollected >= TOTAL_PENCILS && bossDefeated) {
+        if (!exitsUnlocked) {
+          exitsUnlocked = true;
+          playSound('unlock');
+          showStatusBanner("🎉 DOORS UNLOCKED! ESCAPE OUTSIDE!", true);
+        }
+      }
+    }
+
+    function update() {
+      if (gameState !== 'PLAYING') return;
+
+      if (warningTimer > 0) {
+        warningTimer--;
+        if (warningTimer <= 0) {
+          document.getElementById('doorWarningModal').classList.add('opacity-0', 'scale-90', 'pointer-events-none');
+        }
+      }
+
+      let moveX = 0;
+      let moveY = 0;
+
+      if (keys.KeyW) moveY -= 1;
+      if (keys.KeyS) moveY += 1;
+      if (keys.KeyA) moveX -= 1;
+      if (keys.KeyD) moveX += 1;
+
+      if (moveX !== 0 && moveY !== 0) {
+        moveX *= 0.7071;
+        moveY *= 0.7071;
+      }
+
+      if (moveX !== 0 || moveY !== 0) {
+        player.facingAngle = Math.atan2(moveY, moveX);
+        player.walkFrame += 0.25;
+      }
+
+      let speedMult = 1.0;
+      puddles.forEach(p => {
+        const pdx = player.x - p.x;
+        const pdy = player.y - p.y;
+        if (Math.sqrt(pdx * pdx + pdy * pdy) < player.radius + p.radius) {
+          speedMult = 0.55;
+        }
+      });
+
+      player.x += moveX * player.speed * speedMult;
+      player.y += moveY * player.speed * speedMult;
+
+      resolveEntityMapCollisions(player);
+
+      if (spacePressed) {
+        triggerPlayerAttack();
+        spacePressed = false;
+      }
+
+      if (player.attackTimer > 0) player.attackTimer--;
+
+      if (player.iframeTimer > 0) {
+        player.iframeTimer--;
+        const secondsLeft = (player.iframeTimer / 60).toFixed(1);
+        showStatusBanner(`🛡️ SPAWN SHIELD ACTIVE! (${secondsLeft}s)`, true);
+        if (player.iframeTimer <= 0) {
+          showStatusBanner("", false);
+        }
+      }
+
+      goldenPencils.forEach(p => {
+        if (!p.collected) {
+          const dx = player.x - p.x;
+          const dy = player.y - p.y;
+          if (Math.sqrt(dx * dx + dy * dy) < player.radius + 16) {
+            p.collected = true;
+            goldenPencilsCollected++;
+            playSound('pencil');
+            checkObjectiveCompletion();
+          }
+        }
+      });
+
+      exitDoors.forEach(door => {
+        const res = checkCircleRectCollision(player.x, player.y, player.radius, door.x, door.y, door.w, door.h);
+        if (res.hit) {
+          if (exitsUnlocked) {
+            gameState = 'VICTORY';
+            playSound('unlock');
+            document.getElementById('overlayModal').classList.remove('hidden');
+            document.getElementById('overlayModal').innerHTML = `
+              <h1 class="text-4xl sm:text-6xl font-display font-extrabold text-emerald-400 mb-3 drop-shadow">
+                🎉 YOU ESCAPED!
+              </h1>
+              <p class="text-slate-200 text-lg max-w-md mb-6">
+                You defeated the Evil Pen Boss, collected all 5 Golden Pencils, and escaped Detention!
+              </p>
+              <button onclick="resetGame()" class="bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-display text-xl px-8 py-3 rounded-xl font-bold shadow-xl transition transform hover:scale-105 glow-gold">
+                PLAY AGAIN
+              </button>
+            `;
+          } else {
+            let missing = [];
+            if (goldenPencilsCollected < TOTAL_PENCILS) missing.push(`${TOTAL_PENCILS - goldenPencilsCollected} Golden Pencils`);
+            if (!bossDefeated) missing.push("Evil Pen Boss");
+
+            showDoorWarning(`DOORS LOCKED! Still need to defeat: ${missing.join(" and ")}!`);
+          }
+        }
+      });
+
+      enemies = enemies.filter(enemy => enemy.hp > 0);
+
+      enemies.forEach(enemy => {
+        const dx = player.x - enemy.x;
+        const dy = player.y - enemy.y;
+        const distToPlayer = Math.sqrt(dx * dx + dy * dy);
+
+        if (distToPlayer < 400 || enemy.type === 'EVIL_PEN') {
+          const moveAngle = Math.atan2(dy, dx);
+          enemy.vx = Math.cos(moveAngle) * enemy.speed;
+          enemy.vy = Math.sin(moveAngle) * enemy.speed;
+
+          enemy.x += enemy.vx;
+          enemy.y += enemy.vy;
+
+          resolveEntityMapCollisions(enemy);
+        }
+
+        enemy.shootTimer++;
+        if (enemy.type === 'EVIL_PEN' && enemy.shootTimer > 90) {
+          enemy.shootTimer = 0;
+          const shootAngle = Math.atan2(dy, dx);
+          projectiles.push({
+            x: enemy.x,
+            y: enemy.y,
+            vx: Math.cos(shootAngle) * 5,
+            vy: Math.sin(shootAngle) * 5,
+            radius: 8,
+            type: 'INK_BLOB',
+            color: '#3b0764',
+            damage: 1
+          });
+          playSound('eraserShoot');
+        } else if (enemy.type === 'ERASER' && enemy.shootTimer > 120) {
+          enemy.shootTimer = 0;
+          if (distToPlayer < 300) {
+            const shootAngle = Math.atan2(dy, dx);
+            projectiles.push({
+              x: enemy.x,
+              y: enemy.y,
+              vx: Math.cos(shootAngle) * 4.5,
+              vy: Math.sin(shootAngle) * 4.5,
+              radius: 6,
+              type: 'ERASER_CAP',
+              color: '#f472b6',
+              damage: 1
+            });
+            playSound('eraserShoot');
+          }
+        } else if (enemy.type === 'MOP' && Math.random() < 0.015) {
+          puddles.push({
+            x: enemy.x,
+            y: enemy.y,
+            radius: 20,
+            life: 300
+          });
+        }
+
+        if (distToPlayer < player.radius + enemy.radius) {
+          if (player.iframeTimer <= 0) {
+            player.hp -= enemy.damage;
+            player.iframeTimer = 45;
+            playSound('hurt');
+
+            if (player.hp <= 0) {
+              gameState = 'GAMEOVER';
+              document.getElementById('overlayModal').classList.remove('hidden');
+              document.getElementById('overlayModal').innerHTML = `
+                <h1 class="text-4xl sm:text-6xl font-display font-extrabold text-rose-500 mb-3 drop-shadow">
+                  💥 DETENTION OVERRUN!
+                </h1>
+                <p class="text-slate-300 text-base max-w-md mb-6">
+                  The rogue supplies overwhelmed Stickman in Detention.
+                </p>
+                <button onclick="resetGame()" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-display text-xl px-8 py-3 rounded-xl font-bold shadow-xl transition transform hover:scale-105">
+                  RESPAWN IN DETENTION
+                </button>
+              `;
+            }
+          }
+        }
+      });
+
+      projectiles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+
+        const dx = player.x - p.x;
+        const dy = player.y - p.y;
+        if (Math.sqrt(dx * dx + dy * dy) < player.radius + p.radius) {
+          if (player.iframeTimer <= 0) {
+            player.hp -= p.damage;
+            player.iframeTimer = 45;
+            playSound('hurt');
+          }
+          p.destroyed = true;
+        }
+
+        for (let wall of staticWalls) {
+          if (checkCircleRectCollision(p.x, p.y, p.radius, wall.x, wall.y, wall.w, wall.h).hit) {
+            p.destroyed = true;
+          }
+        }
+        for (let furn of furnitureHitboxes) {
+          if (checkCircleRectCollision(p.x, p.y, p.radius, furn.x, furn.y, furn.w, furn.h).hit) {
+            p.destroyed = true;
+          }
+        }
+      });
+
+      projectiles = projectiles.filter(p => !p.destroyed);
+
+      puddles.forEach(p => p.life--);
+      puddles = puddles.filter(p => p.life > 0);
+
+      camera.width = canvas.width;
+      camera.height = canvas.height;
+      camera.x = player.x - camera.width / 2;
+      camera.y = player.y - camera.height / 2;
+
+      camera.x = Math.max(0, Math.min(WORLD_WIDTH - camera.width, camera.x));
+      camera.y = Math.max(0, Math.min(WORLD_HEIGHT - camera.height, camera.y));
+
+      document.getElementById('heartsContainer').innerText = '♥'.repeat(Math.max(0, player.hp)) + '♡'.repeat(Math.max(0, player.maxHp - player.hp));
+      document.getElementById('pencilCount').innerText = `${goldenPencilsCollected} / ${TOTAL_PENCILS}`;
+      
+      const boss = enemies.find(e => e.type === 'EVIL_PEN');
+      const bossStatusEl = document.getElementById('bossStatus');
+      if (bossDefeated || !boss) {
+        bossStatusEl.innerText = "DEFEATED";
+        bossStatusEl.className = "text-emerald-400 font-display text-base";
+      } else {
+        bossStatusEl.innerText = `ALIVE (${boss.hp} HP)`;
+        bossStatusEl.className = "text-rose-400 font-display text-base";
+      }
+
+      const exitStatusEl = document.getElementById('exitStatus');
+      if (exitsUnlocked) {
+        exitStatusEl.innerText = "UNLOCKED";
+        exitStatusEl.className = "text-emerald-400 font-display text-base font-bold animate-pulse";
+      } else {
+        exitStatusEl.innerText = "LOCKED";
+        exitStatusEl.className = "text-rose-400 font-display text-base";
+      }
+    }
+
+    /* =========================================================================
+       RENDERING ENGINE
+       ========================================================================= */
+    function draw() {
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.save();
+      ctx.translate(-camera.x, -camera.y);
+
+      rooms.forEach(room => {
+        ctx.fillStyle = room.color;
+        ctx.fillRect(room.x, room.y, room.w, room.h);
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.lineWidth = 1;
+        const tileSize = 40;
+        for (let x = room.x; x < room.x + room.w; x += tileSize) {
+          ctx.beginPath(); ctx.moveTo(x, room.y); ctx.lineTo(x, room.y + room.h); ctx.stroke();
+        }
+        for (let y = room.y; y < room.y + room.h; y += tileSize) {
+          ctx.beginPath(); ctx.moveTo(room.x, y); ctx.lineTo(room.x + room.w, y); ctx.stroke();
+        }
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+        ctx.font = '700 18px Fredoka, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(room.name.toUpperCase(), room.x + room.w / 2, room.y + 30);
+      });
+
+      puddles.forEach(p => {
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.35)';
+        ctx.strokeStyle = 'rgba(165, 243, 252, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      });
+
+      furnitureHitboxes.forEach(f => {
+        ctx.fillStyle = f.color;
+        ctx.fillRect(f.x, f.y, f.w, f.h);
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(f.x, f.y, f.w, f.h);
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.font = '600 10px Outfit, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(f.label, f.x + f.w / 2, f.y + f.h / 2 + 3);
+      });
+
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 3;
+      staticWalls.forEach(w => {
+        ctx.fillRect(w.x, w.y, w.w, w.h);
+        ctx.strokeRect(w.x, w.y, w.w, w.h);
+      });
+
+      exitDoors.forEach(d => {
+        if (exitsUnlocked) {
+          ctx.fillStyle = '#10b981';
+          ctx.strokeStyle = '#34d399';
+          ctx.shadowColor = '#34d399';
+          ctx.shadowBlur = 15;
+        } else {
+          ctx.fillStyle = '#f43f5e';
+          ctx.strokeStyle = '#fda4af';
+          ctx.shadowColor = '#f43f5e';
+          ctx.shadowBlur = 10;
+        }
+        ctx.fillRect(d.x, d.y, d.w, d.h);
+        ctx.strokeRect(d.x, d.y, d.w, d.h);
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px Fredoka, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(exitsUnlocked ? "OPEN" : "LOCKED", d.x + d.w / 2, d.y + d.h / 2);
+      });
+
+      goldenPencils.forEach(p => {
+        if (!p.collected) {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+
+          ctx.shadowColor = '#facc15';
+          ctx.shadowBlur = 12;
+
+          ctx.fillStyle = '#eab308';
+          ctx.fillRect(-12, -4, 20, 8);
+          ctx.fillStyle = '#f472b6';
+          ctx.fillRect(-16, -4, 4, 8);
+          ctx.fillStyle = '#fde047';
+          ctx.beginPath();
+          ctx.moveTo(8, -4); ctx.lineTo(16, 0); ctx.lineTo(8, 4);
+          ctx.closePath(); ctx.fill();
+
+          ctx.restore();
+        }
+      });
+
+      enemies.forEach(enemy => {
+        ctx.save();
+        ctx.translate(enemy.x, enemy.y);
+
+        if (enemy.type === 'EVIL_PEN') {
+          ctx.shadowColor = '#a855f7';
+          ctx.shadowBlur = 15;
+
+          ctx.fillStyle = '#cbd5e1';
+          ctx.beginPath();
+          ctx.moveTo(0, -enemy.radius - 10);
+          ctx.lineTo(12, -2); ctx.lineTo(-12, -2);
+          ctx.closePath(); ctx.fill();
+
+          ctx.fillStyle = '#6b21a8';
+          ctx.fillRect(-12, -2, 24, 32);
+
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath(); ctx.arc(-5, 6, 3, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(5, 6, 3, 0, Math.PI * 2); ctx.fill();
+
+          const hpPct = enemy.hp / enemy.maxHp;
+          ctx.fillStyle = 'rgba(0,0,0,0.7)';
+          ctx.fillRect(-25, -enemy.radius - 22, 50, 6);
+          ctx.fillStyle = '#a855f7';
+          ctx.fillRect(-25, -enemy.radius - 22, 50 * hpPct, 6);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 10px Fredoka, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText("EVIL PEN BOSS", 0, -enemy.radius - 26);
+
+        } else if (enemy.type === 'SHARPENER') {
+          ctx.fillStyle = enemy.color;
+          ctx.fillRect(-12, -12, 24, 24);
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.fill();
+
+        } else if (enemy.type === 'ERASER') {
+          ctx.fillStyle = enemy.color;
+          ctx.fillRect(-14, -10, 28, 20);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 8px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText("ERASER", 0, 3);
+
+        } else if (enemy.type === 'MOUSE') {
+          ctx.fillStyle = enemy.color;
+          ctx.beginPath(); ctx.ellipse(0, 0, 14, 10, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath(); ctx.arc(8, 0, 3, 0, Math.PI * 2); ctx.fill();
+
+        } else if (enemy.type === 'MOP') {
+          ctx.fillStyle = '#0ea5e9';
+          ctx.fillRect(-4, -16, 8, 20);
+          ctx.fillStyle = '#e0f2fe';
+          ctx.fillRect(-12, 4, 24, 10);
+        }
+
+        ctx.restore();
+      });
+
+      projectiles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.save();
+      ctx.translate(player.x, player.y);
+
+      if (player.iframeTimer > 0) {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.arc(0, 0, player.radius + 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+
+      if (player.attackTimer > 0) {
+        ctx.save();
+        ctx.rotate(player.attackAngle);
+        ctx.fillStyle = '#f59e0b';
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 1.5;
+
+        ctx.fillRect(10, -4, player.attackRange - 10, 8);
+        ctx.strokeRect(10, -4, player.attackRange - 10, 8);
+
+        ctx.fillStyle = '#78350f';
+        for (let m = 14; m < player.attackRange - 4; m += 6) {
+          ctx.fillRect(m, -4, 1, 4);
+        }
+        ctx.restore();
+      }
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+
+      ctx.beginPath();
+      ctx.arc(0, -14, 7, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const eyeX = Math.cos(player.facingAngle) * 4;
+      const eyeY = -14 + Math.sin(player.facingAngle) * 4;
+      ctx.beginPath();
+      ctx.arc(eyeX, eyeY, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(0, -7);
+      ctx.lineTo(0, 8);
+      ctx.stroke();
+
+      const legSwing = Math.sin(player.walkFrame) * 6;
+      ctx.beginPath(); ctx.moveTo(0, 8); ctx.lineTo(-legSwing, 18); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, 8); ctx.lineTo(legSwing, 18); ctx.stroke();
+
+      ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(-6, 5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(6, 5); ctx.stroke();
+
+      ctx.restore();
+
+      ctx.restore();
+    }
+
+    /* =========================================================================
+       MAIN GAME LOOP & INITIALIZATION
+       ========================================================================= */
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvasWrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function resetGame() {
+      initAudio();
+      buildSchoolMap();
+      spawnPlayerInDetention();
+      bossDefeated = false;
+      exitsUnlocked = false;
+      goldenPencilsCollected = 0;
+      gameState = 'PLAYING';
+      document.getElementById('overlayModal').classList.add('hidden');
+    }
+
+    function startGame() {
+      resetGame();
+    }
+
+    window.onload = function() {
+      resizeCanvas();
+      buildSchoolMap();
+      spawnPlayerInDetention();
+      requestAnimationFrame(gameLoop);
+    };
+  </script>
+</body>
+</html>

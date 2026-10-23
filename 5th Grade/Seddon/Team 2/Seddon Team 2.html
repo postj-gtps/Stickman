@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Seddon Team 2 - Top-Down Arcade Engine</title>
+  <title>Seddon Team 2 - Arcade Engine (Universal Shield Update)</title>
   <style>
     * {
       box-sizing: border-box;
@@ -14,7 +14,7 @@
     }
 
     body {
-      background-color: #04020a;
+      background-color: #05020a;
       color: #ffffff;
       display: flex;
       flex-direction: column;
@@ -25,7 +25,7 @@
       padding: 12px;
     }
 
-    /* Header Bar */
+    /* Vibrant Header Bar */
     #header {
       display: flex;
       justify-content: space-between;
@@ -42,14 +42,16 @@
       letter-spacing: 2px;
       text-transform: uppercase;
       font-weight: bold;
-      color: #00ffff;
-      text-shadow: 0 0 10px #00ffff;
+      background: linear-gradient(90deg, #00ffff, #ff00ff, #ffff00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 8px #ff00ff);
     }
 
     .header-info {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 16px;
     }
 
     .level-badge {
@@ -60,7 +62,7 @@
       text-shadow: 0 0 10px #ffff00;
     }
 
-    /* Stamina Bar Container in Header */
+    /* Stamina Bar HUD */
     #stamina-container {
       display: flex;
       align-items: center;
@@ -80,7 +82,7 @@
     }
 
     #stamina-bar-outer {
-      width: 120px;
+      width: 110px;
       height: 12px;
       background: #221133;
       border: 1px solid #00ff66;
@@ -130,11 +132,11 @@
     canvas {
       background-color: #080314;
       border: 3px solid #00ffff;
-      box-shadow: 0 0 20px #00ffff;
+      box-shadow: 0 0 22px #00ffff;
       display: block;
       width: 100%;
       height: 100%;
-      border-radius: 6px;
+      border-radius: 8px;
     }
 
     .instructions {
@@ -151,7 +153,7 @@
 
   <!-- Header Section -->
   <div id="header">
-    <h1>Arcade Maze - Enemy Attack!</h1>
+    <h1>Arcade Engine - Universal Shield Update</h1>
     
     <div class="header-info">
       <!-- Stamina Gauge -->
@@ -173,7 +175,7 @@
   </div>
 
   <div class="instructions">
-    [WASD] Move | Hold [SHIFT] to Sprint | Grab Paddle to Deflect Pong Balls | Hide in Entrance Safe Zone!
+    [WASD] Move | Hold [SHIFT] Sprint | Shield Deflects ALL Facing Enemies (Ghosts, Balls, Rockets, Claws)!
   </div>
 
   <script>
@@ -190,12 +192,11 @@
     const GRID_ROWS = 9;
     let grid = []; // 1 = Cabinet Wall, 0 = Walkway
     let cabinetGames = []; // 0 = Space Defender, 1 = Maze Muncher, 2 = Pong, 3 = Cyber Racer, 4 = Pixel Jump
-    let cabinetFacings = []; // Direction vector { dx, dy } per cabinet
+    let cabinetFacings = [];
     let cellW = 0;
     let cellH = 0;
 
-    // RANDOMIZED ENEMY TYPE UNLOCK ORDER (Generated on page load)
-    // 0 = Space Defender Rocket, 1 = Neon Ghost, 2 = Bouncing Pong Ball, 3 = Ceiling Claw
+    // RANDOMIZED ENEMY TYPE UNLOCK ORDER
     let enemyTypeOrder = [0, 1, 2, 3];
 
     function shuffleEnemyOrder() {
@@ -216,19 +217,26 @@
       radius: 12,
       baseSpeed: 4.2,
       sprintSpeed: 6.8,
-      facing: 1, // 1 = Right, -1 = Left
+      facingX: 1, // Facing direction vector
+      facingY: 0,
       walkFrame: 0,
-      isCaptured: false,
       stamina: 100,
       maxStamina: 100,
       isSprinting: false,
       hasPaddle: false
     };
 
-    // PADDLE PICKUP ITEM STATE
-    let paddleItem = { x: 0, y: 0, active: false };
+    // CLAW ESCAPE MINIGAME STATE
+    let clawMinigame = {
+      active: false,
+      presses: 0,
+      targetPresses: 5,
+      timer: 120,
+      clawRef: null
+    };
 
-    // ACTIVE HAZARDS STATE
+    // ITEM & HAZARD DATA
+    let paddleItem = { x: 0, y: 0, spawned: false, pickedUp: false };
     let ghosts = [];
     let pongMachines = [];
     let pongBalls = [];
@@ -256,12 +264,16 @@
 
     window.addEventListener('resize', resizeCanvas);
 
-    // KEYBOARD CONTROLS HANDLER (WASD + Shift for Sprint, Arrow keys blocked)
+    // CONTROLS HANDLER (Strictly WASD + Shift for Sprint, Arrow keys blocked)
     window.addEventListener('keydown', (e) => {
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight'].includes(e.code)) {
         e.preventDefault();
       }
+
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ShiftLeft', 'ShiftRight'].includes(e.code)) {
+        if (clawMinigame.active && !keys[e.code] && ['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+          clawMinigame.presses++;
+        }
         keys[e.code] = true;
       }
     });
@@ -272,7 +284,6 @@
       }
     });
 
-    // Helper: Find direction a cabinet faces toward an open path
     function getCabinetFacingDir(r, c) {
       const dirs = [
         { dx: 0, dy: 1 },  // SOUTH
@@ -300,9 +311,7 @@
         const stack = [[cx, cy]];
         grid[cy][cx] = 0;
 
-        const dirs = [
-          [0, -2], [0, 2], [-2, 0], [2, 0]
-        ];
+        const dirs = [[0, -2], [0, 2], [-2, 0], [2, 0]];
 
         while (stack.length > 0) {
           const [currX, currY] = stack[stack.length - 1];
@@ -329,7 +338,7 @@
 
       stackCarve(1, 1);
 
-      // RANDOM ENTRANCE AND EXIT DOORS ON OPPOSITE SIDES
+      // ENTRANCE & EXIT DOORS ON OPPOSITE SIDES
       const isHorizontalAxis = Math.random() < 0.5;
       const validOddRows = [1, 3, 5, 7];
       const validOddCols = [1, 3, 5, 7, 9, 11, 13];
@@ -354,7 +363,7 @@
         grid[GRID_ROWS - 1][exitX] = 0;
       }
 
-      // ASSIGN GAME TYPES & FACINGS TO CABINET TILES
+      // ASSIGN GAMES
       const cabinetListByGame = { 0: [], 1: [], 2: [], 3: [], 4: [] };
 
       for (let r = 0; r < GRID_ROWS; r++) {
@@ -369,7 +378,7 @@
         }
       }
 
-      // CLEAR ACTIVE HAZARD LISTS
+      // CLEAR LISTS
       ghosts = [];
       pongMachines = [];
       pongBalls = [];
@@ -377,9 +386,41 @@
       rockets = [];
       explosions = [];
       clawTraps = [];
-      paddleItem.active = false;
 
-      // CALCULATE ACTIVE ENEMY TYPES & SPAWN MACHINES BASED ON LEVEL
+      // GUARANTEED PADDLE SPAWN ON OPEN WALKWAY TILE
+      let validWalkwayTiles = [];
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          if (grid[r][c] === 0) {
+            if ((r !== entranceDoor.gridY || c !== entranceDoor.gridX) &&
+                (r !== exitDoor.gridY || c !== exitDoor.gridX)) {
+              validWalkwayTiles.push({ c, r });
+            }
+          }
+        }
+      }
+
+      let preferredPaddleTile = null;
+      if (cabinetListByGame[2].length > 0) {
+        for (let cab of cabinetListByGame[2]) {
+          let frontC = cab.c + cab.facing.dx;
+          let frontR = cab.r + cab.facing.dy;
+          if (frontR >= 0 && frontR < GRID_ROWS && frontC >= 0 && frontC < GRID_COLS && grid[frontR][frontC] === 0) {
+            preferredPaddleTile = { c: frontC, r: frontR };
+            break;
+          }
+        }
+      }
+
+      const finalPaddleTile = preferredPaddleTile || validWalkwayTiles[Math.floor(Math.random() * validWalkwayTiles.length)];
+      if (finalPaddleTile) {
+        paddleItem.x = (finalPaddleTile.c + 0.5) * cellW;
+        paddleItem.y = (finalPaddleTile.r + 0.5) * cellH;
+        paddleItem.spawned = true;
+        paddleItem.pickedUp = false;
+      }
+
+      // CALCULATE ACTIVE ENEMY TYPES
       const numActiveTypes = Math.min(4, level);
       const machinesPerType = level <= 4 ? 1 : (level - 3);
 
@@ -387,7 +428,6 @@
         const enemyTypeID = enemyTypeOrder[t];
 
         if (enemyTypeID === 0) {
-          // SPACE DEFENDER ROCKETS (Game 0)
           let candidates = [...cabinetListByGame[0], ...cabinetListByGame[3]];
           for (let i = 0; i < Math.min(machinesPerType, candidates.length); i++) {
             const chosen = candidates.splice(Math.floor(Math.random() * candidates.length), 1)[0];
@@ -398,11 +438,10 @@
             });
           }
         } else if (enemyTypeID === 1) {
-          // NEON GHOSTS (Game 1)
           let candidates = [...cabinetListByGame[1]];
           for (let i = 0; i < Math.min(machinesPerType, candidates.length); i++) {
             const chosen = candidates.splice(Math.floor(Math.random() * candidates.length), 1)[0];
-            const speedFactor = 0.45 + Math.random() * 0.10; // 50% +/- 5% speed
+            const speedFactor = 0.45 + Math.random() * 0.10;
             ghosts.push({
               x: (chosen.c + 0.5) * cellW,
               y: (chosen.r + 0.5) * cellH,
@@ -411,11 +450,10 @@
             });
           }
         } else if (enemyTypeID === 2) {
-          // BOUNCING PONG MACHINES (Game 2)
           let candidates = [...cabinetListByGame[2]];
           for (let i = 0; i < Math.min(machinesPerType, candidates.length); i++) {
             const chosen = candidates.splice(Math.floor(Math.random() * candidates.length), 1)[0];
-            const fireInterval = (0.5 + Math.random() * 1.0) * 60; // 1.0s +/- 0.5s rate set for level
+            const fireInterval = (0.5 + Math.random() * 1.0) * 60;
             pongMachines.push({
               c: chosen.c, r: chosen.r,
               facing: chosen.facing,
@@ -424,13 +462,14 @@
             });
           }
         } else if (enemyTypeID === 3) {
-          // CEILING CLAW TRAP (Game 1 / Maze Muncher)
           let candidates = [...cabinetListByGame[1], ...cabinetListByGame[4]];
-          for (let i = 0; i < Math.min(machinesPerType, candidates.length); i++) {
-            const chosen = candidates.splice(Math.floor(Math.random() * candidates.length), 1)[0];
+          for (let i = 0; i < candidates.length && clawTraps.length < machinesPerType; i++) {
+            const chosen = candidates[i];
             const triggerX = chosen.c + chosen.facing.dx;
             const triggerY = chosen.r + chosen.facing.dy;
-            if (triggerX >= 0 && triggerX < GRID_COLS && triggerY >= 0 && triggerY < GRID_ROWS) {
+
+            const distToEnt = Math.hypot(triggerX - entranceDoor.gridX, triggerY - entranceDoor.gridY);
+            if (distToEnt > 2.5 && triggerX >= 0 && triggerX < GRID_COLS && triggerY >= 0 && triggerY < GRID_ROWS) {
               clawTraps.push({
                 targetGridX: triggerX,
                 targetGridY: triggerY,
@@ -441,32 +480,6 @@
             }
           }
         }
-      }
-
-      // SPAWN PING PONG PADDLE ITEM
-      // Spawns in front of an active Pong Machine, or any Pong cabinet if active list empty
-      let paddleSpawnTile = null;
-      if (pongMachines.length > 0) {
-        const pm = pongMachines[Math.floor(Math.random() * pongMachines.length)];
-        paddleSpawnTile = { c: pm.c + pm.facing.dx, r: pm.r + pm.facing.dy };
-      } else if (cabinetListByGame[2].length > 0) {
-        const cab = cabinetListByGame[2][Math.floor(Math.random() * cabinetListByGame[2].length)];
-        paddleSpawnTile = { c: cab.c + cab.facing.dx, r: cab.r + cab.facing.dy };
-      } else {
-        // Fallback: Random walkway tile
-        let openTiles = [];
-        for (let r = 0; r < GRID_ROWS; r++) {
-          for (let c = 0; c < GRID_COLS; c++) {
-            if (grid[r][c] === 0) openTiles.push({ c, r });
-          }
-        }
-        paddleSpawnTile = openTiles[Math.floor(Math.random() * openTiles.length)];
-      }
-
-      if (paddleSpawnTile) {
-        paddleItem.x = (paddleSpawnTile.c + 0.5) * cellW;
-        paddleItem.y = (paddleSpawnTile.r + 0.5) * cellH;
-        paddleItem.active = true;
       }
 
       updateDoorCoordinates();
@@ -491,12 +504,16 @@
       generateMaze();
       player.x = entranceDoor.x + cellW / 2;
       player.y = entranceDoor.y + cellH / 2;
-      player.facing = 1;
+      player.facingX = 1;
+      player.facingY = 0;
       player.walkFrame = 0;
-      player.isCaptured = false;
       player.hasPaddle = false;
       player.stamina = player.maxStamina;
       player.isSprinting = false;
+
+      clawMinigame.active = false;
+      clawMinigame.presses = 0;
+
       document.getElementById('level-display').innerText = `LEVEL: ${level}`;
     }
 
@@ -517,97 +534,147 @@
       return false;
     }
 
+    // HELPER: Check if player's shield is facing toward a given target position
+    function isFacingTarget(targetX, targetY) {
+      const tx = targetX - player.x;
+      const ty = targetY - player.y;
+      const dot = tx * player.facingX + ty * player.facingY;
+      return player.hasPaddle && dot >= -2;
+    }
+
     // UPDATE PHYSICS & ENEMY AI
     function updatePhysics() {
-      // 1. SPRINT & STAMINA MECHANICS
+      const entranceCenterX = entranceDoor.x + cellW / 2;
+      const entranceCenterY = entranceDoor.y + cellH / 2;
+      const safeRadius = cellW * 1.8;
+      const distToEntrance = Math.hypot(player.x - entranceCenterX, player.y - entranceCenterY);
+      const isPlayerInSafeZone = (distToEntrance < safeRadius);
+
+      // CLAW ESCAPE MINIGAME HANDLER
+      if (clawMinigame.active) {
+        clawMinigame.timer--;
+
+        if (clawMinigame.presses >= clawMinigame.targetPresses) {
+          if (clawMinigame.clawRef) clawMinigame.clawRef.state = 'RETRACTING';
+          clawMinigame.active = false;
+          player.y += 15;
+        } else if (clawMinigame.timer <= 0) {
+          let openTiles = [];
+          for (let r = 0; r < GRID_ROWS; r++) {
+            for (let c = 0; c < GRID_COLS; c++) {
+              if (grid[r][c] === 0) openTiles.push({ c, r });
+            }
+          }
+          const randTile = openTiles[Math.floor(Math.random() * openTiles.length)];
+          player.x = (randTile.c + 0.5) * cellW;
+          player.y = (randTile.r + 0.5) * cellH;
+
+          if (clawMinigame.clawRef) clawMinigame.clawRef.state = 'RETRACTING';
+          clawMinigame.active = false;
+        }
+        return;
+      }
+
+      // SPRINT & STAMINA MECHANICS
       let currentSpeed = player.baseSpeed;
       const isShiftPressed = keys['ShiftLeft'] || keys['ShiftRight'];
 
-      if (!player.isCaptured) {
-        let dx = 0;
-        let dy = 0;
+      let dx = 0;
+      let dy = 0;
 
-        if (keys['KeyW']) dy -= 1;
-        if (keys['KeyS']) dy += 1;
-        if (keys['KeyA']) { dx -= 1; player.facing = -1; }
-        if (keys['KeyD']) { dx += 1; player.facing = 1; }
+      if (keys['KeyW']) dy -= 1;
+      if (keys['KeyS']) dy += 1;
+      if (keys['KeyA']) dx -= 1;
+      if (keys['KeyD']) dx += 1;
 
-        const isMoving = (dx !== 0 || dy !== 0);
+      const isMoving = (dx !== 0 || dy !== 0);
 
-        if (isShiftPressed && isMoving && player.stamina > 0) {
-          player.isSprinting = true;
-          currentSpeed = player.sprintSpeed;
-          player.stamina = Math.max(0, player.stamina - 1.8); // Drains fast
-        } else {
-          player.isSprinting = false;
-          if (player.stamina < player.maxStamina) {
-            player.stamina = Math.min(player.maxStamina, player.stamina + 0.5); // Regenerates
-          }
-        }
+      if (isMoving) {
+        // UPDATE WASD FACING DIRECTION FOR OMNI-SHIELD
+        const len = Math.hypot(dx, dy);
+        player.facingX = dx / len;
+        player.facingY = dy / len;
+      }
 
-        // Update Stamina Bar UI
-        const fillPct = (player.stamina / player.maxStamina) * 100;
-        const fillElem = document.getElementById('stamina-bar-fill');
-        if (fillElem) fillElem.style.width = fillPct + '%';
-
-        if (dx !== 0 && dy !== 0) {
-          dx *= 0.7071;
-          dy *= 0.7071;
-        }
-
-        const moveX = dx * currentSpeed;
-        const moveY = dy * currentSpeed;
-
-        if (!checkCabinetCollision(player.x + moveX, player.y)) {
-          player.x += moveX;
-        }
-        if (!checkCabinetCollision(player.x, player.y + moveY)) {
-          player.y += moveY;
-        }
-
-        const margin = 12;
-        player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
-        player.y = Math.max(margin, Math.min(canvas.height - margin, player.y));
-
-        if (isMoving) {
-          player.walkFrame += (player.isSprinting ? 0.45 : 0.25);
-        } else {
-          player.walkFrame = 0;
+      if (isShiftPressed && isMoving && player.stamina > 0) {
+        player.isSprinting = true;
+        currentSpeed = player.sprintSpeed;
+        player.stamina = Math.max(0, player.stamina - 1.8);
+      } else {
+        player.isSprinting = false;
+        if (player.stamina < player.maxStamina) {
+          player.stamina = Math.min(player.maxStamina, player.stamina + 0.5);
         }
       }
 
-      // 2. PADDLE PICKUP CHECK
-      if (paddleItem.active && !player.hasPaddle) {
+      // Update Stamina Bar UI
+      const fillPct = (player.stamina / player.maxStamina) * 100;
+      const fillElem = document.getElementById('stamina-bar-fill');
+      if (fillElem) fillElem.style.width = fillPct + '%';
+
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.7071;
+        dy *= 0.7071;
+      }
+
+      const moveX = dx * currentSpeed;
+      const moveY = dy * currentSpeed;
+
+      if (!checkCabinetCollision(player.x + moveX, player.y)) {
+        player.x += moveX;
+      }
+      if (!checkCabinetCollision(player.x, player.y + moveY)) {
+        player.y += moveY;
+      }
+
+      const margin = 12;
+      player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
+      player.y = Math.max(margin, Math.min(canvas.height - margin, player.y));
+
+      if (isMoving) {
+        player.walkFrame += (player.isSprinting ? 0.45 : 0.25);
+      } else {
+        player.walkFrame = 0;
+      }
+
+      // PADDLE PICKUP CHECK
+      if (paddleItem.spawned && !paddleItem.pickedUp) {
         const distToPaddle = Math.hypot(player.x - paddleItem.x, player.y - paddleItem.y);
-        if (distToPaddle < player.radius + 14) {
+        if (distToPaddle < player.radius + 15) {
+          paddleItem.pickedUp = true;
           player.hasPaddle = true;
-          paddleItem.active = false;
         }
       }
 
-      // 3. ENTRANCE SAFE ZONE CHECK FOR GHOSTS
-      const entranceCenterX = entranceDoor.x + cellW / 2;
-      const entranceCenterY = entranceDoor.y + cellH / 2;
-      const distToEntrance = Math.hypot(player.x - entranceCenterX, player.y - entranceCenterY);
-      const isPlayerInSafeZone = (distToEntrance < cellW * 1.6);
-
-      // NEON GHOSTS AI
+      // 1. NEON GHOSTS (DEFLECTED & KNOCKED BACK BY SHIELD WHEN FACING)
       for (let g of ghosts) {
-        if (!isPlayerInSafeZone) {
-          // Ghost chases player through walls
+        const distToSafe = Math.hypot(g.x - entranceCenterX, g.y - entranceCenterY);
+
+        if (isPlayerInSafeZone || distToSafe < safeRadius) {
+          const fleeAngle = Math.atan2(g.y - entranceCenterY, g.x - entranceCenterX);
+          g.x += Math.cos(fleeAngle) * g.speed;
+          g.y += Math.sin(fleeAngle) * g.speed;
+        } else {
           const angle = Math.atan2(player.y - g.y, player.x - g.x);
           g.x += Math.cos(angle) * g.speed;
           g.y += Math.sin(angle) * g.speed;
 
           const dist = Math.hypot(player.x - g.x, player.y - g.y);
-          if (dist < player.radius + 10 && !player.isCaptured) {
-            player.x = entranceCenterX;
-            player.y = entranceCenterY;
+          if (dist < player.radius + 12) {
+            if (isFacingTarget(g.x, g.y)) {
+              // UNIVERSAL SHIELD DEFLECTION: KNOCK GHOST BACK!
+              g.x += player.facingX * 45;
+              g.y += player.facingY * 45;
+            } else {
+              // Unshielded / Back turned: Reset player
+              player.x = entranceCenterX;
+              player.y = entranceCenterY;
+            }
           }
         }
       }
 
-      // 4. PONG MACHINES & BOUNCING BALLS WITH SHIELD DEFLECTION
+      // 2. PONG MACHINES & BOUNCING BALLS (DEFLECTED BY SHIELD WHEN FACING)
       for (let pm of pongMachines) {
         pm.cooldown--;
         if (pm.cooldown <= 0) {
@@ -616,7 +683,7 @@
           const startY = (pm.r + 0.5) * cellH + pm.facing.dy * (cellH * 0.4);
           
           const perpAngle = Math.atan2(pm.facing.dy, pm.facing.dx);
-          const randomOffset = (Math.random() - 0.5) * (Math.PI / 2); // 90 degree launch arc
+          const randomOffset = (Math.random() - 0.5) * (Math.PI / 2);
           const launchAngle = perpAngle + randomOffset;
           const ballSpeed = 5.0;
 
@@ -637,7 +704,16 @@
         let nextX = b.x + b.vx;
         let nextY = b.y + b.vy;
 
-        // Bounce horizontally
+        // Anti-camping forcefield near entrance
+        const distToSafe = Math.hypot(b.x - entranceCenterX, b.y - entranceCenterY);
+        if (distToSafe < safeRadius) {
+          b.vx *= -1;
+          b.vy *= -1;
+          b.x += b.vx * 3;
+          b.y += b.vy * 3;
+        }
+
+        // Horizontal bounce
         let nextGridCX = Math.floor((b.vx > 0 ? nextX + b.radius : nextX - b.radius) / cellW);
         let currentGridCY = Math.floor(b.y / cellH);
         if (nextGridCX < 0 || nextGridCX >= GRID_COLS || grid[currentGridCY][nextGridCX] === 1) {
@@ -647,7 +723,7 @@
           b.x += b.vx;
         }
 
-        // Bounce vertically
+        // Vertical bounce
         let currentGridCX = Math.floor(b.x / cellW);
         let nextGridCY = Math.floor((b.vy > 0 ? nextY + b.radius : nextY - b.radius) / cellH);
         if (nextGridCY < 0 || nextGridCY >= GRID_ROWS || grid[nextGridCY][currentGridCX] === 1) {
@@ -657,24 +733,17 @@
           b.y += b.vy;
         }
 
-        // Player Collision & Shield Deflection
+        // Universal Shield Ball Deflection
         const distToPlayer = Math.hypot(player.x - b.x, player.y - b.y);
-        if (distToPlayer < player.radius + b.radius && !player.isCaptured) {
-          // Check if player is facing the ball
-          // player.facing: 1 = Right/East, -1 = Left/West
-          const ballRelX = b.x - player.x;
-          const isFacingBall = (player.facing === 1 && ballRelX > -4) || (player.facing === -1 && ballRelX < 4);
-
-          if (player.hasPaddle && isFacingBall) {
-            // DEFLECT BALL LIKE A SHIELD!
-            b.vx = -b.vx * 1.25; // Reverse and boost speed
-            b.vy = -b.vy * 1.1;
+        if (distToPlayer < player.radius + b.radius + 8) {
+          if (isFacingTarget(b.x, b.y)) {
+            const speed = Math.hypot(b.vx, b.vy) * 1.3;
+            b.vx = player.facingX * speed + (Math.random() - 0.5) * 2;
+            b.vy = player.facingY * speed + (Math.random() - 0.5) * 2;
             b.bounces++;
-            // Move ball outside collision radius to prevent multi-hit
-            b.x += b.vx * 2;
-            b.y += b.vy * 2;
-          } else {
-            // Unshielded Hit: Return player to entrance
+            b.x += b.vx * 3;
+            b.y += b.vy * 3;
+          } else if (!isPlayerInSafeZone) {
             player.x = entranceCenterX;
             player.y = entranceCenterY;
             pongBalls.splice(i, 1);
@@ -687,11 +756,11 @@
         }
       }
 
-      // 5. ROCKET LAUNCHERS & 3x3 AOE EXPLOSIONS
+      // 3. ROCKET LAUNCHERS & ROCKETS (REFLECTED BY SHIELD WHEN FACING)
       for (let rl of rocketLaunchers) {
         rl.cooldown--;
         if (rl.cooldown <= 0) {
-          rl.cooldown = 600; // 1 rocket every 10 seconds
+          rl.cooldown = 600;
           rockets.push({
             x: (rl.c + 0.5) * cellW + rl.facing.dx * (cellW * 0.5),
             y: (rl.r + 0.5) * cellH + rl.facing.dy * (cellH * 0.5),
@@ -706,6 +775,19 @@
         r.x += r.vx;
         r.y += r.vy;
 
+        // Check shield deflection against rocket direct hit
+        const distToPlayer = Math.hypot(player.x - r.x, player.y - r.y);
+        if (distToPlayer < player.radius + 12) {
+          if (isFacingTarget(r.x, r.y)) {
+            // REFLECT ROCKET BACK!
+            r.vx = player.facingX * 10;
+            r.vy = player.facingY * 10;
+            r.x += r.vx * 2;
+            r.y += r.vy * 2;
+            continue;
+          }
+        }
+
         const gridC = Math.floor(r.x / cellW);
         const gridR = Math.floor(r.y / cellH);
 
@@ -718,11 +800,17 @@
             duration: 25
           });
 
+          // 4. BLAST SHIELDING AGAINST EXPLOSIONS
+          const exX = (gridC + 0.5) * cellW;
+          const exY = (gridR + 0.5) * cellH;
           const pGridC = Math.floor(player.x / cellW);
           const pGridR = Math.floor(player.y / cellH);
-          if (Math.abs(pGridC - gridC) <= 1 && Math.abs(pGridR - gridR) <= 1) {
-            player.x = entranceCenterX;
-            player.y = entranceCenterY;
+
+          if (Math.abs(pGridC - gridC) <= 1 && Math.abs(pGridR - gridR) <= 1 && !isPlayerInSafeZone) {
+            if (!isFacingTarget(exX, exY)) {
+              player.x = entranceCenterX;
+              player.y = entranceCenterY;
+            }
           }
 
           rockets.splice(i, 1);
@@ -736,7 +824,7 @@
         if (ex.duration <= 0) explosions.splice(i, 1);
       }
 
-      // 6. CEILING CLAW TRAPS
+      // 5. CEILING CLAW TRAPS (BLOCKED BY UPWARD/FACING SHIELD)
       const pGridX = Math.floor(player.x / cellW);
       const pGridY = Math.floor(player.y / cellH);
 
@@ -747,36 +835,29 @@
             claw.clawY = 0;
           }
         } else if (claw.state === 'DROPPING') {
-          claw.clawY += 4;
+          claw.clawY += 5;
           if (claw.clawY >= cellH * 0.7) {
             if (pGridX === claw.targetGridX && pGridY === claw.targetGridY) {
-              claw.state = 'GRABBED';
-              player.isCaptured = true;
-              claw.timer = 35;
+              const clawX = (claw.targetGridX + 0.5) * cellW;
+              const clawY = claw.clawY;
+
+              if (player.hasPaddle && (player.facingY < -0.3 || isFacingTarget(clawX, clawY))) {
+                // SHIELD BLOCKS CEILING CLAW!
+                claw.state = 'RETRACTING';
+              } else {
+                // Snagged! Trigger WASD Escape Minigame
+                claw.state = 'GRABBED';
+                clawMinigame.active = true;
+                clawMinigame.presses = 0;
+                clawMinigame.timer = 110;
+                clawMinigame.clawRef = claw;
+              }
             } else {
               claw.state = 'RETRACTING';
             }
           }
-        } else if (claw.state === 'GRABBED') {
-          claw.timer--;
-          player.x = (claw.targetGridX + 0.5) * cellW;
-          player.y = (claw.targetGridY + 0.5) * cellH - claw.clawY + 10;
-
-          if (claw.timer <= 0) {
-            let openTiles = [];
-            for (let r = 0; r < GRID_ROWS; r++) {
-              for (let c = 0; c < GRID_COLS; c++) {
-                if (grid[r][c] === 0) openTiles.push({ c, r });
-              }
-            }
-            const randTile = openTiles[Math.floor(Math.random() * openTiles.length)];
-            player.x = (randTile.c + 0.5) * cellW;
-            player.y = (randTile.r + 0.5) * cellH;
-            player.isCaptured = false;
-            claw.state = 'RETRACTING';
-          }
         } else if (claw.state === 'RETRACTING') {
-          claw.clawY -= 4;
+          claw.clawY -= 5;
           if (claw.clawY <= 0) claw.state = 'IDLE';
         }
       }
@@ -871,27 +952,27 @@
       const color = isEntrance ? '#00ff66' : '#ff0055';
       const label = isEntrance ? 'ENTRANCE' : 'EXIT';
 
-      // ENTRANCE SAFE ZONE GLOW AURA
+      // ENTRANCE SAFE ZONE GLOW FIELD
       if (isEntrance) {
         const cx = x + w / 2;
         const cy = y + h / 2;
-        const safeRadius = cellW * 1.6;
+        const safeRadius = cellW * 1.8;
 
-        ctx.fillStyle = 'rgba(0, 255, 102, 0.12)';
+        ctx.fillStyle = 'rgba(0, 255, 102, 0.14)';
         ctx.beginPath();
         ctx.arc(cx, cy, safeRadius, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.strokeStyle = '#00ff66';
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 6]);
         ctx.stroke();
-        ctx.setLineDash([]); // Reset dash
+        ctx.setLineDash([]);
 
         ctx.fillStyle = '#00ff66';
-        ctx.font = 'bold 9px Courier New';
+        ctx.font = 'bold 10px Courier New';
         ctx.textAlign = 'center';
-        ctx.fillText("SAFE ZONE", cx, cy - safeRadius + 10);
+        ctx.fillText("SAFE ZONE", cx, cy - safeRadius + 12);
       }
 
       ctx.fillStyle = isEntrance ? 'rgba(0, 255, 102, 0.25)' : 'rgba(255, 0, 85, 0.25)';
@@ -936,39 +1017,36 @@
     function drawPaddleItem(x, y) {
       ctx.save();
       ctx.shadowColor = '#ffff00';
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 12;
 
-      // Handle
       ctx.fillStyle = '#ff9900';
       ctx.fillRect(x - 2, y + 2, 4, 10);
 
-      // Oval Face
       ctx.fillStyle = '#ff0055';
       ctx.beginPath();
       ctx.ellipse(x, y - 2, 8, 10, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.8;
       ctx.stroke();
 
       ctx.restore();
 
       ctx.fillStyle = '#ffff00';
-      ctx.font = 'bold 9px Courier New';
+      ctx.font = 'bold 10px Courier New';
       ctx.textAlign = 'center';
       ctx.fillText("PADDLE", x, y - 15);
     }
 
-    // DRAW STICKMAN PLAYER
-    function drawStickman(x, y, facing, walkFrame, isSprinting, hasPaddle) {
-      // Sprint motion streak lines
+    // DRAW STICKMAN PLAYER & DYNAMIC WASD SHIELD TRACKING
+    function drawStickman(x, y, isSprinting, hasPaddle) {
       if (isSprinting) {
-        ctx.strokeStyle = 'rgba(0, 255, 255, 0.4)';
+        ctx.strokeStyle = 'rgba(0, 255, 255, 0.45)';
         ctx.lineWidth = 2;
         for (let i = 1; i <= 3; i++) {
           ctx.beginPath();
-          ctx.moveTo(x - facing * (i * 8), y - 10);
-          ctx.lineTo(x - facing * (i * 8), y + 10);
+          ctx.moveTo(x - player.facingX * (i * 8), y - player.facingY * (i * 8) - 10);
+          ctx.lineTo(x - player.facingX * (i * 8), y - player.facingY * (i * 8) + 10);
           ctx.stroke();
         }
       }
@@ -993,7 +1071,7 @@
 
       // Eye
       ctx.beginPath();
-      ctx.arc(x + facing * 2.5, headY - 1, 1, 0, Math.PI * 2);
+      ctx.arc(x + player.facingX * 2.5, headY + player.facingY * 2.5, 1, 0, Math.PI * 2);
       ctx.fill();
 
       // Torso
@@ -1003,7 +1081,7 @@
       ctx.stroke();
 
       // Legs
-      const legSwing = Math.sin(walkFrame) * 7;
+      const legSwing = Math.sin(player.walkFrame) * 7;
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x - legSwing, y + legLength);
@@ -1014,41 +1092,85 @@
       ctx.lineTo(x + legSwing, y + legLength);
       ctx.stroke();
 
-      // Arms & Paddle Shield
-      const armSwing = Math.sin(walkFrame + Math.PI) * 5;
+      // Arms
+      const armSwing = Math.sin(player.walkFrame + Math.PI) * 5;
 
-      // Back Arm
       ctx.beginPath();
       ctx.moveTo(x, shoulderY);
-      ctx.lineTo(x - facing * 5 - armSwing, shoulderY + 7);
+      ctx.lineTo(x - player.facingX * 5 - armSwing, shoulderY + 7);
       ctx.stroke();
 
-      // Front Arm
-      const frontHandX = x + facing * 6 + armSwing;
-      const frontHandY = shoulderY + 6;
+      const frontHandX = x + player.facingX * 6 + armSwing;
+      const frontHandY = shoulderY + 6 + player.facingY * 4;
       ctx.beginPath();
       ctx.moveTo(x, shoulderY);
       ctx.lineTo(frontHandX, frontHandY);
       ctx.stroke();
 
-      // EQUIPPED PADDLE SHIELD
+      // DRAW DYNAMIC WASD PADDLE SHIELD TRACKING
       if (hasPaddle) {
         ctx.save();
         ctx.shadowColor = '#00ffff';
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 12;
 
-        // Draw paddle attached to front hand
         ctx.fillStyle = '#ff0055';
         ctx.strokeStyle = '#00ffff';
         ctx.lineWidth = 2;
 
+        const shieldDist = 16;
+        const shieldX = x + player.facingX * shieldDist;
+        const shieldY = y - 6 + player.facingY * shieldDist;
+        const shieldAngle = Math.atan2(player.facingY, player.facingX);
+
+        ctx.translate(shieldX, shieldY);
+        ctx.rotate(shieldAngle);
+
         ctx.beginPath();
-        ctx.ellipse(frontHandX + facing * 5, frontHandY, 4, 11, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, 4, 13, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
 
         ctx.restore();
       }
+    }
+
+    // DRAW CLAW ESCAPE MINIGAME UI OVERLAY
+    function drawClawEscapeMinigameUI() {
+      if (!clawMinigame.active) return;
+
+      const boxW = 320;
+      const boxH = 100;
+      const boxX = (canvas.width - boxW) / 2;
+      const boxY = canvas.height * 0.3;
+
+      ctx.fillStyle = 'rgba(15, 5, 30, 0.92)';
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+
+      ctx.strokeStyle = '#ff00ff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+      ctx.fillStyle = '#ffff00';
+      ctx.font = 'bold 16px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText("CLAW SNATCHED YOU!", canvas.width / 2, boxY + 28);
+
+      ctx.fillStyle = '#00ffff';
+      ctx.font = 'bold 13px Courier New';
+      ctx.fillText(`SPAM [WASD] TO ESCAPE! (${clawMinigame.presses}/${clawMinigame.targetPresses})`, canvas.width / 2, boxY + 52);
+
+      const barW = 240;
+      const barH = 14;
+      const barX = (canvas.width - barW) / 2;
+      const barY = boxY + 66;
+
+      ctx.strokeStyle = '#00ffff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(barX, barY, barW, barH);
+
+      const fillW = Math.min(barW, (clawMinigame.presses / clawMinigame.targetPresses) * barW);
+      ctx.fillStyle = '#ff00ff';
+      ctx.fillRect(barX, barY, fillW, barH);
     }
 
     // MAIN RENDER LOOP
@@ -1066,7 +1188,7 @@
       }
 
       // RENDER PADDLE ITEM ON GROUND
-      if (paddleItem.active) {
+      if (paddleItem.spawned && !paddleItem.pickedUp) {
         drawPaddleItem(paddleItem.x, paddleItem.y);
       }
 
@@ -1144,7 +1266,10 @@
       }
 
       // DRAW STICKMAN ALWAYS ON TOP
-      drawStickman(player.x, player.y, player.facing, player.walkFrame, player.isSprinting, player.hasPaddle);
+      drawStickman(player.x, player.y, player.isSprinting, player.hasPaddle);
+
+      // DRAW ESCAPE MINIGAME UI OVERLAY
+      drawClawEscapeMinigameUI();
     }
 
     function animate() {
@@ -1154,7 +1279,7 @@
     }
 
     window.onload = function() {
-      shuffleEnemyOrder(); // Randomize enemy unlock order on load
+      shuffleEnemyOrder();
       resizeCanvas();
       animate();
     };

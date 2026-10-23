@@ -10,11 +10,11 @@
       user-select: none;
       margin: 0;
       padding: 0;
-      font-family: 'Courier New', Courier, monospace, sans-serif;
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Courier New', sans-serif;
     }
 
     body {
-      background-color: #0b0f19;
+      background-color: #0c0a09;
       color: #ffffff;
       display: flex;
       flex-direction: column;
@@ -22,7 +22,7 @@
       justify-content: flex-start;
       height: 100vh;
       overflow: hidden;
-      padding: 12px;
+      padding: 10px;
     }
 
     /* Top Header Bar */
@@ -33,40 +33,48 @@
       width: 100%;
       max-width: 1150px;
       margin-bottom: 6px;
-      padding-bottom: 6px;
-      border-bottom: 3px solid #38bdf8;
+      padding: 8px 16px;
+      background: #1e1b4b;
+      border: 3px solid #38bdf8;
+      border-radius: 14px;
+      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4);
     }
 
     h1 {
-      font-size: 19px;
-      letter-spacing: 2px;
+      font-size: 21px;
+      letter-spacing: 1px;
       text-transform: uppercase;
-      font-weight: bold;
+      font-weight: 900;
       color: #fde047;
-      text-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
+      text-shadow: 2px 2px 0px #000000, 0 0 10px rgba(253, 224, 71, 0.6);
     }
 
     .btn-reset {
       background: #ef4444;
       color: #ffffff;
-      border: none;
-      padding: 6px 16px;
-      font-size: 13px;
+      border: 2px solid #ffffff;
+      padding: 6px 18px;
+      font-size: 14px;
       font-weight: bold;
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 1px;
-      border-radius: 6px;
-      box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
-      transition: all 0.15s ease-in-out;
+      border-radius: 20px;
+      box-shadow: 0 4px 0px #991b1b;
+      transition: all 0.1s ease-in-out;
     }
 
     .btn-reset:hover {
       background: #f87171;
-      transform: scale(1.05);
+      transform: translateY(-2px);
     }
 
-    /* Game Info & Health Bar */
+    .btn-reset:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+
+    /* Game Info Bar */
     #status-bar {
       display: flex;
       justify-content: space-between;
@@ -74,22 +82,43 @@
       width: 100%;
       max-width: 1150px;
       margin-bottom: 8px;
-      font-size: 13px;
+      font-size: 14px;
       color: #38bdf8;
-      text-transform: uppercase;
       font-weight: bold;
       letter-spacing: 1px;
-      background: #1e293b;
-      padding: 6px 12px;
-      border-radius: 8px;
-      border: 1px solid #334155;
+      background: #0f172a;
+      padding: 8px 16px;
+      border-radius: 12px;
+      border: 3px solid #f43f5e;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
     }
 
     #hearts-container {
       display: flex;
       align-items: center;
-      gap: 4px;
-      font-size: 16px;
+      gap: 2px;
+      font-size: 18px;
+    }
+
+    #difficulty-badge {
+      padding: 3px 10px;
+      border-radius: 8px;
+      font-weight: 900;
+      text-transform: uppercase;
+      border: 2px solid #ffffff;
+    }
+
+    .diff-easy { background: #16a34a; color: #ffffff; }
+    .diff-normal { background: #0284c7; color: #ffffff; }
+    .diff-hardcore { background: #dc2626; color: #ffffff; }
+
+    #extinguisher-status {
+      color: #a5f3fc;
+      background: #0284c7;
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 2px solid #ffffff;
+      text-shadow: 1px 1px 0 #000;
     }
 
     /* Main Canvas Container */
@@ -101,69 +130,134 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      border-radius: 8px;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 0 25px rgba(0, 0, 0, 0.8);
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
     }
 
     canvas {
       background-color: #000000;
-      border: 3px solid #38bdf8;
+      border: 4px solid #38bdf8;
+      border-radius: 16px;
       display: block;
       width: 100%;
       height: 100%;
     }
 
-    /* UI Overlay Prompts */
-    #trap-prompt, #freeze-prompt, #gameover-overlay {
+    /* UI Overlay Screens */
+    #difficulty-overlay, #trap-prompt, #freeze-prompt, #gameover-overlay {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      padding: 18px 32px;
-      border-radius: 16px;
-      font-size: 20px;
-      font-weight: bold;
+      border-radius: 20px;
+      font-weight: 900;
       letter-spacing: 1px;
+      text-align: center;
+      z-index: 30;
+    }
+
+    #difficulty-overlay {
+      background: rgba(15, 23, 42, 0.98);
+      color: #ffffff;
+      border: 4px solid #38bdf8;
+      padding: 30px 40px;
+      box-shadow: 0 0 50px rgba(56, 189, 248, 0.8);
+      width: 90%;
+      max-width: 520px;
+    }
+
+    #difficulty-overlay h2 {
+      font-size: 26px;
+      color: #fde047;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 0 #000;
+    }
+
+    #difficulty-overlay p {
+      font-size: 14px;
+      color: #cbd5e1;
+      margin-bottom: 20px;
+    }
+
+    .diff-btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .diff-option-btn {
+      padding: 12px 20px;
+      font-size: 16px;
+      font-weight: 900;
+      color: #ffffff;
+      border: 3px solid #ffffff;
+      border-radius: 14px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.15s ease-in-out;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.5);
+    }
+
+    .diff-option-btn:hover {
+      transform: scale(1.03);
+    }
+
+    .btn-easy-opt { background: #16a34a; box-shadow: 0 4px 0 #14532d; }
+    .btn-normal-opt { background: #0284c7; box-shadow: 0 4px 0 #075985; }
+    .btn-hardcore-opt { background: #dc2626; box-shadow: 0 4px 0 #7f1d1d; }
+
+    #trap-prompt, #freeze-prompt, #gameover-overlay {
+      padding: 20px 36px;
+      font-size: 22px;
       display: none;
       pointer-events: none;
-      text-align: center;
-      z-index: 20;
     }
 
     #trap-prompt {
-      background: rgba(239, 68, 68, 0.95);
+      background: rgba(225, 29, 72, 0.95);
       color: #ffffff;
-      border: 3px solid #fde047;
-      box-shadow: 0 0 25px rgba(239, 68, 68, 0.9);
-      animation: pulse 0.4s infinite alternate;
+      border: 4px solid #fde047;
+      box-shadow: 0 0 35px rgba(225, 29, 72, 0.9);
+      animation: pulse 0.35s infinite alternate;
+      text-shadow: 2px 2px 0 #000;
     }
 
     #freeze-prompt {
-      background: rgba(56, 189, 248, 0.95);
-      color: #0f172a;
-      border: 3px solid #ffffff;
-      box-shadow: 0 0 25px rgba(56, 189, 248, 0.9);
+      background: rgba(14, 165, 233, 0.95);
+      color: #ffffff;
+      border: 4px solid #ffffff;
+      box-shadow: 0 0 35px rgba(14, 165, 233, 0.9);
+      text-shadow: 2px 2px 0 #000;
     }
 
     #gameover-overlay {
       background: rgba(15, 23, 42, 0.96);
-      color: #ef4444;
-      border: 3px solid #ef4444;
-      box-shadow: 0 0 30px rgba(239, 68, 68, 0.8);
+      color: #f43f5e;
+      border: 4px solid #f43f5e;
+      box-shadow: 0 0 40px rgba(244, 63, 94, 0.8);
       pointer-events: auto;
+      text-shadow: 2px 2px 0 #000;
     }
 
     #gameover-overlay button {
       margin-top: 15px;
-      padding: 8px 20px;
-      font-size: 15px;
+      padding: 10px 24px;
+      font-size: 16px;
       font-weight: bold;
-      background: #ef4444;
+      background: #22c55e;
       color: white;
-      border: none;
-      border-radius: 8px;
+      border: 2px solid #ffffff;
+      border-radius: 12px;
       cursor: pointer;
+      box-shadow: 0 4px 0 #15803d;
+    }
+
+    #gameover-overlay button:hover {
+      background: #4ade80;
+      transform: translateY(-2px);
     }
 
     @keyframes pulse {
@@ -173,10 +267,11 @@
 
     .instructions {
       margin-top: 6px;
-      font-size: 12px;
+      font-size: 13px;
       color: #fde047;
       font-weight: bold;
       text-align: center;
+      text-shadow: 1px 1px 0 #000;
     }
   </style>
 </head>
@@ -184,14 +279,16 @@
 
   <!-- Header Section -->
   <div id="header">
-    <h1>Stickman Engine - Widebody Aircraft</h1>
-    <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+    <h1>✈️ Stickman Aircraft Gauntlet ✈️</h1>
+    <button class="btn-reset" onclick="showDifficultyScreen()">Reset / Mode</button>
   </div>
 
   <!-- Game Status Bar -->
   <div id="status-bar">
     <div>LEVEL: <span id="level-display" style="color:#fde047;">1</span></div>
+    <div>MODE: <span id="difficulty-badge" class="diff-normal">NORMAL</span></div>
     <div>HP: <span id="hearts-container">❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️</span></div>
+    <div id="extinguisher-status">🧯 EXTINGUISHER: [E] or [F]</div>
     <div id="zone-display">ZONE: CARGO BAY</div>
   </div>
 
@@ -199,18 +296,38 @@
   <div id="canvas-wrapper">
     <canvas id="simCanvas"></canvas>
 
+    <!-- Difficulty Select Modal -->
+    <div id="difficulty-overlay">
+      <h2>SELECT DIFFICULTY</h2>
+      <p>Choose your challenge level to begin flight!</p>
+      <div class="diff-btn-group">
+        <button class="diff-option-btn btn-easy-opt" onclick="selectDifficulty('easy')">
+          <span>🟢 EASY</span>
+          <span style="font-size:12px;">15 Hearts | 1/2 Enemies</span>
+        </button>
+        <button class="diff-option-btn btn-normal-opt" onclick="selectDifficulty('normal')">
+          <span>🔵 NORMAL</span>
+          <span style="font-size:12px;">10 Hearts | Standard Enemies</span>
+        </button>
+        <button class="diff-option-btn btn-hardcore-opt" onclick="selectDifficulty('hardcore')">
+          <span>🔴 HARDCORE</span>
+          <span style="font-size:12px;">5 Hearts | Double Enemies</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Trap & State Prompts -->
     <div id="trap-prompt">🚪 TRAPPED IN LINEN CABINET! 🚪<br>SPAM [SPACEBAR] TO BREAK FREE! (<span id="escape-count">6</span>)</div>
     <div id="freeze-prompt">🥤 FROZEN IN STICKY SODA! 🥤<br>STUCK FOR <span id="freeze-time">3.0</span>s</div>
     <div id="gameover-overlay">
       💥 GAUNTLET OVER! 💥<br>
-      <span style="font-size:14px; color:#ffffff;">You made it to Level <span id="final-level">1</span>!</span><br>
-      <button onclick="resetSimulation()">Try Again</button>
+      <span style="font-size:16px; color:#ffffff;">You made it to Level <span id="final-level">1</span>!</span><br>
+      <button onclick="showDifficultyScreen()">Try Again!</button>
     </div>
   </div>
 
   <div class="instructions">
-    [WASD] Move (Arrow Keys Disabled) | Persistent Health Gauntlet Mode | Reach Cockpit to Advance Level!
+    [WASD] Move (Arrows Disabled) | [E] or [F] Extinguisher (Freeze Monsters & Destroy Projectiles!)
   </div>
 
   <script>
@@ -221,6 +338,8 @@
     const zoneDisplay = document.getElementById('zone-display');
     const levelDisplay = document.getElementById('level-display');
     const heartsContainer = document.getElementById('hearts-container');
+    const difficultyBadge = document.getElementById('difficulty-badge');
+    const difficultyOverlay = document.getElementById('difficulty-overlay');
     const trapPrompt = document.getElementById('trap-prompt');
     const escapeCountDisplay = document.getElementById('escape-count');
     const freezePrompt = document.getElementById('freeze-prompt');
@@ -271,6 +390,30 @@
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
         osc.start(now);
         osc.stop(now + 0.15);
+      } else if (type === 'freeze') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.25);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'spray') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.linearRampToValueAtTime(200, now + 0.1);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      } else if (type === 'destroy_proj') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(300, now + 0.15);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
       }
     }
 
@@ -285,16 +428,25 @@
     // KEYBOARD INPUT STATE (WASD EXCLUSIVE)
     const keys = {};
 
-    // STICKMAN PLAYER STATE (Speed reduced by 50% to 2.25)
+    // DIFFICULTY CONFIGURATIONS
+    const DIFFICULTY_SETTINGS = {
+      easy: { name: 'EASY', hearts: 15, maxHealth: 30, spawnMult: 0.5, cssClass: 'diff-easy' },
+      normal: { name: 'NORMAL', hearts: 10, maxHealth: 20, spawnMult: 1.0, cssClass: 'diff-normal' },
+      hardcore: { name: 'HARDCORE', hearts: 5, maxHealth: 10, spawnMult: 2.0, cssClass: 'diff-hardcore' }
+    };
+
+    let selectedDifficulty = 'normal';
+
+    // STICKMAN PLAYER STATE
     const player = {
       x: 320,
       y: 300,
       radius: 12,
-      speed: 2.25, // Halved from 4.5
+      speed: 2.25,
       facing: 1,
       walkFrame: 0,
       hasWon: false,
-      maxHealth: 20, // 20 half-hearts = 10 full hearts
+      maxHealth: 20,
       health: 20,
       invulnerableTimer: 0,
       freezeTimer: 0,
@@ -302,7 +454,9 @@
       trapDamageTick: 0,
       escapePressesNeeded: 6,
       trappedCabinetX: 0,
-      trappedCabinetY: 0
+      trappedCabinetY: 0,
+      extinguisherActive: false,
+      sprayParticles: []
     };
 
     let currentLevel = 1;
@@ -310,7 +464,6 @@
 
     // AIRPLANE LEVEL COLOR PALETTES
     const AIRPLANE_PALETTES = [
-      // Level 1: Midnight Cobalt
       {
         sky: ['#38bdf8', '#0284c7', '#0f172a'],
         hull: '#f8fafc',
@@ -318,7 +471,6 @@
         wingBorder: '#334155',
         sections: ['#1e293b', '#0f172a', '#0b1329', '#1e1b4b', '#022c22']
       },
-      // Level 2: Sunset Ruby
       {
         sky: ['#f97316', '#c2410c', '#450a0a'],
         hull: '#fef08a',
@@ -326,7 +478,6 @@
         wingBorder: '#7f1d1d',
         sections: ['#450a0a', '#3b0764', '#581c87', '#701a75', '#831843']
       },
-      // Level 3: Emerald Jade
       {
         sky: ['#34d399', '#059669', '#064e3b'],
         hull: '#a7f3d0',
@@ -334,7 +485,6 @@
         wingBorder: '#065f46',
         sections: ['#064e3b', '#022c22', '#065f46', '#047857', '#14532d']
       },
-      // Level 4: Neon Cyber Violet
       {
         sky: ['#f0abfc', '#c084fc', '#3b0764'],
         hull: '#e9d5ff',
@@ -342,7 +492,6 @@
         wingBorder: '#581c87',
         sections: ['#3b0764', '#2e1065', '#4c1d95', '#581c87', '#701a75']
       },
-      // Level 5: Golden Solar
       {
         sky: ['#fde047', '#d97706', '#78350f'],
         hull: '#fef08a',
@@ -373,7 +522,7 @@
       }
     }
 
-    // PROCEDURAL GENERATION OPTIONS (PASSENGERS)
+    // PROCEDURAL PASSENGERS
     const CLOTHING_BOTTOMS = ['#1e293b', '#2563eb', '#15803d', '#b45309', '#be123c'];
     const CLOTHING_TOPS    = ['#f8fafc', '#ef4444', '#06b6d4', '#eab308', '#8b5cf6'];
     const HAIR_STYLES      = ['none', 'short', 'long', 'spiky', 'afro'];
@@ -429,7 +578,6 @@
       }
     }
 
-    // PARALLAX SKY CLOUDS (Parallax speed preserved at full original 1.2 - 4.0 speed)
     function initClouds() {
       clouds = [];
       for (let i = 0; i < 50; i++) {
@@ -453,7 +601,7 @@
       });
     }
 
-    // BUILD AIRCRAFT LAYOUT & ENEMIES
+    // BUILD AIRCRAFT LAYOUT & DIFFICULTY-SCALED ENEMIES
     function initAircraftLayout() {
       obstacles = [];
       seats = [];
@@ -461,24 +609,16 @@
       enemies = [];
       enemyProjectiles = [];
 
-      // Boundaries
-      obstacles.push({ x: 0, y: 0, w: WORLD.width, h: WORLD.topY, type: 'boundary' });
-      obstacles.push({ x: 0, y: WORLD.bottomY, w: WORLD.width, h: WORLD.height - WORLD.bottomY, type: 'boundary' });
-      obstacles.push({ x: 0, y: 0, w: 280, h: 100, type: 'boundary' });
-      obstacles.push({ x: 0, y: 425, w: 280, h: 100, type: 'boundary' });
-      obstacles.push({ x: 0, y: WORLD.topY, w: 70, h: WORLD.bottomY - WORLD.topY, type: 'boundary' });
-      obstacles.push({ x: 3930, y: WORLD.topY, w: 70, h: WORLD.bottomY - WORLD.topY, type: 'boundary' });
-
       // Bulkheads
       const bulkheads = [750, 2000, 2900, 3550];
       bulkheads.forEach((bx, idx) => {
         if (idx === 3) {
-          obstacles.push({ x: bx, y: WORLD.topY, w: 15, h: 185 });
-          obstacles.push({ x: bx, y: 315, w: 15, h: WORLD.bottomY - 315 });
+          obstacles.push({ x: bx, y: WORLD.topY, w: 15, h: 185, type: 'wall' });
+          obstacles.push({ x: bx, y: 315, w: 15, h: WORLD.bottomY - 315, type: 'wall' });
         } else {
-          obstacles.push({ x: bx, y: WORLD.topY, w: 15, h: 105 });
-          obstacles.push({ x: bx, y: 220, w: 15, h: 160 });
-          obstacles.push({ x: bx, y: 425, w: 15, h: WORLD.bottomY - 425 });
+          obstacles.push({ x: bx, y: WORLD.topY, w: 15, h: 105, type: 'wall' });
+          obstacles.push({ x: bx, y: 220, w: 15, h: 160, type: 'wall' });
+          obstacles.push({ x: bx, y: 425, w: 15, h: WORLD.bottomY - 425, type: 'wall' });
         }
       });
 
@@ -499,6 +639,10 @@
         seats.push({ x: x, y: 450, w: 28, h: 28 });
         seats.push({ x: x, y: 485, w: 28, h: 28 });
       }
+
+      // Restrooms
+      obstacles.push({ x: 1350, y: WORLD.topY, w: 80, h: 105, type: 'restroom', label: 'LAV' });
+      obstacles.push({ x: 1350, y: 425, w: 80, h: WORLD.bottomY - 425, type: 'restroom', label: 'LAV' });
 
       // Business Class
       for (let x = 2060; x < 2850; x += 75) {
@@ -537,68 +681,69 @@
         }
       });
 
-      // -----------------------------------------------------------------
-      // SPAWN ENEMIES (WITH HALVED SPEEDS & N = LEVEL FORMULAS)
-      // -----------------------------------------------------------------
+      // DIFFICULTY SPAWN MULTIPLIERS
+      const setting = DIFFICULTY_SETTINGS[selectedDifficulty];
+      const spawnMult = setting.spawnMult;
+      const speedMult = 1.02;
 
-      // 1. EVIL SUITCASES (N = Level * 2)
-      const numSuitcases = currentLevel * 2;
+      // 1. EVIL SUITCASES
+      const numSuitcases = Math.max(1, Math.round(currentLevel * 2 * spawnMult));
       for (let i = 0; i < numSuitcases; i++) {
-        const spawnX = 850 + Math.random() * 2600;
-        const spawnY = 180 + Math.random() * 240;
         enemies.push({
           type: 'suitcase',
-          x: spawnX,
-          y: spawnY,
-          speed: 0.6 + Math.random() * 0.4, // Halved from 1.2..2.0
+          x: 850 + Math.random() * 2600,
+          y: 180 + Math.random() * 240,
+          speed: (0.6 + Math.random() * 0.4) * speedMult,
           shootTimer: 1.5 + Math.random() * 2.0,
+          frozenTimer: 0,
           w: 24,
           h: 22
         });
       }
 
-      // 2. EVIL FOOD CARTS (N = Level)
-      const numFoodCarts = currentLevel;
+      // 2. EVIL FOOD CARTS
+      const numFoodCarts = Math.max(1, Math.round(currentLevel * spawnMult));
       for (let i = 0; i < numFoodCarts; i++) {
         const spawnX = 1100 + (i * (2200 / Math.max(1, numFoodCarts))) + (Math.random() * 100 - 50);
-        const spawnY = 180 + (i % 2) * 160;
         enemies.push({
           type: 'foodcart',
           x: Math.min(3400, Math.max(850, spawnX)),
-          y: spawnY,
-          vy: (i % 2 === 0 ? 1 : -1) * (0.55 + Math.random() * 0.2), // Halved from 1.1..1.5
+          y: 180 + (i % 2) * 160,
+          vy: (i % 2 === 0 ? 1 : -1) * (0.55 + Math.random() * 0.2) * speedMult,
           shootTimer: 2.0 + Math.random() * 3.0,
+          frozenTimer: 0,
           w: 32,
           h: 40
         });
       }
 
-      // 3. EVIL LINEN CABINETS (N = Level)
-      const numCabinets = currentLevel;
+      // 3. EVIL LINEN CABINETS
+      const numCabinets = Math.max(1, Math.round(currentLevel * spawnMult));
       const availableBulkheads = [750, 2000, 2900, 3550];
       for (let i = 0; i < numCabinets; i++) {
         const bx = availableBulkheads[i % availableBulkheads.length];
-        const by = (i % 2 === 0) ? 140 : 400;
         enemies.push({
           type: 'linencabinet',
           x: bx - 18,
-          y: by,
+          y: (i % 2 === 0) ? 140 : 400,
           w: 36,
           h: 48,
-          shootTimer: 1.5 + Math.random() * 2.0
+          shootTimer: 1.5 + Math.random() * 2.0,
+          frozenTimer: 0
         });
       }
 
-      // 4. EVIL NECK PILLOWS (N = 3 + Level)
-      const numNeckPillows = 3 + currentLevel;
+      // 4. EVIL NECK PILLOWS
+      const numNeckPillows = Math.max(1, Math.round((3 + currentLevel) * spawnMult));
       for (let i = 0; i < numNeckPillows; i++) {
         enemies.push({
           type: 'neckpillow',
           x: 900 + Math.random() * 2500,
           y: 180 + Math.random() * 220,
-          vx: (Math.random() - 0.5) * 1.0, // Halved from 2.0
-          vy: (Math.random() - 0.5) * 1.0, // Halved from 2.0
-          radius: 12
+          vx: (Math.random() - 0.5) * 1.0 * speedMult,
+          vy: (Math.random() - 0.5) * 1.0 * speedMult,
+          radius: 12,
+          frozenTimer: 0
         });
       }
     }
@@ -611,9 +756,14 @@
 
     window.addEventListener('resize', resizeCanvas);
 
-    // WASD EXCLUSIVE CONTROLS ENFORCEMENT
+    // CONTROLS HANDLERS (WASD EXCLUSIVE - ARROWS STRICTLY BLOCKED)
     window.addEventListener('keydown', (e) => {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+        return;
+      }
+
+      if (['Enter', 'NumpadEnter'].includes(e.code)) {
         e.preventDefault();
         return;
       }
@@ -632,6 +782,12 @@
         }
       }
 
+      if (['KeyE', 'KeyF', 'Keye', 'Keyf'].includes(e.code)) {
+        if (!player.isTrapped && player.freezeTimer <= 0) {
+          player.extinguisherActive = true;
+        }
+      }
+
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
         e.preventDefault();
         keys[e.code] = true;
@@ -639,23 +795,53 @@
     });
 
     window.addEventListener('keyup', (e) => {
+      if (['KeyE', 'KeyF', 'Keye', 'Keyf'].includes(e.code)) {
+        player.extinguisherActive = false;
+      }
+
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
         keys[e.code] = false;
       }
     });
 
+    function showDifficultyScreen() {
+      difficultyOverlay.style.display = 'block';
+      gameoverOverlay.style.display = 'none';
+      trapPrompt.style.display = 'none';
+      freezePrompt.style.display = 'none';
+    }
+
+    function selectDifficulty(mode) {
+      selectedDifficulty = mode;
+      const setting = DIFFICULTY_SETTINGS[mode];
+
+      difficultyBadge.innerText = setting.name;
+      difficultyBadge.className = setting.cssClass;
+
+      player.maxHealth = setting.maxHealth;
+      player.health = setting.maxHealth;
+
+      difficultyOverlay.style.display = 'none';
+      resetSimulation();
+    }
+
     function resetSimulation() {
       currentLevel = 1;
+      const setting = DIFFICULTY_SETTINGS[selectedDifficulty];
+      player.maxHealth = setting.maxHealth;
+      player.health = setting.maxHealth;
+
       player.x = 320;
       player.y = 300;
       player.facing = 1;
       player.walkFrame = 0;
       player.hasWon = false;
-      player.health = 20;
       player.invulnerableTimer = 0;
       player.freezeTimer = 0;
       player.isTrapped = false;
       player.trapDamageTick = 0;
+      player.extinguisherActive = false;
+      player.sprayParticles = [];
       isGameOver = false;
 
       gameoverOverlay.style.display = 'none';
@@ -668,8 +854,30 @@
       initAircraftLayout();
     }
 
-    function checkCollision(px, py, radius) {
+    // ACCURATE DIAGONAL TAIL WALL & FUSELAGE COLLISION
+    function checkCollision(px, py, radius, checkSeats = true) {
+      // 1. Nose Tip Cap (X > 3830) and Tail Apex Cap (X < 70)
+      if (px - radius < 70 || px + radius > 3830) return true;
+
+      // 2. Angled Tail Cone Hull Collision (X between 70 and 280)
+      if (px < 280) {
+        let minAllowedY = 300 - (1.0714 * (px - 70)); // Top diagonal wall
+        let maxAllowedY = 300 + (1.0714 * (px - 70)); // Bottom diagonal wall
+
+        if (py - radius < minAllowedY || py + radius > maxAllowedY) {
+          return true; // Blocked by angled tail wall!
+        }
+      } else {
+        // 3. Standard Rectangular Fuselage Hull (X >= 280)
+        if (py - radius < WORLD.topY + 2 || py + radius > WORLD.bottomY - 2) {
+          return true;
+        }
+      }
+
+      // 4. Interior Object Collisions (walls, bulkheads, seats, crates)
       for (let obs of obstacles) {
+        if (!checkSeats && obs.type === 'seat') continue;
+
         let closestX = Math.max(obs.x, Math.min(px, obs.x + obs.w));
         let closestY = Math.max(obs.y, Math.min(py, obs.y + obs.h));
 
@@ -684,19 +892,19 @@
       return false;
     }
 
-    // PHYSICS & ENEMY UPDATES
+    // PHYSICS & GAME LOOP UPDATES
     function updatePhysics(dt) {
       updateClouds();
-      if (player.hasWon || isGameOver) return;
+      if (player.hasWon || isGameOver || difficultyOverlay.style.display === 'block') return;
 
       if (player.invulnerableTimer > 0) player.invulnerableTimer -= dt;
 
-      // 1. LINEN CABINET TRAP DoT LOGIC (1 Heart/sec = 1 Half-Heart per 0.5s)
+      // LINEN CABINET TRAP DoT
       if (player.isTrapped) {
         trapPrompt.style.display = 'block';
         player.trapDamageTick = (player.trapDamageTick || 0) + dt;
         if (player.trapDamageTick >= 0.5) {
-          applyDamage(1, true); // Lose 0.5 heart every 0.5 seconds
+          applyDamage(1, true);
           player.trapDamageTick -= 0.5;
         }
       } else {
@@ -704,7 +912,7 @@
         player.trapDamageTick = 0;
       }
 
-      // 2. SODA CAN FREEZE TIMER (Movement restricted, but stickman CAN still take hits!)
+      // SODA CAN FREEZE TIMER
       if (player.freezeTimer > 0) {
         player.freezeTimer -= dt;
         freezePrompt.style.display = 'block';
@@ -713,7 +921,7 @@
         freezePrompt.style.display = 'none';
       }
 
-      // 3. PLAYER WASD MOVEMENT (Only evaluated if not frozen and not trapped)
+      // PLAYER WASD MOVEMENT
       if (!player.isTrapped && player.freezeTimer <= 0) {
         let dx = 0;
         let dy = 0;
@@ -728,14 +936,12 @@
           dy *= 0.7071;
         }
 
-        let currentSpeed = player.speed;
-
-        let nextX = player.x + dx * currentSpeed;
+        let nextX = player.x + dx * player.speed;
         if (!checkCollision(nextX, player.y, player.radius)) {
           player.x = nextX;
         }
 
-        let nextY = player.y + dy * currentSpeed;
+        let nextY = player.y + dy * player.speed;
         if (!checkCollision(player.x, nextY, player.radius)) {
           player.y = nextY;
         }
@@ -747,12 +953,61 @@
         }
       }
 
+      // FIRE EXTINGUISHER SPRAY MECHANIC
+      if (player.extinguisherActive && !player.isTrapped && player.freezeTimer <= 0) {
+        if (Math.random() < 0.3) playSound('spray');
+
+        for (let i = 0; i < 4; i++) {
+          const angle = (player.facing === 1 ? 0 : Math.PI) + (Math.random() - 0.5) * 0.6;
+          const spd = 3.5 + Math.random() * 3.5;
+          player.sprayParticles.push({
+            x: player.x + player.facing * 12,
+            y: player.y - 4,
+            vx: Math.cos(angle) * spd,
+            vy: Math.sin(angle) * spd,
+            radius: 4 + Math.random() * 6,
+            life: 0.35
+          });
+        }
+      }
+
+      // SPRAY COLLISION WITH ENEMIES & INCOMING PROJECTILES
+      for (let i = player.sprayParticles.length - 1; i >= 0; i--) {
+        let sp = player.sprayParticles[i];
+        sp.x += sp.vx;
+        sp.y += sp.vy;
+        sp.life -= dt;
+
+        // 1. Freeze Monsters (10 seconds)
+        enemies.forEach(e => {
+          const dist = Math.hypot(sp.x - e.x, sp.y - e.y);
+          if (dist < 32) {
+            if (e.frozenTimer <= 0) playSound('freeze');
+            e.frozenTimer = 10.0;
+          }
+        });
+
+        // 2. Freeze/Extinguish/Destroy Incoming Projectiles
+        for (let j = enemyProjectiles.length - 1; j >= 0; j--) {
+          let proj = enemyProjectiles[j];
+          const distToProj = Math.hypot(sp.x - proj.x, sp.y - proj.y);
+          if (distToProj < sp.radius + proj.radius + 6) {
+            playSound('destroy_proj');
+            enemyProjectiles.splice(j, 1);
+          }
+        }
+
+        if (sp.life <= 0) {
+          player.sprayParticles.splice(i, 1);
+        }
+      }
+
       const currentZone = sections.find(s => player.x >= s.startX && player.x <= s.endX);
       if (currentZone) {
         zoneDisplay.innerText = `ZONE: ${currentZone.name.toUpperCase()}`;
       }
 
-      // ADVANCE LEVEL (PERSISTENT HEALTH GAUNTLET RUN)
+      // ADVANCE LEVEL
       if (player.x > 3800) {
         currentLevel++;
         levelDisplay.innerText = currentLevel;
@@ -762,13 +1017,23 @@
         initAircraftLayout();
       }
 
-      // ENEMY UPDATES & COLLISIONS (CONTINUES EVEN WHEN FROZEN)
+      // ENEMY UPDATES
       enemies.forEach(e => {
+        if (e.frozenTimer > 0) {
+          e.frozenTimer -= dt;
+          return;
+        }
+
         if (e.type === 'suitcase') {
-          if (player.x > e.x) e.x += e.speed * 0.6;
-          if (player.x < e.x) e.x -= e.speed * 0.6;
-          if (player.y > e.y) e.y += e.speed * 0.4;
-          if (player.y < e.y) e.y -= e.speed * 0.4;
+          let moveX = 0;
+          let moveY = 0;
+          if (player.x > e.x) moveX += e.speed * 0.6;
+          if (player.x < e.x) moveX -= e.speed * 0.6;
+          if (player.y > e.y) moveY += e.speed * 0.4;
+          if (player.y < e.y) moveY -= e.speed * 0.4;
+
+          if (!checkCollision(e.x + moveX, e.y, 12, true)) e.x += moveX;
+          if (!checkCollision(e.x, e.y + moveY, 12, true)) e.y += moveY;
 
           e.shootTimer -= dt;
           if (e.shootTimer <= 0) {
@@ -778,14 +1043,18 @@
               type: 'pretzel',
               x: e.x,
               y: e.y,
-              vx: Math.cos(angle) * 2.25, // Halved from 4.5
-              vy: Math.sin(angle) * 2.25, // Halved from 4.5
+              vx: Math.cos(angle) * 2.3,
+              vy: Math.sin(angle) * 2.3,
               radius: 6,
               life: 4.0
             });
           }
         } else if (e.type === 'foodcart') {
-          e.y += e.vy;
+          if (!checkCollision(e.x, e.y + e.vy, 16, true)) {
+            e.y += e.vy;
+          } else {
+            e.vy *= -1;
+          }
           if (e.y < 160 || e.y > 420) e.vy *= -1;
 
           e.shootTimer -= dt;
@@ -796,8 +1065,8 @@
               type: 'soda',
               x: e.x,
               y: e.y,
-              vx: Math.cos(angle) * 2.5, // Halved from 5.0
-              vy: Math.sin(angle) * 2.5, // Halved from 5.0
+              vx: Math.cos(angle) * 2.55,
+              vy: Math.sin(angle) * 2.55,
               radius: 8,
               life: 3.5
             });
@@ -811,8 +1080,8 @@
               type: 'pillow',
               x: e.x,
               y: e.y,
-              vx: Math.cos(angle) * 2.0, // Halved from 4.0
-              vy: Math.sin(angle) * 2.0, // Halved from 4.0
+              vx: Math.cos(angle) * 2.04,
+              vy: Math.sin(angle) * 2.04,
               radius: 10,
               cabinetX: e.x,
               cabinetY: e.y,
@@ -824,28 +1093,34 @@
           e.y += e.vy;
           if (e.x < 750 || e.x > 3550) e.vx *= -1;
           if (e.y < 120 || e.y > 480) e.vy *= -1;
+        }
 
-          const dist = Math.hypot(player.x - e.x, player.y - e.y);
-          if (dist < player.radius + e.radius) {
-            applyDamage(1);
-          }
+        const enemyRadius = e.radius || 14;
+        const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
+        if (distToPlayer < player.radius + enemyRadius) {
+          applyDamage(1);
         }
       });
 
-      // Enemy Projectiles
+      // PROJECTILE MOVEMENTS & DAMAGE
       for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
         let p = enemyProjectiles[i];
         p.x += p.vx;
         p.y += p.vy;
         p.life -= dt;
 
+        if (checkCollision(p.x, p.y, p.radius, false)) {
+          enemyProjectiles.splice(i, 1);
+          continue;
+        }
+
         const dist = Math.hypot(player.x - p.x, player.y - p.y);
         if (dist < player.radius + p.radius) {
           if (p.type === 'pretzel') {
-            applyDamage(1); // 0.5 heart damage
+            applyDamage(1);
           } else if (p.type === 'soda') {
-            applyDamage(1); // Soda can impact loses 0.5 heart
-            player.freezeTimer = 3.0; // Freezes movement
+            applyDamage(1);
+            player.freezeTimer = 3.0;
             playSound('soda');
           } else if (p.type === 'pillow') {
             player.isTrapped = true;
@@ -981,6 +1256,12 @@
       ctx.fillRect(-7, -10, 3, 4);
       ctx.fillRect(4, -10, 3, 4);
 
+      // Fire Extinguisher Tank on Back
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(-facing * 9, -10, 5, 12);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(-facing * 9, -12, 5, 2);
+
       // Arms
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2;
@@ -1015,14 +1296,29 @@
     }
 
     function drawEnemiesAndProjectiles() {
+      player.sprayParticles.forEach(sp => {
+        ctx.fillStyle = 'rgba(224, 242, 254, 0.85)';
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, sp.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(sp.x - 1, sp.y - 1, sp.radius * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
       enemies.forEach(e => {
         ctx.save();
         ctx.translate(e.x, e.y);
 
+        if (e.frozenTimer > 0) {
+          ctx.translate((Math.random() - 0.5) * 2, 0);
+        }
+
         if (e.type === 'suitcase') {
-          ctx.fillStyle = '#7e22ce';
+          ctx.fillStyle = e.frozenTimer > 0 ? '#38bdf8' : '#7e22ce';
           ctx.fillRect(-12, -10, 24, 20);
-          ctx.strokeStyle = '#eab308';
+          ctx.strokeStyle = e.frozenTimer > 0 ? '#e0f2fe' : '#eab308';
           ctx.lineWidth = 2;
           ctx.strokeRect(-12, -10, 24, 20);
 
@@ -1034,7 +1330,7 @@
           ctx.lineTo(4, -10);
           ctx.stroke();
 
-          ctx.fillStyle = '#ef4444';
+          ctx.fillStyle = e.frozenTimer > 0 ? '#0284c7' : '#ef4444';
           ctx.fillRect(-6, -4, 4, 4);
           ctx.fillRect(2, -4, 4, 4);
 
@@ -1044,7 +1340,7 @@
           ctx.arc(8, 11, 3, 0, Math.PI * 2);
           ctx.fill();
         } else if (e.type === 'foodcart') {
-          ctx.fillStyle = '#94a3b8';
+          ctx.fillStyle = e.frozenTimer > 0 ? '#0284c7' : '#94a3b8';
           ctx.fillRect(-16, -20, 32, 40);
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 2;
@@ -1066,7 +1362,7 @@
           ctx.fillStyle = '#38bdf8';
           ctx.fillRect(6, -24, 6, 8);
         } else if (e.type === 'linencabinet') {
-          ctx.fillStyle = '#854d0e';
+          ctx.fillStyle = e.frozenTimer > 0 ? '#0284c7' : '#854d0e';
           ctx.fillRect(-18, -24, 36, 48);
           ctx.strokeStyle = '#fde047';
           ctx.lineWidth = 2;
@@ -1082,7 +1378,7 @@
           ctx.fillRect(-5, -6, 3, 3);
           ctx.fillRect(2, -6, 3, 3);
         } else if (e.type === 'neckpillow') {
-          ctx.fillStyle = '#a855f7';
+          ctx.fillStyle = e.frozenTimer > 0 ? '#38bdf8' : '#a855f7';
           ctx.beginPath();
           ctx.arc(0, 0, 12, Math.PI, 0);
           ctx.lineTo(12, 8);
@@ -1099,6 +1395,19 @@
           ctx.arc(-4, -4, 2, 0, Math.PI * 2);
           ctx.arc(4, -4, 2, 0, Math.PI * 2);
           ctx.fill();
+        }
+
+        if (e.frozenTimer > 0) {
+          ctx.fillStyle = 'rgba(186, 230, 253, 0.55)';
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.fillRect(-20, -26, 40, 52);
+          ctx.strokeRect(-20, -26, 40, 52);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 12px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(`❄️ ${Math.ceil(e.frozenTimer)}s`, 0, -30);
         }
 
         ctx.restore();
@@ -1240,7 +1549,7 @@
       ctx.fillText("FIRST CLASS", 3225, 310);
       ctx.fillText("COCKPIT", 3750, 310);
 
-      // Fuselage Hull
+      // Fuselage Outer Wall Line
       ctx.strokeStyle = palette.hull;
       ctx.lineWidth = 5;
       ctx.beginPath();
@@ -1323,7 +1632,7 @@
 
     window.onload = function() {
       resizeCanvas();
-      resetSimulation();
+      showDifficultyScreen();
       requestAnimationFrame(animate);
     };
   </script>

@@ -4,349 +4,178 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Seddon Team 3 - Cinema Candy Clash</title>
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Elementary-friendly Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     * {
-      box-sizing: border-box;
       user-select: none;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      -webkit-user-select: none;
+      box-sizing: border-box;
     }
-
     body {
-      background-color: #0b0e17;
-      color: #ffffff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      height: 100vh;
-      overflow: hidden;
-      padding: 12px;
+      font-family: 'Fredoka', sans-serif;
     }
-
-    /* Top Header Bar */
-    #header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-      max-width: 1100px;
-      margin-bottom: 8px;
-      padding: 10px 16px;
-      background: linear-gradient(135deg, #151928, #1f263e);
-      border: 2px solid #00f3ff;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+    .num-font {
+      font-family: 'Outfit', sans-serif;
     }
-
-    .title-box h1 {
-      font-size: 20px;
-      font-weight: 900;
-      letter-spacing: 1.5px;
-      background: linear-gradient(90deg, #ff007f, #00f3ff, #ffea00);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-transform: uppercase;
+    /* Pulse Glow Animation */
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 15px rgba(0, 243, 255, 0.4); }
+      50% { box-shadow: 0 0 25px rgba(0, 243, 255, 0.8); }
     }
-
-    .scoreboard {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-    }
-
-    .score-badge {
-      background: #090c15;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-weight: 800;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      border: 1px solid #333;
-    }
-
-    .score-stickmen { border-color: #00f3ff; color: #00f3ff; }
-    .score-enemies { border-color: #ff3366; color: #ff3366; }
-    .score-floor { border-color: #ffea00; color: #ffea00; }
-
-    .btn-action {
-      background: linear-gradient(135deg, #ff007f, #7928ca);
-      color: #ffffff;
-      border: none;
-      padding: 8px 18px;
-      font-size: 13px;
-      font-weight: 800;
-      border-radius: 8px;
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      transition: all 0.2s ease;
-      box-shadow: 0 0 10px rgba(255, 0, 127, 0.4);
-    }
-
-    .btn-action:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 18px rgba(255, 0, 127, 0.7);
-    }
-
-    /* Main Canvas Wrapper */
-    #canvas-wrapper {
-      position: relative;
-      width: 100%;
-      max-width: 1100px;
-      flex-grow: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 2px solid #22293e;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
-    }
-
-    canvas {
-      background-color: #0a0d14;
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    /* Instructions & HUD Footer */
-    .hud-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-      max-width: 1100px;
-      margin-top: 6px;
-      padding: 4px 8px;
-      font-size: 12px;
-      color: #aaaaaa;
-      font-weight: 600;
-    }
-
-    .ability-indicator {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #151928;
-      padding: 4px 12px;
-      border-radius: 16px;
-      border: 1px solid #00f3ff;
-      color: #00f3ff;
-    }
-
-    /* Toothbrush Storm Alert Banner */
-    #storm-banner {
-      position: absolute;
-      top: 15px;
-      left: 50%;
-      transform: translateX(-50%) translateY(-100px);
-      background: linear-gradient(90deg, #ff0055, #ffaa00);
-      color: #ffffff;
-      padding: 10px 24px;
-      border-radius: 30px;
-      font-weight: 900;
-      font-size: 16px;
-      letter-spacing: 1px;
-      box-shadow: 0 0 20px #ff0055;
-      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      z-index: 20;
-      pointer-events: none;
-    }
-
-    #storm-banner.show {
-      transform: translateX(-50%) translateY(0);
-    }
-
-    /* Modal Overlay Styling */
-    .modal-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(5, 7, 12, 0.88);
-      backdrop-filter: blur(8px);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 50;
-      padding: 20px;
-    }
-
-    .modal-card {
-      background: linear-gradient(145deg, #121624, #1a2035);
-      border: 2px solid #00f3ff;
-      border-radius: 16px;
-      padding: 28px;
-      max-width: 650px;
-      width: 90%;
-      text-align: center;
-      box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
-    }
-
-    .ability-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
-      margin: 20px 0;
-    }
-
-    .ability-card {
-      background: #0e121d;
-      border: 2px solid #28324e;
-      border-radius: 12px;
-      padding: 14px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-
-    .ability-card:hover {
-      border-color: #ffea00;
-      transform: translateY(-4px);
-      box-shadow: 0 6px 16px rgba(255, 234, 0, 0.25);
-    }
-
-    .ability-card.selected {
-      border-color: #00f3ff;
-      background: rgba(0, 243, 255, 0.1);
-      box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
-    }
-
-    .ability-icon {
-      font-size: 32px;
-      margin-bottom: 6px;
-    }
-
-    .ability-title {
-      font-weight: 800;
-      color: #ffffff;
-      font-size: 15px;
-      margin-bottom: 4px;
-    }
-
-    .ability-desc {
-      font-size: 11px;
-      color: #a0aec0;
-      line-height: 1.3;
+    .glow-cyan {
+      animation: pulse-glow 2s infinite;
     }
   </style>
 </head>
-<body>
+<body class="bg-slate-950 text-white min-h-screen w-full flex flex-col items-center justify-between p-2 md:p-3 overflow-hidden select-none font-['Fredoka']">
 
-  <!-- Header Bar -->
-  <div id="header">
-    <div class="title-box">
-      <h1>Seddon Team 3 - Cinema Candy Clash</h1>
+  <!-- TOP HEADER HUD (CENTERED MAX-W-5XL) -->
+  <header id="header" class="w-full max-w-5xl mx-auto flex items-center justify-between bg-slate-900/90 backdrop-blur-md border-2 border-cyan-400/40 rounded-2xl px-4 py-2 shadow-lg shadow-cyan-950/50 z-10 shrink-0">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">🎬</span>
+      <h1 class="text-lg md:text-xl font-extrabold tracking-wide bg-gradient-to-r from-pink-500 via-yellow-300 to-cyan-400 bg-clip-text text-transparent uppercase">
+        Cinema Candy Clash
+      </h1>
     </div>
-    <div class="scoreboard">
-      <div class="score-badge score-stickmen">
-        <span>🍿 Stickmen Candy:</span>
-        <span id="score-stickmen-val">0</span>
+
+    <!-- Score Badges -->
+    <div class="flex items-center gap-2 md:gap-4">
+      <div class="bg-slate-950/90 border border-cyan-400/60 rounded-xl px-3 py-1 flex items-center gap-2 shadow-inner">
+        <span class="text-lg">🍿</span>
+        <div class="flex flex-col">
+          <span class="text-[10px] text-cyan-300 font-semibold leading-none">STICKMEN</span>
+          <span id="score-stickmen-val" class="num-font text-base font-extrabold text-cyan-400 leading-tight">0</span>
+        </div>
       </div>
-      <div class="score-badge score-enemies">
-        <span>🥦 Healthy Food Candy:</span>
-        <span id="score-enemies-val">0</span>
+
+      <div class="bg-slate-950/90 border border-rose-500/60 rounded-xl px-3 py-1 flex items-center gap-2 shadow-inner">
+        <span class="text-lg">🥦</span>
+        <div class="flex flex-col">
+          <span class="text-[10px] text-rose-300 font-semibold leading-none">VEGGIES</span>
+          <span id="score-enemies-val" class="num-font text-base font-extrabold text-rose-400 leading-tight">0</span>
+        </div>
       </div>
-      <div class="score-badge score-floor">
-        <span>🍬 Floor:</span>
-        <span id="score-floor-val">24</span>
+
+      <div class="bg-slate-950/90 border border-amber-400/60 rounded-xl px-3 py-1 flex items-center gap-2 shadow-inner">
+        <span class="text-lg">🍬</span>
+        <div class="flex flex-col">
+          <span class="text-[10px] text-amber-300 font-semibold leading-none">FLOOR</span>
+          <span id="score-floor-val" class="num-font text-base font-extrabold text-amber-400 leading-tight">24</span>
+        </div>
       </div>
     </div>
-    <button class="btn-action" onclick="openAbilityModal()">Restart</button>
-  </div>
 
-  <!-- Main Canvas Container -->
-  <div id="canvas-wrapper">
-    <canvas id="simCanvas"></canvas>
-    
-    <!-- Toothbrush Storm Banner -->
-    <div id="storm-banner">⚠️ TOOTHBRUSH STORM INCOMING! BRUSH YOUR TEETH! 🪥</div>
+    <button onclick="openAbilityModal()" class="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-extrabold px-4 py-1.5 rounded-xl shadow-md hover:scale-105 active:scale-95 transition-all text-xs md:text-sm uppercase tracking-wider border border-pink-300/30">
+      Restart 🔄
+    </button>
+  </header>
 
-    <!-- Ability Selection Modal -->
-    <div id="ability-modal" class="modal-overlay">
-      <div class="modal-card">
-        <h2 style="font-size: 24px; font-weight: 900; color: #ffea00; margin-bottom: 6px;">SELECT CAPTAIN POWER!</h2>
-        <p style="font-size: 13px; color: #cbd5e0;">Choose your Stickman Captain ability for this round. Balanced 4v4 Match!</p>
-        
-        <div class="ability-grid">
-          <div class="ability-card selected" onclick="selectAbility('carrot')">
-            <div class="ability-icon">🥕</div>
-            <div class="ability-title">Carrot Dash</div>
-            <div class="ability-desc">+30% Speed (2.9 units). Active: Trigger a super speed burst!</div>
+  <!-- MAIN CANVAS CONTAINER (CENTERED MAX-W-5XL FLEX-1) -->
+  <main id="canvas-wrapper" class="relative w-full max-w-5xl mx-auto flex-1 my-2 rounded-2xl overflow-hidden border-2 border-slate-800 bg-slate-900 shadow-2xl flex items-center justify-center min-h-[420px]">
+    <canvas id="simCanvas" class="w-full h-full block bg-slate-950"></canvas>
+
+    <!-- Toothbrush Storm Banner Alert -->
+    <div id="storm-banner" class="absolute top-4 left-1/2 -translate-x-1/2 -translate-y-28 bg-gradient-to-r from-rose-600 via-amber-500 to-rose-600 text-white px-6 py-2.5 rounded-full font-black text-xs md:text-sm tracking-wide shadow-xl shadow-rose-950/80 transition-transform duration-500 z-20 pointer-events-none border-2 border-yellow-300 text-center">
+      ⚠️ TOOTHBRUSH STORM INCOMING! Toothbrushes can only take 50% of remaining candy! 🪥
+    </div>
+
+    <!-- CAPTAIN POWER SELECTION MODAL -->
+    <div id="ability-modal" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center z-50 p-4">
+      <div class="bg-slate-900 border-2 border-cyan-400 rounded-2xl p-6 max-w-xl w-full text-center shadow-2xl shadow-cyan-900/40 glow-cyan">
+        <h2 class="text-2xl md:text-3xl font-black text-amber-300 mb-1 tracking-wider uppercase">SELECT CAPTAIN POWER!</h2>
+        <p class="text-xs md:text-sm text-slate-300 mb-5">Choose your Stickman Captain ability for this cinema clash!</p>
+
+        <div class="grid grid-cols-2 gap-3 mb-6">
+          <div onclick="selectAbility('carrot', this)" class="ability-card selected bg-slate-950 border-2 border-cyan-400 rounded-xl p-3 cursor-pointer hover:border-amber-300 transition-all flex flex-col items-center text-center group">
+            <span class="text-3xl mb-1 group-hover:scale-110 transition-transform">🥕</span>
+            <span class="font-bold text-white text-sm mb-1">Carrot Dash</span>
+            <span class="text-[11px] text-slate-400 leading-tight">+30% Speed. Active [SPACE/E]: Trigger a super speed burst!</span>
           </div>
-          <div class="ability-card" onclick="selectAbility('tree_trap')">
-            <div class="ability-icon">🌳</div>
-            <div class="ability-title">Tree Trap</div>
-            <div class="ability-desc">Active [SPACE/E]: Roots freeze nearby Healthy Food enemies for 5 seconds!</div>
+
+          <div onclick="selectAbility('tree_trap', this)" class="ability-card bg-slate-950 border-2 border-slate-700 rounded-xl p-3 cursor-pointer hover:border-amber-300 transition-all flex flex-col items-center text-center group">
+            <span class="text-3xl mb-1 group-hover:scale-110 transition-transform">🌳</span>
+            <span class="font-bold text-white text-sm mb-1">Tree Trap</span>
+            <span class="text-[11px] text-slate-400 leading-tight">Active [SPACE/E]: Freeze nearby Veggies for 4.5s! <b class="text-emerald-400">(Fast 4s Cooldown!)</b></span>
           </div>
-          <div class="ability-card" onclick="selectAbility('bounce_blast')">
-            <div class="ability-icon">💥</div>
-            <div class="ability-title">Bounce Blast</div>
-            <div class="ability-desc">Active [SPACE/E]: Shockwave bounces enemies away and stuns them!</div>
+
+          <div onclick="selectAbility('bounce_blast', this)" class="ability-card bg-slate-950 border-2 border-slate-700 rounded-xl p-3 cursor-pointer hover:border-amber-300 transition-all flex flex-col items-center text-center group">
+            <span class="text-3xl mb-1 group-hover:scale-110 transition-transform">💥</span>
+            <span class="font-bold text-white text-sm mb-1">Bounce Blast</span>
+            <span class="text-[11px] text-slate-400 leading-tight">Active [SPACE/E]: Shockwave knocks back enemies & stuns them!</span>
           </div>
-          <div class="ability-card" onclick="selectAbility('multi_bagger')">
-            <div class="ability-icon">🎒</div>
-            <div class="ability-title">Multi-Bagger</div>
-            <div class="ability-desc">Carry up to 3 candies! Active: Candy Magnet pulls nearby floor candies.</div>
+
+          <div onclick="selectAbility('multi_bagger', this)" class="ability-card bg-slate-950 border-2 border-slate-700 rounded-xl p-3 cursor-pointer hover:border-amber-300 transition-all flex flex-col items-center text-center group">
+            <span class="text-3xl mb-1 group-hover:scale-110 transition-transform">🎒</span>
+            <span class="font-bold text-white text-sm mb-1">Multi-Bagger</span>
+            <span class="text-[11px] text-slate-400 leading-tight">Carry 3 candies! Active: Candy Magnet pulls nearby candies.</span>
           </div>
         </div>
 
-        <button class="btn-action" style="padding: 12px 32px; font-size: 15px;" onclick="startRoundWithSelectedAbility()">START MOVIE CLASH 🎬</button>
+        <button onclick="startRoundWithSelectedAbility()" class="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-black px-8 py-3 rounded-xl text-base shadow-lg hover:scale-105 active:scale-95 transition-all uppercase tracking-wider border border-white/40">
+          START MOVIE CLASH 🎬
+        </button>
       </div>
     </div>
 
-    <!-- Game Over Modal -->
-    <div id="game-over-modal" class="modal-overlay" style="display: none;">
-      <div class="modal-card" style="border-color: #ffea00;">
-        <h2 id="win-title" style="font-size: 28px; font-weight: 900; margin-bottom: 8px;">GAME OVER!</h2>
-        <p id="win-subtitle" style="font-size: 15px; color: #cbd5e0; margin-bottom: 16px;">All candies have been claimed or brushed away!</p>
-        
-        <div style="background: #0a0d14; padding: 16px; border-radius: 12px; margin-bottom: 20px; text-align: left;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #00f3ff; font-weight: bold;">
+    <!-- GAME OVER MODAL -->
+    <div id="game-over-modal" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center z-50 p-4 hidden">
+      <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl p-6 max-w-md w-full text-center shadow-2xl shadow-amber-950/50">
+        <h2 id="win-title" class="text-2xl md:text-3xl font-black mb-1 uppercase tracking-wide">GAME OVER!</h2>
+        <p id="win-subtitle" class="text-xs md:text-sm text-slate-300 mb-4">All candies have been claimed or brushed away!</p>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-5 space-y-2 text-left">
+          <div class="flex justify-between items-center text-cyan-400 font-bold text-sm">
             <span>🍿 Stickmen Saved:</span>
-            <span id="final-stickmen-score">0</span>
+            <span id="final-stickmen-score" class="num-font text-base">0</span>
           </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #ff3366; font-weight: bold;">
-            <span>🥦 Healthy Food Stolen:</span>
-            <span id="final-enemies-score">0</span>
+          <div class="flex justify-between items-center text-rose-400 font-bold text-sm">
+            <span>🥦 Veggies Stolen:</span>
+            <span id="final-enemies-score" class="num-font text-base">0</span>
           </div>
-          <div style="display: flex; justify-content: space-between; color: #ffea00; font-weight: bold;">
+          <div class="flex justify-between items-center text-emerald-400 font-bold text-sm">
             <span>🪥 Brushed Away:</span>
-            <span id="final-brushed-score">0</span>
+            <span id="final-brushed-score" class="num-font text-base">0</span>
           </div>
         </div>
 
-        <button class="btn-action" style="padding: 12px 32px; font-size: 15px;" onclick="openAbilityModal()">PLAY AGAIN 🔄</button>
+        <button onclick="openAbilityModal()" class="bg-gradient-to-r from-pink-500 to-amber-400 hover:from-pink-400 hover:to-amber-300 text-slate-950 font-black px-8 py-3 rounded-xl text-base shadow-lg hover:scale-105 active:scale-95 transition-all uppercase tracking-wider">
+          PLAY AGAIN 🔄
+        </button>
       </div>
     </div>
-  </div>
+  </main>
 
-  <!-- HUD Footer -->
-  <div class="hud-footer">
-    <div><strong>CONTROLS:</strong> [WASD] Move Stickman Captain | [SPACE] or [E] Captain Ability</div>
-    <div class="ability-indicator">
-      <span id="hud-ability-name">Power: None</span>
-      <span id="hud-ability-cd" style="font-weight: bold;">[READY]</span>
+  <!-- HUD FOOTER BAR (CENTERED MAX-W-5XL) -->
+  <footer class="w-full max-w-5xl mx-auto flex items-center justify-between bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-xl px-4 py-1.5 text-xs text-slate-400 shrink-0">
+    <div class="flex items-center gap-2">
+      <span class="bg-slate-800 text-cyan-400 px-2 py-0.5 rounded font-extrabold border border-cyan-500/30">WASD</span>
+      <span class="hidden sm:inline">Move Captain</span>
+      <span class="bg-slate-800 text-amber-400 px-2 py-0.5 rounded font-extrabold border border-amber-500/30 ml-2">SPACE / E</span>
+      <span class="hidden sm:inline">Captain Power</span>
     </div>
-  </div>
+
+    <!-- Power Cooldown HUD Bar -->
+    <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1">
+      <span id="hud-ability-name" class="font-bold text-cyan-300">Power: Carrot Dash</span>
+      <div class="w-20 bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
+        <div id="hud-cd-bar" class="bg-cyan-400 h-full w-full transition-all duration-100"></div>
+      </div>
+      <span id="hud-ability-cd" class="font-extrabold text-cyan-400 text-[11px] min-w-[50px]">READY</span>
+    </div>
+  </footer>
 
   <script>
-    // Canvas & Scaling setup
+    // --- CANVAS & LOGICAL RESOLUTION SETUP ---
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
 
     const LOGICAL_WIDTH = 1100;
     const LOGICAL_HEIGHT = 700;
 
-    // Web Audio Synthesizer for SFX
+    // --- SOUND EFFECTS SYNTHESIZER (WEB AUDIO API) ---
     class SoundFX {
       constructor() {
         this.ctx = null;
@@ -377,15 +206,15 @@
         try {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(650, this.ctx.currentTime);
-          osc.frequency.linearRampToValueAtTime(250, this.ctx.currentTime + 0.18);
-          gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.18);
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(700, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(220, this.ctx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start();
-          osc.stop(this.ctx.currentTime + 0.18);
+          osc.stop(this.ctx.currentTime + 0.2);
         } catch (e) {}
       }
       playScore() {
@@ -411,10 +240,10 @@
         try {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(220, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.25);
-          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(900, this.ctx.currentTime + 0.25);
+          gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
@@ -428,24 +257,25 @@
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
           osc.type = 'square';
-          osc.frequency.setValueAtTime(320, this.ctx.currentTime);
-          osc.frequency.linearRampToValueAtTime(160, this.ctx.currentTime + 0.35);
+          osc.frequency.setValueAtTime(350, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(150, this.ctx.currentTime + 0.4);
           gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start();
-          osc.stop(this.ctx.currentTime + 0.35);
+          osc.stop(this.ctx.currentTime + 0.4);
         } catch (e) {}
       }
     }
 
     const audio = new SoundFX();
 
-    // Game state variables
+    // --- GAME STATE ENGINE ---
     let gameRunning = false;
     let selectedAbilityType = 'carrot';
     let abilityCooldownTimer = 0;
+    let maxAbilityCooldown = 7.0;
     let dashActiveTimer = 0;
 
     let scoreStickmen = 0;
@@ -458,8 +288,10 @@
     let stormTriggered = false;
     let stormActive = false;
     let stormDurationTimer = 0;
+    let maxBrushedLimit = 0;
+    let brushedInCurrentStorm = 0;
 
-    // Entities Arrays
+    // Entity collections
     let player = null;
     let allies = [];
     let enemies = [];
@@ -468,47 +300,70 @@
     let particles = [];
     let floatingTexts = [];
 
-    // Keyboard state - STRICTLY WASD ONLY for movement
-    const keys = {};
+    // KEYBOARD ENGINE - STRICTLY WASD MOVEMENT ONLY!
+    const activeKeys = {};
 
     window.addEventListener('keydown', (e) => {
       audio.init();
-      const code = e.code;
-      // WASD and Ability keys only
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyE'].includes(code)) {
-        keys[code] = true;
+      // Block Arrow Key scrolling & movement completely
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+        return;
       }
-      if (code === 'Space' || code === 'KeyE') {
+
+      // WASD movement keys strictly
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        e.preventDefault();
+        activeKeys[e.code] = true;
+      }
+
+      // Ability keys
+      if (e.code === 'Space' || e.code === 'KeyE') {
+        e.preventDefault();
         useCaptainAbility();
       }
     });
 
     window.addEventListener('keyup', (e) => {
-      const code = e.code;
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyE'].includes(code)) {
-        keys[code] = false;
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        activeKeys[e.code] = false;
       }
     });
 
-    function selectAbility(type) {
+    // DRIFT PREVENTION LISTENERS
+    function flushInputKeys() {
+      for (let k in activeKeys) activeKeys[k] = false;
+    }
+    window.addEventListener('blur', flushInputKeys);
+    window.addEventListener('mouseleave', flushInputKeys);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) flushInputKeys();
+    });
+
+    // MODAL CONTROL & ABILITY SELECTION
+    function selectAbility(type, element) {
       selectedAbilityType = type;
-      document.querySelectorAll('.ability-card').forEach(card => card.classList.remove('selected'));
-      event.currentTarget.classList.add('selected');
+      document.querySelectorAll('.ability-card').forEach(card => {
+        card.classList.remove('selected', 'border-cyan-400');
+        card.classList.add('border-slate-700');
+      });
+      element.classList.add('selected', 'border-cyan-400');
+      element.classList.remove('border-slate-700');
     }
 
     function openAbilityModal() {
       gameRunning = false;
-      document.getElementById('ability-modal').style.display = 'flex';
-      document.getElementById('game-over-modal').style.display = 'none';
+      document.getElementById('ability-modal').classList.remove('hidden');
+      document.getElementById('game-over-modal').classList.add('hidden');
     }
 
     function startRoundWithSelectedAbility() {
-      document.getElementById('ability-modal').style.display = 'none';
-      document.getElementById('game-over-modal').style.display = 'none';
+      document.getElementById('ability-modal').classList.add('hidden');
+      document.getElementById('game-over-modal').classList.add('hidden');
       initGame();
     }
 
-    // Initialize / Reset Game
+    // --- GAME INITIALIZATION ---
     function initGame() {
       scoreStickmen = 0;
       scoreEnemies = 0;
@@ -520,10 +375,16 @@
       floatingTexts = [];
       toothbrushes = [];
 
-      // 1. Player setup (Base speed: 2.25, Carrot Dash: 2.9)
+      // Max cooldowns per power
+      if (selectedAbilityType === 'carrot') maxAbilityCooldown = 7.0;
+      else if (selectedAbilityType === 'tree_trap') maxAbilityCooldown = 4.0; // TREE TRAP 4S COOLDOWN
+      else if (selectedAbilityType === 'bounce_blast') maxAbilityCooldown = 6.0;
+      else if (selectedAbilityType === 'multi_bagger') maxAbilityCooldown = 6.0;
+
       const playerSpeed = selectedAbilityType === 'carrot' ? 2.9 : 2.25;
       const maxCarryCap = selectedAbilityType === 'multi_bagger' ? 3 : 1;
 
+      // 1. Player (Stickman Captain)
       player = {
         x: 550,
         y: 620,
@@ -537,46 +398,46 @@
         isPlayer: true
       };
 
-      // 2. AI Allies setup (3 NPC Stickmen allies, speed: 2.1)
+      // 2. AI Stickmen Allies (3 friendly helpers)
       allies = [
-        { x: 250, y: 630, speed: 2.1, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'stickman', isPlayer: false, name: 'Ally 1' },
-        { x: 550, y: 630, speed: 2.1, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'stickman', isPlayer: false, name: 'Ally 2' },
-        { x: 850, y: 630, speed: 2.1, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'stickman', isPlayer: false, name: 'Ally 3' }
+        { x: 250, y: 630, speed: 2.1, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'stickman', isPlayer: false },
+        { x: 550, y: 630, speed: 2.1, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'stickman', isPlayer: false },
+        { x: 850, y: 630, speed: 2.1, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'stickman', isPlayer: false }
       ];
 
-      // 3. Healthy Food Enemies setup (Speed tuned: Carrot fast at 2.5, others at 1.6 - 1.9)
+      // 3. Healthy Food Enemies
       enemies = [
-        { x: 100, y: 50, speed: 2.5, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Carrot', color: '#ff7700', emoji: '🥕', frozenTimer: 0, stunTimer: 0 },
-        { x: 350, y: 50, speed: 1.8, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Broccoli', color: '#22cc44', emoji: '🥦', frozenTimer: 0, stunTimer: 0 },
-        { x: 750, y: 50, speed: 1.9, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Cabbage', color: '#88e034', emoji: '🥬', frozenTimer: 0, stunTimer: 0 },
-        { x: 1000, y: 50, speed: 1.6, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Apple', color: '#ff3344', emoji: '🍎', frozenTimer: 0, stunTimer: 0 }
+        { x: 100, y: 60, speed: 2.4, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Carrot', emoji: '🥕', frozenTimer: 0, stunTimer: 0 },
+        { x: 350, y: 60, speed: 1.8, facing: 1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Broccoli', emoji: '🥦', frozenTimer: 0, stunTimer: 0 },
+        { x: 750, y: 60, speed: 1.9, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Cabbage', emoji: '🥬', frozenTimer: 0, stunTimer: 0 },
+        { x: 1000, y: 60, speed: 1.7, facing: -1, walkFrame: 0, carrying: [], maxCarry: 1, immunityTimer: 0, team: 'enemy', name: 'Apple', emoji: '🍎', frozenTimer: 0, stunTimer: 0 }
       ];
 
-      // 4. Midline Candy Spawns (24 Candies distributed near horizontal middle)
+      // 4. Floor Candies (24 Candies)
       candies = [];
       const candyTypes = ['🍿', '🍫', '🍭', '🥤', '🍬', '🍩'];
-
       for (let i = 0; i < 24; i++) {
         candies.push({
           id: i,
           x: 120 + Math.random() * 860,
-          y: 280 + Math.random() * 140, // 350 +/- 70 px
+          y: 280 + Math.random() * 140, // Middle horizontal hall
           type: candyTypes[Math.floor(Math.random() * candyTypes.length)]
         });
       }
 
-      // 5. Toothbrush Storm calculation (50% chance, 1 - 30 seconds trigger)
-      stormEnabled = Math.random() < 0.5;
-      stormTriggerTime = 1.0 + Math.random() * 29.0;
+      // 5. Toothbrush Storm setup
+      stormEnabled = Math.random() < 0.6;
+      stormTriggerTime = 2.0 + Math.random() * 25.0;
       stormTriggered = false;
       stormActive = false;
       stormDurationTimer = 0;
+      brushedInCurrentStorm = 0;
 
       updateHUD();
       gameRunning = true;
     }
 
-    // Ability Trigger
+    // --- CAPTAIN ABILITY TRIGGER ---
     function useCaptainAbility() {
       if (!gameRunning || abilityCooldownTimer > 0) return;
 
@@ -584,58 +445,58 @@
 
       if (selectedAbilityType === 'carrot') {
         dashActiveTimer = 2.0; // 2s speed burst
-        abilityCooldownTimer = 7.0;
-        spawnParticles(player.x, player.y, '#ff7700', 15);
+        abilityCooldownTimer = maxAbilityCooldown;
+        spawnParticles(player.x, player.y, '#ff7700', 16);
         addFloatingText(player.x, player.y - 30, 'CARROT DASH! ⚡', '#ff7700');
       } else if (selectedAbilityType === 'tree_trap') {
-        abilityCooldownTimer = 11.0;
+        // TREE TRAP: 4s cooldown, freezes veggies for 4.5s with green particle bursts!
+        abilityCooldownTimer = maxAbilityCooldown;
         enemies.forEach(e => {
           const dist = Math.hypot(e.x - player.x, e.y - player.y);
-          if (dist < 240) {
-            e.frozenTimer = 5.0; // Freeze for 5s
-            spawnParticles(e.x, e.y, '#22cc44', 12);
-            addFloatingText(e.x, e.y - 20, 'TRAPPED! 🌳', '#22cc44');
+          if (dist < 280) {
+            e.frozenTimer = 4.5; // Freeze Veggie for 4.5s
+            spawnParticles(e.x, e.y, '#10b981', 18);
+            addFloatingText(e.x, e.y - 25, 'TRAPPED! 🌿', '#10b981');
           }
         });
-        addFloatingText(player.x, player.y - 30, 'TREE TRAP WAVE! 🌳', '#22cc44');
+        spawnParticles(player.x, player.y, '#10b981', 25);
+        addFloatingText(player.x, player.y - 30, 'TREE TRAP WAVE! 🌳', '#10b981');
       } else if (selectedAbilityType === 'bounce_blast') {
-        abilityCooldownTimer = 8.0;
+        abilityCooldownTimer = maxAbilityCooldown;
         enemies.forEach(e => {
           const dist = Math.hypot(e.x - player.x, e.y - player.y);
-          if (dist < 220) {
+          if (dist < 230) {
             const angle = Math.atan2(e.y - player.y, e.x - player.x);
-            e.x = Math.max(50, Math.min(1050, e.x + Math.cos(angle) * 160));
-            e.y = Math.max(50, Math.min(650, e.y + Math.sin(angle) * 160));
+            e.x = Math.max(50, Math.min(LOGICAL_WIDTH - 50, e.x + Math.cos(angle) * 160));
+            e.y = Math.max(50, Math.min(LOGICAL_HEIGHT - 50, e.y + Math.sin(angle) * 160));
             e.stunTimer = 1.8;
-            spawnParticles(e.x, e.y, '#ff007f', 15);
-            addFloatingText(e.x, e.y - 20, 'BOUNCED! 💥', '#ff007f');
+            spawnParticles(e.x, e.y, '#ec4899', 15);
+            addFloatingText(e.x, e.y - 25, 'BOUNCED! 💥', '#ec4899');
           }
         });
-        spawnParticles(player.x, player.y, '#00f3ff', 25);
+        spawnParticles(player.x, player.y, '#00f3ff', 30);
         addFloatingText(player.x, player.y - 30, 'BOUNCE BLAST! 💥', '#00f3ff');
       } else if (selectedAbilityType === 'multi_bagger') {
-        abilityCooldownTimer = 8.0;
-        // Magnet vacuum pull
+        abilityCooldownTimer = maxAbilityCooldown;
         let pulled = 0;
         candies.forEach(c => {
           const dist = Math.hypot(c.x - player.x, c.y - player.y);
           if (dist < 280) {
-            c.x = player.x + (Math.random() * 20 - 10);
-            c.y = player.y + (Math.random() * 20 - 10);
+            c.x = player.x + (Math.random() * 24 - 12);
+            c.y = player.y + (Math.random() * 24 - 12);
             pulled++;
           }
         });
-        addFloatingText(player.x, player.y - 30, `CANDY MAGNET! (${pulled}) 🎒`, '#ffea00');
-        spawnParticles(player.x, player.y, '#ffea00', 20);
+        addFloatingText(player.x, player.y - 30, `CANDY MAGNET! (${pulled}) 🎒`, '#facc15');
+        spawnParticles(player.x, player.y, '#facc15', 20);
       }
     }
 
-    // Floating text helper
+    // FX HELPERS
     function addFloatingText(x, y, text, color) {
       floatingTexts.push({ x, y, text, color, alpha: 1.0, dy: -1.2 });
     }
 
-    // Particle FX helper
     function spawnParticles(x, y, color, count) {
       for (let i = 0; i < count; i++) {
         const angle = Math.random() * Math.PI * 2;
@@ -650,33 +511,44 @@
       }
     }
 
-    // Main Physics & Logic Update
+    // --- MAIN PHYSICS & SIMULATION UPDATE ---
     function updatePhysics(dt) {
       if (!gameRunning) return;
 
       matchSeconds += dt;
 
-      // Update cooldowns & timers
+      // Ability timers
       if (abilityCooldownTimer > 0) abilityCooldownTimer = Math.max(0, abilityCooldownTimer - dt);
       if (dashActiveTimer > 0) dashActiveTimer = Math.max(0, dashActiveTimer - dt);
 
-      // Toothbrush Storm Trigger check
+      // TOOTHBRUSH STORM CHECK (BALANCED TO 50% MAX CANDY LIMIT)
       if (stormEnabled && !stormTriggered && matchSeconds >= stormTriggerTime) {
         stormTriggered = true;
         stormActive = true;
-        stormDurationTimer = 5.0;
+        stormDurationTimer = 6.0;
+
+        // Toothbrushes can ONLY brush away a maximum of 50% of the remaining floor candies
+        maxBrushedLimit = Math.floor(candies.length * 0.5);
+        brushedInCurrentStorm = 0;
+
         audio.playStorm();
 
         const banner = document.getElementById('storm-banner');
-        banner.classList.add('show');
-        setTimeout(() => banner.classList.remove('show'), 3500);
+        banner.innerHTML = `⚠️ TOOTHBRUSH STORM! Toothbrushes can only take 50% of remaining candy (${maxBrushedLimit})! 🪥`;
+        banner.classList.remove('-translate-y-28');
+        banner.classList.add('translate-y-0');
+        setTimeout(() => {
+          banner.classList.remove('translate-y-0');
+          banner.classList.add('-translate-y-28');
+        }, 4000);
 
         // Spawn falling toothbrushes
-        for (let i = 0; i < 16; i++) {
+        toothbrushes = [];
+        for (let i = 0; i < 15; i++) {
           toothbrushes.push({
             x: 80 + Math.random() * 940,
             y: -20 - Math.random() * 300,
-            vy: 160 + Math.random() * 100,
+            vy: 170 + Math.random() * 90,
             angle: Math.random() * Math.PI
           });
         }
@@ -686,22 +558,24 @@
         stormDurationTimer -= dt;
         if (stormDurationTimer <= 0) stormActive = false;
 
-        // Move toothbrushes & check collision with floor candies
         for (let i = toothbrushes.length - 1; i >= 0; i--) {
           const tb = toothbrushes[i];
           tb.y += tb.vy * dt;
           tb.angle += 0.05;
 
-          // Check collision with floor candies
-          for (let j = candies.length - 1; j >= 0; j--) {
-            const c = candies[j];
-            if (Math.hypot(tb.x - c.x, tb.y - c.y) < 22) {
-              // Destroy candy!
-              scoreBrushed++;
-              spawnParticles(c.x, c.y, '#33ffaa', 15);
-              addFloatingText(c.x, c.y, 'BRUSHED AWAY! 🪥', '#33ffaa');
-              audio.playSteal();
-              candies.splice(j, 1);
+          // Check candy hit only if max brushed quota is not reached
+          if (brushedInCurrentStorm < maxBrushedLimit) {
+            for (let j = candies.length - 1; j >= 0; j--) {
+              const c = candies[j];
+              if (Math.hypot(tb.x - c.x, tb.y - c.y) < 24) {
+                scoreBrushed++;
+                brushedInCurrentStorm++;
+                spawnParticles(c.x, c.y, '#10b981', 15);
+                addFloatingText(c.x, c.y - 15, 'BRUSHED AWAY! 🪥', '#10b981');
+                audio.playSteal();
+                candies.splice(j, 1);
+                if (brushedInCurrentStorm >= maxBrushedLimit) break;
+              }
             }
           }
 
@@ -709,14 +583,14 @@
         }
       }
 
-      // --- 1. PLAYER MOVEMENT (STRICT WASD ONLY) ---
+      // 1. PLAYER WASD MOVEMENT (STRICT WASD ONLY)
       let dx = 0;
       let dy = 0;
 
-      if (keys['KeyW']) dy -= 1;
-      if (keys['KeyS']) dy += 1;
-      if (keys['KeyA']) { dx -= 1; player.facing = -1; }
-      if (keys['KeyD']) { dx += 1; player.facing = 1; }
+      if (activeKeys['KeyW']) dy -= 1;
+      if (activeKeys['KeyS']) dy += 1;
+      if (activeKeys['KeyA']) { dx -= 1; player.facing = -1; }
+      if (activeKeys['KeyD']) { dx += 1; player.facing = 1; }
 
       if (dx !== 0 && dy !== 0) {
         dx *= 0.7071;
@@ -724,24 +598,24 @@
       }
 
       let currentSpd = player.speed;
-      if (dashActiveTimer > 0) currentSpd += 1.5; // Active dash boost
+      if (dashActiveTimer > 0) currentSpd += 1.5; // Active dash speed boost
 
       player.x += dx * currentSpd;
       player.y += dy * currentSpd;
 
-      // Keep inside bounds
+      // Canvas boundary containment
       player.x = Math.max(25, Math.min(LOGICAL_WIDTH - 25, player.x));
-      player.y = Math.max(100, Math.min(LOGICAL_HEIGHT - 25, player.y));
+      player.y = Math.max(90, Math.min(LOGICAL_HEIGHT - 25, player.y));
 
       if (dx !== 0 || dy !== 0) player.walkFrame += 0.2;
       if (player.immunityTimer > 0) player.immunityTimer = Math.max(0, player.immunityTimer - dt);
 
-      // --- 2. AI ALLIES MOVEMENT ---
+      // 2. AI ALLIES MOVEMENT & NO-FREEZE INSTANT DELIVERY
       allies.forEach(ally => {
         if (ally.immunityTimer > 0) ally.immunityTimer = Math.max(0, ally.immunityTimer - dt);
 
         if (ally.carrying.length < ally.maxCarry) {
-          // Hunt floor candy or target enemy carrying candy
+          // Find floor candy or enemy carrying candy
           let target = findNearestCandy(ally.x, ally.y);
           if (!target) target = findNearestEnemyWithCandy(ally.x, ally.y);
 
@@ -749,34 +623,37 @@
             moveTowards(ally, target.x, target.y, ally.speed);
           }
         } else {
-          // Carry candy down to Back Entrances
-          const targetExit = ally.x < LOGICAL_WIDTH / 2 ? { x: 90, y: 670 } : { x: 1010, y: 670 };
+          // Carry candy to Back Base Entrances
+          const targetExit = ally.x < LOGICAL_WIDTH / 2 ? { x: 90, y: 660 } : { x: 1010, y: 660 };
           moveTowards(ally, targetExit.x, targetExit.y, ally.speed);
 
-          // Deliver candy
-          if (Math.hypot(ally.x - targetExit.x, ally.y - targetExit.y) < 30) {
-            scoreStickmen += ally.carrying.length;
+          // INSTANT STICKMAN DELIVERY FIX: Triggers score immediately without halting or stuck loops
+          if (Math.hypot(ally.x - targetExit.x, ally.y - targetExit.y) < 36) {
+            const deliveredCount = ally.carrying.length;
+            scoreStickmen += deliveredCount;
             audio.playScore();
-            addFloatingText(ally.x, ally.y - 20, `+${ally.carrying.length} SAVED! 🍿`, '#00f3ff');
-            ally.carrying = [];
+            spawnParticles(ally.x, ally.y, '#00f3ff', 16);
+            addFloatingText(ally.x, ally.y - 20, `+${deliveredCount} SAVED! 🍿`, '#00f3ff');
+            ally.carrying = []; // Clear array cleanly
           }
         }
       });
 
-      // --- 3. HEALTHY FOOD ENEMIES MOVEMENT ---
+      // 3. HEALTHY FOOD ENEMIES MOVEMENT
       enemies.forEach(enemy => {
         if (enemy.immunityTimer > 0) enemy.immunityTimer = Math.max(0, enemy.immunityTimer - dt);
+
+        // Stun or Freeze timers
         if (enemy.frozenTimer > 0) {
           enemy.frozenTimer = Math.max(0, enemy.frozenTimer - dt);
-          return; // Frozen!
+          return; // Frozen by Tree Trap!
         }
         if (enemy.stunTimer > 0) {
           enemy.stunTimer = Math.max(0, enemy.stunTimer - dt);
-          return;
+          return; // Stunned by Steal or Bounce Blast!
         }
 
         if (enemy.carrying.length < enemy.maxCarry) {
-          // Hunt floor candy or target stickman carrying candy
           let target = findNearestCandy(enemy.x, enemy.y);
           if (!target) target = findNearestStickmanWithCandy(enemy.x, enemy.y);
 
@@ -784,76 +661,96 @@
             moveTowards(enemy, target.x, target.y, enemy.speed);
           }
         } else {
-          // Carry candy up to Front Fire Exits
+          // Carry candy up to Front Exits
           const targetExit = enemy.x < LOGICAL_WIDTH / 2 ? { x: 90, y: 25 } : { x: 1010, y: 25 };
           moveTowards(enemy, targetExit.x, targetExit.y, enemy.speed);
 
-          // Deliver candy
-          if (Math.hypot(enemy.x - targetExit.x, enemy.y - targetExit.y) < 30) {
-            scoreEnemies += enemy.carrying.length;
+          if (Math.hypot(enemy.x - targetExit.x, enemy.y - targetExit.y) < 36) {
+            const deliveredCount = enemy.carrying.length;
+            scoreEnemies += deliveredCount;
             audio.playScore();
-            addFloatingText(enemy.x, enemy.y + 20, `+${enemy.carrying.length} STOLEN! 🥦`, '#ff3366');
+            spawnParticles(enemy.x, enemy.y, '#f43f5e', 16);
+            addFloatingText(enemy.x, enemy.y + 20, `+${deliveredCount} STOLEN! 🥦`, '#f43f5e');
             enemy.carrying = [];
           }
         }
       });
 
-      // --- 4. PLAYER CANDY PICKUP & DELIVERY ---
-      // Player delivery at Back Entrances
+      // 4. PLAYER CANDY DELIVERY
       if (player.carrying.length > 0) {
-        if (player.y > 640 && (player.x < 150 || player.x > 950)) {
-          scoreStickmen += player.carrying.length;
+        if (player.y > 620 && (player.x < 160 || player.x > 940)) {
+          const deliveredCount = player.carrying.length;
+          scoreStickmen += deliveredCount;
           audio.playScore();
-          addFloatingText(player.x, player.y - 20, `+${player.carrying.length} SAVED! 🍿`, '#00f3ff');
+          spawnParticles(player.x, player.y, '#00f3ff', 20);
+          addFloatingText(player.x, player.y - 20, `+${deliveredCount} SAVED! 🍿`, '#00f3ff');
           player.carrying = [];
         }
       }
 
-      // Pickup floor candies
+      // Candy pickup logic
       const allStickmen = [player, ...allies];
       const allCharacters = [...allStickmen, ...enemies];
 
       candies.forEach((c, idx) => {
         allCharacters.forEach(char => {
           if (char.carrying.length < char.maxCarry) {
-            if (Math.hypot(char.x - c.x, char.y - c.y) < 22) {
+            if (Math.hypot(char.x - c.x, char.y - c.y) < 24) {
               char.carrying.push(c.type);
               audio.playPickup();
-              addFloatingText(char.x, char.y - 15, `GOT ${c.type}!`, char.team === 'stickman' ? '#00f3ff' : '#ffea00');
+              addFloatingText(char.x, char.y - 15, `GOT ${c.type}!`, char.team === 'stickman' ? '#00f3ff' : '#facc15');
               candies.splice(idx, 1);
             }
           }
         });
       });
 
-      // --- 5. BUMP STEALING MECHANICS ---
+      // BUMP STEALING WITH ~40px KNOCKBACK & 2.5s IMMUNITY (PREVENTS IMMEDIATE STEAL-BACK)
       allStickmen.forEach(stick => {
         enemies.forEach(enemy => {
           const dist = Math.hypot(stick.x - enemy.x, stick.y - enemy.y);
-          if (dist < 26) {
-            // Stickman steals from Enemy
-            if (enemy.carrying.length > 0 && stick.carrying.length < stick.maxCarry && enemy.immunityTimer <= 0) {
+          if (dist < 28) {
+            // Stickman steals from Veggie Enemy
+            if (enemy.carrying.length > 0 && stick.carrying.length < stick.maxCarry && enemy.immunityTimer <= 0 && enemy.stunTimer <= 0) {
               const stolen = enemy.carrying.pop();
               stick.carrying.push(stolen);
-              enemy.immunityTimer = 2.0; // 2s steal immunity
+
+              // Knock enemy backwards 45-60px away
+              const angle = Math.atan2(enemy.y - stick.y, enemy.x - stick.x);
+              enemy.x = Math.max(50, Math.min(LOGICAL_WIDTH - 50, enemy.x + Math.cos(angle) * 55));
+              enemy.y = Math.max(50, Math.min(LOGICAL_HEIGHT - 50, enemy.y + Math.sin(angle) * 55));
+
+              enemy.stunTimer = 1.2; // Stun enemy brief period
+              enemy.immunityTimer = 2.5; // 2.5s steal immunity
+              stick.immunityTimer = 1.5; // Stickman brief immunity
+
               audio.playSteal();
-              spawnParticles(enemy.x, enemy.y, '#ffea00', 10);
-              addFloatingText(stick.x, stick.y - 20, 'RECOVERED! 🍿', '#00f3ff');
+              spawnParticles(enemy.x, enemy.y, '#facc15', 14);
+              addFloatingText(stick.x, stick.y - 25, 'RECOVERED! ⚡', '#00f3ff');
+              addFloatingText(enemy.x, enemy.y - 25, 'STUNNED! 💫', '#f43f5e');
             }
-            // Enemy steals from Stickman
-            else if (stick.carrying.length > 0 && enemy.carrying.length < enemy.maxCarry && stick.immunityTimer <= 0) {
+            // Veggie Enemy steals from Stickman
+            else if (stick.carrying.length > 0 && enemy.carrying.length < enemy.maxCarry && stick.immunityTimer <= 0 && enemy.stunTimer <= 0) {
               const stolen = stick.carrying.pop();
               enemy.carrying.push(stolen);
-              stick.immunityTimer = 2.0; // 2s steal immunity
+
+              // Knock stickman back 50px
+              const angle = Math.atan2(stick.y - enemy.y, stick.x - enemy.x);
+              stick.x = Math.max(50, Math.min(LOGICAL_WIDTH - 50, stick.x + Math.cos(angle) * 50));
+              stick.y = Math.max(50, Math.min(LOGICAL_HEIGHT - 50, stick.y + Math.sin(angle) * 50));
+
+              stick.immunityTimer = 2.5; // Stickman 2.5s immunity window
+              enemy.immunityTimer = 1.5;
+
               audio.playSteal();
-              spawnParticles(stick.x, stick.y, '#ff3366', 10);
-              addFloatingText(enemy.x, enemy.y - 20, 'STOLEN! 🥦', '#ff3366');
+              spawnParticles(stick.x, stick.y, '#f43f5e', 12);
+              addFloatingText(enemy.x, enemy.y - 25, 'STOLEN! 🥦', '#f43f5e');
             }
           }
         });
       });
 
-      // Update Particles
+      // Particles update
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.x += p.vx;
@@ -862,7 +759,7 @@
         if (p.life <= 0) particles.splice(i, 1);
       }
 
-      // Update Floating Texts
+      // Floating texts update
       for (let i = floatingTexts.length - 1; i >= 0; i--) {
         const ft = floatingTexts[i];
         ft.y += ft.dy;
@@ -874,7 +771,7 @@
       checkGameOver();
     }
 
-    // Helper pathfinding
+    // PATHFINDING HELPERS
     function moveTowards(entity, tx, ty, speed) {
       const dx = tx - entity.x;
       const dy = ty - entity.y;
@@ -921,6 +818,7 @@
       return best;
     }
 
+    // UPDATE UI HUD ELEMENTS
     function updateHUD() {
       document.getElementById('score-stickmen-val').textContent = scoreStickmen;
       document.getElementById('score-enemies-val').textContent = scoreEnemies;
@@ -935,12 +833,19 @@
 
       document.getElementById('hud-ability-name').textContent = `Power: ${abilityNames[selectedAbilityType]}`;
       const cdBox = document.getElementById('hud-ability-cd');
+      const cdBar = document.getElementById('hud-cd-bar');
+
       if (abilityCooldownTimer > 0) {
-        cdBox.textContent = `[${abilityCooldownTimer.toFixed(1)}s]`;
-        cdBox.style.color = '#ff3366';
+        cdBox.textContent = `${abilityCooldownTimer.toFixed(1)}s`;
+        cdBox.style.color = '#f43f5e';
+        const pct = ((maxAbilityCooldown - abilityCooldownTimer) / maxAbilityCooldown) * 100;
+        cdBar.style.width = `${pct}%`;
+        cdBar.style.backgroundColor = '#f43f5e';
       } else {
-        cdBox.textContent = '[READY - SPACE/E]';
+        cdBox.textContent = 'READY';
         cdBox.style.color = '#00f3ff';
+        cdBar.style.width = '100%';
+        cdBar.style.backgroundColor = '#00f3ff';
       }
     }
 
@@ -951,7 +856,7 @@
 
       if (candies.length === 0 && carriedTotal === 0) {
         gameRunning = false;
-        
+
         const winTitle = document.getElementById('win-title');
         const winSub = document.getElementById('win-subtitle');
 
@@ -961,127 +866,350 @@
 
         if (scoreStickmen > scoreEnemies) {
           winTitle.textContent = '🍿 STICKMEN VICTORY! 🍿';
-          winTitle.style.color = '#00f3ff';
-          winSub.textContent = 'The Stickmen saved the movie night snacks!';
+          winTitle.className = 'text-2xl md:text-3xl font-black mb-1 uppercase tracking-wide text-cyan-400';
+          winSub.textContent = 'The Stickmen saved movie night snacks!';
         } else if (scoreEnemies > scoreStickmen) {
-          winTitle.textContent = '🥦 HEALTHY FOOD VICTORY! 🥦';
-          winTitle.style.color = '#ff3366';
-          winSub.textContent = 'The Healthy Food veggies stole all the cinema candy!';
+          winTitle.textContent = '🥦 VEGGIES WIN! 🥦';
+          winTitle.className = 'text-2xl md:text-3xl font-black mb-1 uppercase tracking-wide text-rose-500';
+          winSub.textContent = 'The Healthy Food veggies took the cinema candy!';
         } else {
           winTitle.textContent = '🤝 IT\'S A TIE! 🤝';
-          winTitle.style.color = '#ffea00';
-          winSub.textContent = 'An equal amount of snacks were saved and stolen!';
+          winTitle.className = 'text-2xl md:text-3xl font-black mb-1 uppercase tracking-wide text-amber-400';
+          winSub.textContent = 'Equal snacks were saved and stolen!';
         }
 
-        document.getElementById('game-over-modal').style.display = 'flex';
+        document.getElementById('game-over-modal').classList.remove('hidden');
       }
     }
 
-    // --- DRAWING FUNCTIONS ---
+    // --- ENHANCED THEATER RENDERING ROUTINES ---
     let oceanWaveTime = 0;
 
-    function drawCinemaScreen() {
-      // 1. Cinema Screen background at top center
+    function drawProjectorBeam() {
       ctx.save();
-      const sx = 250, sy = 12, sw = 600, sh = 80;
+      // Volumetric Projector Light Beam from ceiling to curved screen
+      const beamGrad = ctx.createLinearGradient(550, 0, 550, 92);
+      beamGrad.addColorStop(0, 'rgba(254, 240, 138, 0.35)');
+      beamGrad.addColorStop(0.3, 'rgba(254, 240, 138, 0.12)');
+      beamGrad.addColorStop(1, 'rgba(56, 189, 248, 0.02)');
 
-      // Glow border
-      ctx.shadowColor = '#00f3ff';
-      ctx.shadowBlur = 12;
-      ctx.strokeStyle = '#00f3ff';
-      ctx.lineWidth = 3;
+      ctx.fillStyle = beamGrad;
+      ctx.beginPath();
+      ctx.moveTo(540, 0);
+      ctx.lineTo(560, 0);
+      ctx.lineTo(870, 92);
+      ctx.lineTo(230, 92);
+      ctx.closePath();
+      ctx.fill();
+
+      // Floating dust motes inside projector beam
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      for (let i = 0; i < 18; i++) {
+        const px = 300 + ((i * 37 + oceanWaveTime * 15) % 500);
+        const py = 10 + ((i * 23 + oceanWaveTime * 8) % 75);
+        ctx.beginPath();
+        ctx.arc(px, py, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawVelvetCurtains() {
+      ctx.save();
+      // Top Valance Curtain Swag across the screen top
+      const swagGrad = ctx.createLinearGradient(0, 0, 0, 30);
+      swagGrad.addColorStop(0, '#9f1239');
+      swagGrad.addColorStop(0.7, '#881337');
+      swagGrad.addColorStop(1, '#4c0519');
+
+      ctx.fillStyle = swagGrad;
+      ctx.beginPath();
+      ctx.moveTo(180, 0);
+      for (let x = 180; x <= 920; x += 60) {
+        ctx.quadraticCurveTo(x + 30, 28, x + 60, 0);
+      }
+      ctx.lineTo(920, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // Gold Fringe along top swag bottom edge
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let x = 180; x <= 920; x += 60) {
+        ctx.quadraticCurveTo(x + 30, 28, x + 60, 0);
+      }
+      ctx.stroke();
+
+      // Left & Right Side Velvet Curtains
+      drawCurtainDrape(180, 0, 65, 125, true);
+      drawCurtainDrape(855, 0, 65, 125, false);
+
+      ctx.restore();
+    }
+
+    function drawCurtainDrape(x, y, w, h, isLeft) {
+      const grad = ctx.createLinearGradient(x, y, x + w, y);
+      grad.addColorStop(0, '#4c0519');
+      grad.addColorStop(0.5, '#9f1239');
+      grad.addColorStop(1, '#2a020d');
+
+      ctx.fillStyle = grad;
+      ctx.fillRect(x, y, w, h);
+
+      // Gold Rope Tie-back cinch
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(isLeft ? x + w - 12 : x, y + 65, 12, 6);
+    }
+
+    function drawTheaterDecor() {
+      ctx.save();
+
+      // Red Carpeted Aisles (between seat blocks)
+      const aisleGrad = ctx.createLinearGradient(0, 140, 0, 380);
+      aisleGrad.addColorStop(0, '#450a0a');
+      aisleGrad.addColorStop(1, '#180202');
+
+      // Left & Right Vertical Carpet Aisle Strips
+      ctx.fillStyle = aisleGrad;
+      ctx.fillRect(215, 140, 195, 230);
+      ctx.fillRect(605, 140, 195, 230);
+
+      // Aisle Floor LED Row Indicator Lights (glowing dots along edges)
+      for (let y = 150; y <= 350; y += 38) {
+        ctx.fillStyle = '#facc15';
+        ctx.shadowColor = '#facc15';
+        ctx.shadowBlur = 8;
+
+        // Left block lights
+        ctx.beginPath(); ctx.arc(210, y, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(415, y, 2.5, 0, Math.PI * 2); ctx.fill();
+
+        // Right block lights
+        ctx.beginPath(); ctx.arc(600, y, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(805, y, 2.5, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+
+      // Side Walls (x: 0..85 and x: 1015..1100)
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, 85, LOGICAL_HEIGHT);
+      ctx.fillRect(1015, 0, 85, LOGICAL_HEIGHT);
+
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(0, 0, 85, LOGICAL_HEIGHT);
+      ctx.strokeRect(1015, 0, 85, LOGICAL_HEIGHT);
+
+      // Illuminated Wall Sconces (Soft ambient light)
+      drawWallSconce(42, 160);
+      drawWallSconce(42, 320);
+      drawWallSconce(1058, 160);
+      drawWallSconce(1058, 320);
+
+      // Framed Movie Posters
+      drawMoviePoster(12, 220, '🚀', 'SPACE');
+      drawMoviePoster(12, 390, '🐉', 'DRAGON');
+      drawMoviePoster(1028, 220, '🦸', 'HERO');
+      drawMoviePoster(1028, 390, '🦕', 'DINO');
+
+      // Surround Sound Wall Speakers 🔊
+      drawWallSpeaker(42, 90);
+      drawWallSpeaker(1058, 90);
+
+      ctx.restore();
+    }
+
+    function drawWallSconce(x, y) {
+      // Glow halo
+      const glow = ctx.createRadialGradient(x, y, 2, x, y, 28);
+      glow.addColorStop(0, 'rgba(253, 224, 71, 0.4)');
+      glow.addColorStop(1, 'rgba(253, 224, 71, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(x, y, 28, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Fixture
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(x - 6, y - 6, 12, 12);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(x - 8, y + 6, 16, 4);
+    }
+
+    function drawMoviePoster(x, y, emoji, title) {
+      ctx.save();
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(x, y, 60, 80);
+      ctx.strokeRect(x, y, 60, 80);
+
+      ctx.font = '24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(emoji, x + 30, y + 42);
+
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = 'bold 8px Fredoka, sans-serif';
+      ctx.fillText(title, x + 30, y + 68);
+      ctx.restore();
+    }
+
+    function drawWallSpeaker(x, y) {
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(x - 12, y - 18, 24, 36);
+      ctx.strokeRect(x - 12, y - 18, 24, 36);
+
+      ctx.fillStyle = '#475569';
+      ctx.beginPath(); ctx.arc(x, y - 7, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y + 7, 8, 0, Math.PI * 2); ctx.fill();
+    }
+
+    function drawCinemaScreen() {
+      ctx.save();
+      const sx = 240, sy = 12, sw = 620, sh = 82;
+
+      // Cinema Screen Bezel Shadow & Backlight Glow
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 18;
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 4;
       ctx.strokeRect(sx, sy, sw, sh);
 
-      // Ocean film gradient background
+      // Curved Screen Background Gradient
       const grad = ctx.createLinearGradient(sx, sy, sx, sy + sh);
-      grad.addColorStop(0, '#002b4d');
-      grad.addColorStop(1, '#006699');
+      grad.addColorStop(0, '#0284c7');
+      grad.addColorStop(1, '#0369a1');
       ctx.fillStyle = grad;
       ctx.fillRect(sx, sy, sw, sh);
 
-      // Animated Ocean Waves
-      oceanWaveTime += 0.03;
-      ctx.fillStyle = 'rgba(0, 243, 255, 0.25)';
+      // Animated ocean waves on movie screen
+      oceanWaveTime += 0.04;
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.45)';
       ctx.beginPath();
       ctx.moveTo(sx, sy + sh);
       for (let x = 0; x <= sw; x += 10) {
-        const y = sy + 45 + Math.sin(oceanWaveTime + x * 0.02) * 10;
+        const y = sy + 46 + Math.sin(oceanWaveTime + x * 0.02) * 8;
         ctx.lineTo(sx + x, y);
       }
       ctx.lineTo(sx + sw, sy + sh);
       ctx.fill();
 
-      // Swimming fish in ocean
-      const fishX1 = sx + ((oceanWaveTime * 40) % sw);
-      const fishX2 = sx + sw - ((oceanWaveTime * 30) % sw);
+      // Swimming creatures on screen
+      const fish1 = sx + ((oceanWaveTime * 45) % sw);
+      const fish2 = sx + sw - ((oceanWaveTime * 35) % sw);
       ctx.font = '16px sans-serif';
-      ctx.fillText('🐬', fishX1, sy + 35);
-      ctx.fillText('🐠', fishX2, sy + 55);
+      ctx.fillText('🐬', fish1, sy + 38);
+      ctx.fillText('🐠', fish2, sy + 58);
 
-      // Screen Header text badge
+      // Cinema Screen Header
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 11px sans-serif';
+      ctx.font = 'bold 11px Fredoka, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('🎬 NOW SHOWING: OCEAN CLASH ADVENTURE 🐬', sx + sw / 2, sy + 18);
+      ctx.fillText('🎬 NOW SHOWING: OCEAN ADVENTURE 🐬', sx + sw / 2, sy + 18);
       ctx.restore();
 
-      // 2. Front Fire Exits (Top Left & Top Right)
-      drawExitDoor(50, 10, 100, 35, 'FIRE EXIT 🚪', '#ff3366');
-      drawExitDoor(950, 10, 100, 35, 'FIRE EXIT 🚪', '#ff3366');
+      // Exit Doors & Base Entrances
+      drawExitDoor(90, 10, 85, 32, 'EXIT 🚪', '#f43f5e');
+      drawExitDoor(925, 10, 85, 32, 'EXIT 🚪', '#f43f5e');
 
-      // 3. Back Entrances (Bottom Left & Bottom Right)
-      drawExitDoor(50, 655, 100, 35, 'BASE 🍿', '#00f3ff');
-      drawExitDoor(950, 655, 100, 35, 'BASE 🍿', '#00f3ff');
-
-      // 4. Seating Grid
-      drawSeatingGrid();
+      drawExitDoor(90, 655, 110, 35, 'BASE 🍿', '#00f3ff', true);
+      drawExitDoor(900, 655, 110, 35, 'BASE 🍿', '#00f3ff', true);
     }
 
-    function drawExitDoor(x, y, w, h, label, color) {
+    function drawExitDoor(x, y, w, h, label, color, isBase = false) {
       ctx.save();
-      ctx.fillStyle = 'rgba(20, 25, 40, 0.8)';
+      ctx.fillStyle = '#0f172a';
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.shadowColor = color;
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 10;
       ctx.fillRect(x, y, w, h);
       ctx.strokeRect(x, y, w, h);
 
       ctx.fillStyle = color;
-      ctx.font = 'bold 10px sans-serif';
+      ctx.font = 'bold 10px Fredoka, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(label, x + w / 2, y + h / 2 + 3);
+
+      // Golden Rope Stanchions at Base Entrance
+      if (isBase) {
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(x - 6, y + 5, 4, 25);
+        ctx.fillRect(x + w + 2, y + 5, 4, 25);
+
+        ctx.strokeStyle = '#eab308';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x - 4, y + 10);
+        ctx.quadraticCurveTo(x + w / 2, y + 22, x + w + 4, y + 10);
+        ctx.stroke();
+      }
+
       ctx.restore();
     }
 
     function drawSeatingGrid() {
       ctx.save();
-      const seatRows = 5;
-      const seatCols = 4;
-      const blockWidths = [160, 440, 720]; // 3 Seat blocks leaving 2 wide vertical aisles
+      const rowYPositions = [150, 188, 226, 264, 302, 340]; // 6 Rows (A to F)
+      const rowNames = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-      blockWidths.forEach(bx => {
-        for (let r = 0; r < seatRows; r++) {
-          for (let c = 0; c < seatCols; c++) {
-            const sx = bx + c * 22;
-            const sy = 160 + r * 45;
+      // 3 Seating Blocks: Left (4 seats), Center (6 seats), Right (4 seats) = 84 Plush Seats Total!
+      const seatBlocks = [
+        { startX: 105, count: 4 },
+        { startX: 430, count: 6 },
+        { startX: 820, count: 4 }
+      ];
 
-            // Cinema Chair
-            ctx.fillStyle = '#2d1527';
-            ctx.strokeStyle = '#ff007f';
+      rowYPositions.forEach((sy, rIdx) => {
+        const rowLetter = rowNames[rIdx];
+
+        // Illuminated Row Letters along Aisle Edges
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 9px Fredoka, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(rowLetter, 96, sy + 13);
+        ctx.fillText(rowLetter, 1004, sy + 13);
+
+        seatBlocks.forEach((block, bIdx) => {
+          for (let c = 0; c < block.count; c++) {
+            const sx = block.startX + c * 25;
+
+            // Plush Ruby Velvet Seat Cushion
+            const seatGrad = ctx.createLinearGradient(sx, sy, sx, sy + 22);
+            seatGrad.addColorStop(0, '#be123c');
+            seatGrad.addColorStop(1, '#881337');
+
+            ctx.fillStyle = seatGrad;
+            ctx.strokeStyle = '#fda4af';
             ctx.lineWidth = 1;
+
+            // Rounded Headrest & Back Cushion
             ctx.beginPath();
-            ctx.roundRect(sx, sy, 18, 22, 4);
+            ctx.roundRect(sx, sy, 18, 20, 3);
             ctx.fill();
             ctx.stroke();
 
-            // Armrest
-            ctx.fillStyle = '#1a0b17';
-            ctx.fillRect(sx - 2, sy + 10, 3, 10);
-            ctx.fillRect(sx + 17, sy + 10, 3, 10);
+            // Armrests with Cup Holders
+            ctx.fillStyle = '#4c0519';
+            ctx.fillRect(sx - 2, sy + 8, 3, 10);
+            ctx.fillRect(sx + 17, sy + 8, 3, 10);
+
+            // Cup Holder Snack Items (Popcorn 🍿 or Soda 🥤 randomly placed)
+            const snackSeed = (rIdx * 17 + c * 3 + bIdx * 7) % 5;
+            if (snackSeed === 0 || snackSeed === 4) {
+              ctx.font = '8px sans-serif';
+              ctx.fillText('🍿', sx + 15, sy + 14);
+            } else if (snackSeed === 1) {
+              ctx.font = '8px sans-serif';
+              ctx.fillText('🥤', sx - 3, sy + 14);
+            }
           }
-        }
+        });
       });
+
       ctx.restore();
     }
 
@@ -1092,20 +1220,20 @@
       const facing = char.facing;
       const walkFrame = char.walkFrame;
 
-      // Immunity Aura Shield
+      // Steal Immunity Shield
       if (char.immunityTimer > 0) {
-        ctx.shadowColor = '#ffea00';
-        ctx.shadowBlur = 12;
-        ctx.strokeStyle = '#ffea00';
+        ctx.shadowColor = '#facc15';
+        ctx.shadowBlur = 14;
+        ctx.strokeStyle = '#facc15';
         ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.arc(x, y - 10, 22, 0, Math.PI * 2);
         ctx.stroke();
       }
 
-      ctx.strokeStyle = char.isPlayer ? '#00f3ff' : '#66ccff';
-      ctx.fillStyle = char.isPlayer ? '#00f3ff' : '#66ccff';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = char.isPlayer ? '#00f3ff' : '#38bdf8';
+      ctx.fillStyle = char.isPlayer ? '#00f3ff' : '#38bdf8';
+      ctx.lineWidth = 2.2;
       ctx.lineCap = 'round';
 
       const headRadius = 6;
@@ -1125,11 +1253,11 @@
       ctx.arc(x + facing * 2, headY - 1, 1, 0, Math.PI * 2);
       ctx.fill();
 
-      // Captain Hat for Player
+      // Player Captain Hat
       if (char.isPlayer) {
-        ctx.fillStyle = '#ffea00';
+        ctx.fillStyle = '#facc15';
         ctx.beginPath();
-        ctx.arc(x, headY - headRadius, 4, Math.PI, 0);
+        ctx.arc(x, headY - headRadius, 4.5, Math.PI, 0);
         ctx.fill();
       }
 
@@ -1163,9 +1291,9 @@
       ctx.lineTo(x + facing * 4 + armSwing, shoulderY + 6);
       ctx.stroke();
 
-      // 5. Carried Candies stack above head
+      // Stacked carried candy items above head
       char.carrying.forEach((item, idx) => {
-        ctx.font = '14px sans-serif';
+        ctx.font = '15px sans-serif';
         ctx.fillText(item, x - 7, headY - 12 - idx * 14);
       });
 
@@ -1179,36 +1307,43 @@
 
       // Immunity Shield
       if (enemy.immunityTimer > 0) {
-        ctx.shadowColor = '#ffea00';
-        ctx.shadowBlur = 12;
-        ctx.strokeStyle = '#ffea00';
+        ctx.shadowColor = '#facc15';
+        ctx.shadowBlur = 14;
+        ctx.strokeStyle = '#facc15';
         ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.arc(x, y, 20, 0, Math.PI * 2);
+        ctx.arc(x, y, 22, 0, Math.PI * 2);
         ctx.stroke();
       }
 
-      // Frozen Visual
+      // Stunned spinning stars
+      if (enemy.stunTimer > 0) {
+        ctx.font = '13px sans-serif';
+        ctx.fillText('💫 STUNNED', x - 30, y - 28);
+      }
+
+      // Trapped Vines Visual
       if (enemy.frozenTimer > 0) {
-        ctx.fillStyle = 'rgba(34, 204, 68, 0.3)';
-        ctx.strokeStyle = '#22cc44';
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.35)';
+        ctx.strokeStyle = '#10b981';
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(x, y, 24, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
-        ctx.font = '12px sans-serif';
-        ctx.fillText('🌿 TRAPPED', x - 28, y - 26);
+        ctx.font = 'bold 11px Fredoka, sans-serif';
+        ctx.fillStyle = '#10b981';
+        ctx.fillText('🌿 TRAPPED', x - 26, y - 28);
       }
 
-      // Food Character Face/Emoji Body
-      ctx.font = '24px sans-serif';
+      // Veggie character emoji sprite
+      ctx.font = '26px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(enemy.emoji, x, y + 8);
 
-      // Carried Candy Stack
+      // Stacked carried candy items
       enemy.carrying.forEach((item, idx) => {
-        ctx.font = '14px sans-serif';
+        ctx.font = '15px sans-serif';
         ctx.fillText(item, x - 7, y - 18 - idx * 14);
       });
 
@@ -1219,12 +1354,12 @@
       ctx.save();
       ctx.translate(tb.x, tb.y);
       ctx.rotate(tb.angle);
-      ctx.font = '22px sans-serif';
-      ctx.fillText('🪥', -11, 8);
+      ctx.font = '24px sans-serif';
+      ctx.fillText('🪥', -12, 8);
       ctx.restore();
     }
 
-    // --- MAIN RENDER LOOP ---
+    // --- MAIN GAME RENDER LOOP ---
     let lastTime = performance.now();
 
     function draw() {
@@ -1236,7 +1371,7 @@
         updatePhysics(dt);
       }
 
-      // Responsive Canvas Scale mapping
+      // Responsive canvas auto-scaling
       const wrapper = document.getElementById('canvas-wrapper');
       canvas.width = wrapper.clientWidth;
       canvas.height = wrapper.clientHeight;
@@ -1248,43 +1383,47 @@
       ctx.scale(scaleX, scaleY);
 
       // Clear Canvas
-      ctx.fillStyle = '#0a0d14';
+      ctx.fillStyle = '#020617';
       ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
 
-      // Draw Cinema & Seating
+      // Render Enhanced Theater World Scenery
+      drawTheaterDecor();
+      drawSeatingGrid();
+      drawProjectorBeam();
       drawCinemaScreen();
+      drawVelvetCurtains();
 
-      // Draw Floor Candies
+      // Render Floor Candies
       candies.forEach(c => {
-        ctx.font = '20px sans-serif';
-        ctx.fillText(c.type, c.x - 10, c.y + 7);
+        ctx.font = '22px sans-serif';
+        ctx.fillText(c.type, c.x - 11, c.y + 8);
       });
 
-      // Draw Falling Toothbrushes
+      // Render Falling Toothbrushes
       toothbrushes.forEach(drawToothbrush);
 
-      // Draw Stickmen (Player + Allies)
+      // Render Stickmen (Player + AI Allies)
       if (player) drawStickman(player);
       allies.forEach(drawStickman);
 
-      // Draw Enemies
+      // Render Veggie Enemies
       enemies.forEach(drawEnemy);
 
-      // Draw Particles
+      // Render FX Particles
       particles.forEach(p => {
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.life;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
         ctx.fill();
       });
 
-      // Draw Floating Text Popups
+      // Render Floating Text Banners
       floatingTexts.forEach(ft => {
         ctx.fillStyle = ft.color;
         ctx.globalAlpha = Math.max(0, ft.alpha);
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillText(ft.text, ft.x - 15, ft.y);
+        ctx.font = 'bold 12px Fredoka, sans-serif';
+        ctx.fillText(ft.text, ft.x - 16, ft.y);
       });
 
       ctx.restore();
@@ -1292,6 +1431,7 @@
       requestAnimationFrame(draw);
     }
 
+    // Window load trigger
     window.onload = function() {
       requestAnimationFrame(draw);
       openAbilityModal();

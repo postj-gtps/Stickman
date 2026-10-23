@@ -34,10 +34,10 @@
             max-width: 1100px;
             margin-bottom: 8px;
             padding: 8px 14px;
-            border-bottom: 2px solid #445577;
-            background: rgba(10, 15, 30, 0.85);
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            border-bottom: 3px solid #00ffff;
+            background: rgba(10, 20, 40, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0, 255, 255, 0.25);
         }
 
         .title-group {
@@ -47,23 +47,24 @@
         }
 
         h1 {
-            font-size: 18px;
+            font-size: 19px;
             letter-spacing: 2px;
             text-transform: uppercase;
             font-weight: bold;
             color: #ffffff;
-            text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
         }
 
         .team-badge {
             background: #ffaa00;
             color: #000000;
-            font-weight: bold;
+            font-weight: 900;
             font-size: 11px;
-            padding: 3px 8px;
-            border-radius: 4px;
+            padding: 4px 9px;
+            border-radius: 6px;
             text-transform: uppercase;
             letter-spacing: 1px;
+            box-shadow: 0 0 8px rgba(255, 170, 0, 0.6);
         }
 
         .header-actions {
@@ -76,8 +77,8 @@
             display: flex;
             align-items: center;
             background: #1a2233;
-            border: 1px solid #00ffff;
-            border-radius: 6px;
+            border: 2px solid #00ffff;
+            border-radius: 8px;
             overflow: hidden;
         }
 
@@ -85,11 +86,11 @@
             background: #25334d;
             color: #ffffff;
             border: none;
-            padding: 6px 12px;
+            padding: 6px 14px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 14px;
-            transition: background 0.15s ease;
+            font-size: 15px;
+            transition: all 0.15s ease;
         }
 
         .level-btn:hover {
@@ -99,50 +100,50 @@
 
         .level-display {
             padding: 0 12px;
-            font-weight: bold;
+            font-weight: 900;
             font-size: 13px;
             color: #00ffff;
             letter-spacing: 1px;
         }
 
         .btn-action {
-            background: #3388ff;
-            color: #ffffff;
+            background: #00ccff;
+            color: #000000;
             border: none;
-            border-radius: 6px;
-            padding: 6px 12px;
+            border-radius: 8px;
+            padding: 7px 14px;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 900;
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 1px;
             transition: all 0.15s ease-in-out;
-            box-shadow: 0 0 8px rgba(51, 136, 255, 0.4);
+            box-shadow: 0 0 10px rgba(0, 204, 255, 0.5);
         }
 
         .btn-action:hover {
-            background: #55aaff;
-            transform: scale(1.04);
+            background: #66e0ff;
+            transform: scale(1.05);
         }
 
         .btn-reset {
-            background: #cc3333;
+            background: #ff3355;
             color: #ffffff;
             border: none;
-            border-radius: 6px;
-            padding: 6px 14px;
+            border-radius: 8px;
+            padding: 7px 16px;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 900;
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 1px;
             transition: all 0.15s ease-in-out;
-            box-shadow: 0 0 10px rgba(255, 51, 51, 0.4);
+            box-shadow: 0 0 12px rgba(255, 51, 85, 0.5);
         }
 
         .btn-reset:hover {
-            background: #ff4444;
-            transform: scale(1.04);
+            background: #ff6680;
+            transform: scale(1.05);
         }
 
         /* Canvas Container */
@@ -158,65 +159,67 @@
 
         canvas {
             background-color: #020208;
-            border: 2px solid #445577;
-            border-radius: 8px;
+            border: 3px solid #00ffff;
+            border-radius: 10px;
             display: block;
             width: 100%;
             height: 100%;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 8px 30px rgba(0, 255, 255, 0.2);
         }
 
         .instructions {
             margin-top: 6px;
-            font-size: 11px;
-            color: #aaccaa;
+            font-size: 12px;
+            color: #55ffff;
             text-align: center;
+            font-weight: bold;
             letter-spacing: 1px;
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.4);
         }
 
-        /* Overlay Toast Banner Messages */
+        /* Dynamic Notification Toast Banner */
         .toast-banner {
             position: absolute;
             top: 16px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9);
-            border: 2px solid #ffaa00;
+            background: rgba(10, 15, 30, 0.95);
+            border: 3px solid #ffaa00;
             color: #ffea00;
-            font-weight: bold;
-            padding: 8px 22px;
-            border-radius: 20px;
+            font-weight: 900;
+            padding: 10px 24px;
+            border-radius: 25px;
             font-size: 14px;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.25s ease, transform 0.25s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
-            box-shadow: 0 0 18px rgba(255, 170, 0, 0.6);
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.8);
             text-align: center;
             z-index: 10;
         }
 
         .toast-banner.show {
             opacity: 1;
-            transform: translateX(-50%) translateY(4px);
+            transform: translateX(-50%) translateY(6px);
         }
 
-        /* Skip Cutscene Button */
+        /* Skip Intro Button */
         #btn-skip-intro {
             position: absolute;
             bottom: 24px;
             right: 24px;
             background: #ffaa00;
             color: #000000;
-            font-weight: bold;
+            font-weight: 900;
             border: 2px solid #ffffff;
-            padding: 10px 20px;
+            padding: 10px 22px;
             border-radius: 30px;
             cursor: pointer;
             font-size: 14px;
             letter-spacing: 1px;
-            box-shadow: 0 0 15px rgba(255, 170, 0, 0.8);
+            box-shadow: 0 0 18px rgba(255, 170, 0, 0.9);
             z-index: 20;
             display: none;
             transition: transform 0.15s ease;
@@ -237,13 +240,13 @@
         </div>
         
         <div class="header-actions">
-            <button class="btn-action" onclick="startIntro()">Watch Intro</button>
+            <button class="btn-action" onclick="startIntro()">Watch Intro 🎬</button>
             <div class="level-selector">
                 <button class="level-btn" onclick="changeLevel(-1)">-</button>
                 <div class="level-display" id="levelText">LEVEL 1</div>
                 <button class="level-btn" onclick="changeLevel(1)">+</button>
             </div>
-            <button class="btn-reset" onclick="resetSimulation()">Reset</button>
+            <button class="btn-reset" onclick="resetSimulation()">Reset 🔄</button>
         </div>
     </div>
 
@@ -254,7 +257,7 @@
     </div>
 
     <div class="instructions">
-        Movement: [WASD] Keys | W: Moon Jump | A: Left | S: FLY SWATTER 🧹 / Drop | D: Right
+        CONTROLS: [W] Moon Jump | [A] Left | [S] FLY SWATTER 🧹 / Fast Drop | [D] Right
     </div>
 
     <script>
@@ -263,7 +266,7 @@
         const toastEl = document.getElementById('toast');
         const skipBtn = document.getElementById('btn-skip-intro');
 
-        // WEB AUDIO SYNTHESIZER FOR SOUND EFFECTS
+        // WEB AUDIO SYNTHESIZER FOR RETRO SOUND EFFECTS
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
 
@@ -282,72 +285,72 @@
                 if (type === 'jump') {
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(150, now);
-                    osc.frequency.exponentialRampToValueAtTime(450, now + 0.15);
+                    osc.frequency.exponentialRampToValueAtTime(480, now + 0.15);
                     gain.gain.setValueAtTime(0.3, now);
                     gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
                     osc.start(now);
                     osc.stop(now + 0.15);
                 } else if (type === 'swat') {
                     osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(600, now);
-                    osc.frequency.exponentialRampToValueAtTime(120, now + 0.12);
+                    osc.frequency.setValueAtTime(750, now);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.15);
                     gain.gain.setValueAtTime(0.4, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
                     osc.start(now);
-                    osc.stop(now + 0.12);
+                    osc.stop(now + 0.15);
                 } else if (type === 'splat') {
                     osc.type = 'square';
-                    osc.frequency.setValueAtTime(220, now);
-                    osc.frequency.linearRampToValueAtTime(80, now + 0.2);
+                    osc.frequency.setValueAtTime(260, now);
+                    osc.frequency.linearRampToValueAtTime(70, now + 0.22);
                     gain.gain.setValueAtTime(0.5, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
                     osc.start(now);
-                    osc.stop(now + 0.2);
+                    osc.stop(now + 0.22);
                 } else if (type === 'pickup') {
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(523.25, now);
                     osc.frequency.setValueAtTime(659.25, now + 0.08);
                     osc.frequency.setValueAtTime(783.99, now + 0.16);
-                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.setValueAtTime(0.35, now);
                     gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
                     osc.start(now);
                     osc.stop(now + 0.25);
                 } else if (type === 'eat') {
                     osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(180, now);
-                    osc.frequency.linearRampToValueAtTime(60, now + 0.3);
-                    gain.gain.setValueAtTime(0.4, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.frequency.setValueAtTime(190, now);
+                    osc.frequency.linearRampToValueAtTime(50, now + 0.32);
+                    gain.gain.setValueAtTime(0.45, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.32);
                     osc.start(now);
-                    osc.stop(now + 0.3);
+                    osc.stop(now + 0.32);
                 } else if (type === 'pop') {
                     osc.type = 'square';
-                    osc.frequency.setValueAtTime(320, now);
-                    osc.frequency.exponentialRampToValueAtTime(850, now + 0.18);
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(900, now + 0.18);
                     gain.gain.setValueAtTime(0.45, now);
                     gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
                     osc.start(now);
                     osc.stop(now + 0.18);
                 } else if (type === 'net') {
                     osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(400, now);
-                    osc.frequency.linearRampToValueAtTime(200, now + 0.25);
+                    osc.frequency.setValueAtTime(450, now);
+                    osc.frequency.linearRampToValueAtTime(180, now + 0.25);
                     gain.gain.setValueAtTime(0.35, now);
                     gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
                     osc.start(now);
                     osc.stop(now + 0.25);
                 } else if (type === 'hit') {
                     osc.type = 'square';
-                    osc.frequency.setValueAtTime(120, now);
-                    osc.frequency.exponentialRampToValueAtTime(40, now + 0.2);
-                    gain.gain.setValueAtTime(0.5, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.frequency.setValueAtTime(140, now);
+                    osc.frequency.exponentialRampToValueAtTime(35, now + 0.25);
+                    gain.gain.setValueAtTime(0.6, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
                     osc.start(now);
-                    osc.stop(now + 0.2);
+                    osc.stop(now + 0.25);
                 } else if (type === 'warp') {
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(200, now);
-                    osc.frequency.linearRampToValueAtTime(1200, now + 0.8);
+                    osc.frequency.linearRampToValueAtTime(1300, now + 0.8);
                     gain.gain.setValueAtTime(0.3, now);
                     gain.gain.linearRampToValueAtTime(0.01, now + 0.8);
                     osc.start(now);
@@ -355,14 +358,14 @@
                 } else if (type === 'launch') {
                     osc.type = 'sawtooth';
                     osc.frequency.setValueAtTime(100, now);
-                    osc.frequency.exponentialRampToValueAtTime(600, now + 1.2);
+                    osc.frequency.exponentialRampToValueAtTime(650, now + 1.2);
                     gain.gain.setValueAtTime(0.5, now);
                     gain.gain.linearRampToValueAtTime(0.01, now + 1.2);
                     osc.start(now);
                     osc.stop(now + 1.2);
                 }
             } catch (e) {
-                // Audio context blocked or unsupported
+                // Audio context blocked or uninitialized
             }
         }
 
@@ -373,10 +376,13 @@
         const WORLD_WIDTH = 8000;
         let GROUND_Y = 0;
 
-        // GAME PROGRESSION STATE
+        // GAME PROGRESSION & TIMERS
         let currentLevel = 1;
         let lastAsteroidTime = Date.now();
         let toastTimeout = null;
+
+        // PERIODIC ALIEN SLIME SPAWNER TIMER (30 SECONDS)
+        let slimeSpawnTimer = 30.0;
 
         // KEYBOARD INPUT STATE
         const keys = {};
@@ -386,7 +392,7 @@
 
         // INTRO CUTSCENE STATE
         const intro = {
-            phase: 0, // 0: Cruise with burger, 1: Burger falls on button, 2: Warp dimensions, 3: Moon crash
+            phase: 0, // 0: Cruise with burger, 1: Burger drops, 2: Warp dimensions, 3: Moon crash
             timer: 0,
             shipX: 0,
             shipY: 0,
@@ -413,8 +419,9 @@
             eatenState: null, // { timer: 3.0, slug: obj }
             netState: null, // { buggy: obj }
             invulnerableTimer: 0,
-            // FLY SWATTER MECHANIC
+            // FLY SWATTER MECHANIC (3-second cooldown, twice the range)
             swatterCooldown: 0,
+            swatterCooldownMax: 3.0, // 3-second cooldown
             swatterAnimTimer: 0,
             isSwatting: false
         };
@@ -461,7 +468,9 @@
         }
 
         function changeLevel(delta) {
-            currentLevel = Math.max(1, Math.min(5, currentLevel + delta));
+            if (delta !== 0) {
+                currentLevel = Math.max(1, Math.min(5, currentLevel + delta));
+            }
             document.getElementById('levelText').innerText = `LEVEL ${currentLevel}`;
             showToast(`Switched to Level ${currentLevel}`);
             resetSimulation();
@@ -485,7 +494,7 @@
             gameState = 'PLAYING';
             skipBtn.style.display = 'none';
             resetSimulation();
-            showToast("GET ALL ROCKET PARTS & FLY HOME!", 3000);
+            showToast("GET ALL 5 ROCKET PARTS & FLY HOME!", 3000);
         }
 
         function initWorldData() {
@@ -495,16 +504,16 @@
                 stars.push({
                     x: Math.random() * WORLD_WIDTH,
                     y: Math.random() * 0.65,
-                    size: Math.random() * 1.8 + 0.5,
+                    size: Math.random() * 2.0 + 0.5,
                     alpha: Math.random() * 0.7 + 0.3
                 });
             }
 
             // 2. Nebulae Clouds
             nebulae = [
-                { x: 1200, y: 100, radius: 240, color: 'rgba(140, 60, 255, 0.18)' },
-                { x: 3800, y: 80, radius: 300, color: 'rgba(0, 200, 255, 0.15)' },
-                { x: 6200, y: 120, radius: 260, color: 'rgba(255, 80, 160, 0.16)' }
+                { x: 1200, y: 100, radius: 240, color: 'rgba(140, 60, 255, 0.22)' },
+                { x: 3800, y: 80, radius: 300, color: 'rgba(0, 220, 255, 0.18)' },
+                { x: 6200, y: 120, radius: 260, color: 'rgba(255, 80, 160, 0.2)' }
             ];
 
             // 3. Earth & Outer Planets
@@ -513,7 +522,7 @@
                 { x: 6800, y: 110, radius: 32, color: '#e77d11', ring: true }
             ];
 
-            // 4. Daylight Mountain Ranges
+            // 4. Moon Mountain Ranges
             moonMountains = [];
             let mX = 0;
             while (mX < WORLD_WIDTH + 500) {
@@ -523,7 +532,7 @@
                 mX += width - 35;
             }
 
-            // 5. Daylight Craters
+            // 5. Daylight Moon Craters
             craters = [];
             for (let x = 200; x < WORLD_WIDTH - 200; x += 160 + Math.random() * 220) {
                 if (Math.abs(x - rocket.x) > 220) {
@@ -547,8 +556,8 @@
                 }
             }
 
-            // 7. Scattered Rocket Parts (5 Total: Left and Right of Rocket)
-            const partNames = ['Engine Nozzle', 'Guidance Module', 'Fuel Cell', 'Solar Array', 'Thruster Control'];
+            // 7. Scattered Rocket Parts (5 Total: Left and Right of Rocket Base)
+            const partNames = ['Engine Nozzle 🚀', 'Guidance Module 🛰️', 'Fuel Cell ⚡', 'Solar Array ☀️', 'Thruster Control 🕹️'];
             const partPositions = [600, 2200, 5400, 6800, 7600];
             parts = partPositions.map((xPos, idx) => ({
                 id: idx,
@@ -562,7 +571,10 @@
                 floatOffset: Math.random() * Math.PI * 2
             }));
 
-            // 8. Spawn Level Specific Enemies
+            // Reset 30-second Slime Spawner Timer
+            slimeSpawnTimer = 30.0;
+
+            // 8. Spawn Enemies
             initEnemies();
         }
 
@@ -572,7 +584,7 @@
             fallingAsteroids = [];
             groundedAsteroids = [];
 
-            // Ground Slugs: Frequency = (Level * 3)
+            // Ground Slugs Initial Spawn: Frequency = (Level * 3)
             const groundSlugCount = currentLevel * 3;
             const colors = ['#33ff55', '#ff33cc', '#00e5ff', '#ffaa00', '#aa33ff', '#ffee00'];
             for (let i = 0; i < groundSlugCount; i++) {
@@ -580,10 +592,11 @@
                     ? 400 + Math.random() * 3200 
                     : 4400 + Math.random() * 3200;
                 groundSlugs.push({
-                    id: i,
+                    id: Date.now() + i,
                     x: spawnX,
                     y: GROUND_Y,
-                    vx: (Math.random() > 0.5 ? 1 : -1) * (1.3 + Math.random() * 0.7),
+                    vx: (Math.random() > 0.5 ? 1 : -1) * (1.3 + Math.random() * 0.5),
+                    vy: 0,
                     speed: 1.5 + Math.random() * 0.5,
                     width: 38,
                     height: 22,
@@ -591,12 +604,13 @@
                     color: colors[i % colors.length],
                     isEating: false,
                     eatCooldown: 0,
-                    respawnTimer: 0
+                    respawnTimer: 0,
+                    lastX: spawnX,
+                    stuckTimer: 0
                 });
             }
 
             // Moon Buggy Slugs: Frequency = Level * 1
-            // REVISION: Buggies now go 25% SLOWER (reduced speed from 9.8 to 7.35)
             const buggyCount = currentLevel;
             for (let i = 0; i < buggyCount; i++) {
                 const spawnX = 1200 + i * 2200;
@@ -604,7 +618,7 @@
                     id: i,
                     x: spawnX,
                     y: GROUND_Y,
-                    speed: 7.35, // 25% Slower!
+                    speed: 7.35, // Slower for gameplay balance
                     facing: i % 2 === 0 ? 1 : -1,
                     width: 65,
                     height: 35,
@@ -632,10 +646,10 @@
 
         window.addEventListener('resize', resizeCanvas);
 
-        // CONTROLS HANDLERS - STRICT WASD ONLY (BLOCK ARROW KEYS)
+        // CONTROLS HANDLERS - STRICT WASD ONLY (STRICTLY INTERCEPT AND BLOCK ARROW KEYS)
         window.addEventListener('keydown', (e) => {
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
-                e.preventDefault(); // Intercept and block arrow key scrolling
+                e.preventDefault(); // Intercept and block arrow key scrolling completely
                 return;
             }
 
@@ -694,7 +708,7 @@
                 }
             } 
             else if (intro.phase === 1) {
-                // Turbulence! Burger slides and drops on controller button!
+                // Turbulence! Burger slides off dashboard onto controller button!
                 intro.shipX += 1.2;
                 intro.shipY = canvas.height * 0.35 + (Math.random() - 0.5) * 12;
 
@@ -709,7 +723,7 @@
                 }
             } 
             else if (intro.phase === 2) {
-                // Warp dimensions!
+                // Dimensional Warp Swirl!
                 intro.warpHue = (intro.warpHue + 8) % 360;
                 shakeTimer = 0.2;
 
@@ -729,7 +743,7 @@
                     shakeTimer = 0.6;
                     playSound('hit');
 
-                    // Scatter crash particles & comic text
+                    // Crash particles & comic explosion
                     for (let i = 0; i < 40; i++) {
                         particles.push({
                             x: intro.shipX + (Math.random() * 60 - 30),
@@ -755,7 +769,7 @@
                         skipIntro();
                     }, 1200);
 
-                    intro.phase = 4; // Done
+                    intro.phase = 4;
                 }
             }
         }
@@ -770,13 +784,13 @@
                 return;
             }
 
-            // Screen Shake decay
+            // Screen Shake Decay
             if (shakeTimer > 0) shakeTimer -= dt;
 
             // Invulnerability Timer
             if (player.invulnerableTimer > 0) player.invulnerableTimer -= dt;
 
-            // Swatter Cooldown & Animation
+            // Swatter Cooldown & Animation Timers
             if (player.swatterCooldown > 0) player.swatterCooldown -= dt;
             if (player.swatterAnimTimer > 0) {
                 player.swatterAnimTimer -= dt;
@@ -801,7 +815,6 @@
                         });
                     }
 
-                    // Auto-advance level when rocket exits screen
                     if (rocket.launchY < -200) {
                         playSound('launch');
                         if (currentLevel < 5) {
@@ -817,12 +830,44 @@
                 return;
             }
 
-            // 1. ASTEROID LAUNCHING MECHANIC - REVISION: SPAWN MUCH MORE FREQUENTLY (Every 2.5 to 6s)
+            // 1. PERIODIC ALIEN SLIME SPAWNER FEATURE (EVERY 30 SECONDS - ONLY SLIMES, NO BUGGIES)
+            slimeSpawnTimer -= dt;
+            if (slimeSpawnTimer <= 0) {
+                slimeSpawnTimer = 30.0; // Reset 30s timer
+
+                // Spawn 1 new slime at least 400px away from Stickman
+                let spawnX = player.x + (Math.random() > 0.5 ? 1 : -1) * (450 + Math.random() * 800);
+                spawnX = Math.max(250, Math.min(WORLD_WIDTH - 250, spawnX));
+
+                const colors = ['#33ff55', '#ff33cc', '#00e5ff', '#ffaa00', '#aa33ff', '#ffee00'];
+                groundSlugs.push({
+                    id: Date.now(),
+                    x: spawnX,
+                    y: GROUND_Y,
+                    vx: (Math.random() > 0.5 ? 1 : -1) * (1.5 + Math.random() * 0.5),
+                    vy: 0,
+                    speed: 1.5 + Math.random() * 0.5,
+                    width: 38,
+                    height: 22,
+                    pulse: Math.random() * Math.PI * 2,
+                    color: colors[groundSlugs.length % colors.length],
+                    isEating: false,
+                    eatCooldown: 0,
+                    respawnTimer: 0,
+                    lastX: spawnX,
+                    stuckTimer: 0
+                });
+
+                playSound('pop');
+                showToast("NEW ALIEN SLIME EMERGED FROM MOON SOIL! 🦠", 3000);
+            }
+
+            // 2. ASTEROID LAUNCHING MECHANIC
             const asteroidInterval = Math.max(2500, (7000 - currentLevel * 900));
             if (now - lastAsteroidTime > asteroidInterval) {
                 lastAsteroidTime = now;
                 fallingAsteroids.push({
-                    x: player.x + (Math.random() * 160 - 80), // Target near player
+                    x: player.x + (Math.random() * 180 - 90),
                     y: -60,
                     vy: 6.8 + Math.min(4, currentLevel * 0.6),
                     vx: (Math.random() - 0.5) * 1.2,
@@ -832,14 +877,14 @@
                 showToast("INCOMING METEOR!", 1200);
             }
 
-            // UPDATE FALLING ASTEROIDS
+            // UPDATE FALLING ASTEROIDS & MID-AIR COLLISION FIX
             for (let i = fallingAsteroids.length - 1; i >= 0; i--) {
                 const ast = fallingAsteroids[i];
                 ast.y += ast.vy;
                 ast.x += ast.vx;
                 ast.rotation += 0.06;
 
-                // Flame trail
+                // Flame trail particles
                 if (Math.random() < 0.7) {
                     particles.push({
                         x: ast.x + (Math.random() * 12 - 6),
@@ -852,62 +897,72 @@
                     });
                 }
 
-                // Ground Collision Check
-                if (ast.y >= GROUND_Y - 10) {
-                    const distToPlayer = Math.hypot(ast.x - player.x, GROUND_Y - player.y);
-                    
-                    // Direct Hit on Stickman
-                    if (distToPlayer < 38 && player.invulnerableTimer <= 0 && !player.eatenState && !player.netState) {
-                        shakeTimer = 0.45;
-                        playSound('hit');
-                        player.vy = -8.0;
-                        player.vx = (player.x > ast.x ? 1 : -1) * 7.5;
-                        player.invulnerableTimer = 1.5;
+                // BUG FIX #1: MID-AIR METEOR COLLISION CHECK
+                // Check direct hit between falling meteor and Stickman on EVERY FRAME (ground or air!)
+                const distToStickman = Math.hypot(ast.x - player.x, ast.y - (player.y - 15));
+                if (distToStickman < (ast.size + 14) && player.invulnerableTimer <= 0 && !player.eatenState && !player.netState) {
+                    shakeTimer = 0.5;
+                    playSound('hit');
+                    player.vy = 3.5;
+                    player.vx = (player.x > ast.x ? 1 : -1) * 8.5;
+                    player.invulnerableTimer = 1.5;
 
-                        for (let p = 0; p < 25; p++) {
-                            particles.push({
-                                x: ast.x,
-                                y: GROUND_Y - 10,
-                                vx: (Math.random() - 0.5) * 10,
-                                vy: (Math.random() - 0.5) * 10,
-                                life: 35,
-                                size: Math.random() * 6 + 2,
-                                color: '#ff3300'
-                            });
-                        }
-                        showToast("HIT BY FALLING METEOR!", 2000);
-                    } else {
-                        // Missed: Becomes permanent obstacle rock on moon floor
-                        groundedAsteroids.push({
+                    // Explosion particles
+                    for (let p = 0; p < 30; p++) {
+                        particles.push({
+                            x: ast.x,
+                            y: ast.y,
+                            vx: (Math.random() - 0.5) * 12,
+                            vy: (Math.random() - 0.5) * 12,
+                            life: 35,
+                            size: Math.random() * 7 + 3,
+                            color: Math.random() > 0.5 ? '#ff3300' : '#ffaa00'
+                        });
+                    }
+
+                    comicTexts.push({
+                        text: "DIRECT HIT!!",
+                        x: ast.x,
+                        y: ast.y - 20,
+                        life: 45,
+                        color: '#ff3300'
+                    });
+
+                    showToast("HIT BY METEOR IN MID-AIR!", 2000);
+                    fallingAsteroids.splice(i, 1);
+                    continue;
+                }
+
+                // Meteor touches ground without hitting Stickman -> Becomes Moon Rock
+                if (ast.y >= GROUND_Y - 10) {
+                    groundedAsteroids.push({
+                        x: ast.x,
+                        y: GROUND_Y,
+                        size: ast.size
+                    });
+
+                    for (let p = 0; p < 12; p++) {
+                        particles.push({
                             x: ast.x,
                             y: GROUND_Y,
-                            size: ast.size
+                            vx: (Math.random() - 0.5) * 6,
+                            vy: -Math.random() * 4 - 1,
+                            life: 20,
+                            size: Math.random() * 4 + 2,
+                            color: '#b0b8cc'
                         });
-
-                        for (let p = 0; p < 12; p++) {
-                            particles.push({
-                                x: ast.x,
-                                y: GROUND_Y,
-                                vx: (Math.random() - 0.5) * 6,
-                                vy: -Math.random() * 4 - 1,
-                                life: 20,
-                                size: Math.random() * 4 + 2,
-                                color: '#b0b8cc'
-                            });
-                        }
                     }
                     fallingAsteroids.splice(i, 1);
                 }
             }
 
-            // 2. PLAYER TRAPPED IN ALIEN SLUG DIGESTION STATE
+            // 3. PLAYER TRAPPED IN ALIEN SLUG DIGESTION STATE
             if (player.eatenState) {
                 const slug = player.eatenState.slug;
                 player.x = slug.x;
                 player.y = GROUND_Y;
                 player.eatenState.timer -= dt;
 
-                // Slime bubble particles while trapped
                 if (Math.random() < 0.4) {
                     particles.push({
                         x: slug.x + (Math.random() * 20 - 10),
@@ -920,19 +975,19 @@
                     });
                 }
 
-                // TIMER EXPIRED: EJECT STICKMAN WITH RANDOM ANGLE & VELOCITY PHYSICS TRAJECTORY!
+                // TIMER EXPIRED: EJECT STICKMAN WITH RANDOM PARABOLIC TRAJECTORY
                 if (player.eatenState.timer <= 0) {
                     slug.isEating = false;
-                    slug.eatCooldown = 2.5; // Prevent instant re-eat by same slug
+                    slug.eatCooldown = 2.5;
                     player.eatenState = null;
-                    player.invulnerableTimer = 2.0; // Post-ejection grace period
+                    player.invulnerableTimer = 2.0;
 
-                    const minAngleRad = Math.PI / 6;       // 30 degrees
-                    const maxAngleRad = (5 * Math.PI) / 6; // 150 degrees
+                    const minAngleRad = Math.PI / 6;
+                    const maxAngleRad = (5 * Math.PI) / 6;
                     const angle = minAngleRad + Math.random() * (maxAngleRad - minAngleRad);
 
                     const sin2Theta = Math.abs(Math.sin(2 * angle));
-                    const maxRange = WORLD_WIDTH / 2; // 4000 pixels
+                    const maxRange = WORLD_WIDTH / 2;
                     
                     const maxVelocity = sin2Theta > 0.05 
                         ? Math.min(29.5, Math.sqrt((maxRange * player.gravity) / sin2Theta)) 
@@ -945,7 +1000,7 @@
                     player.vy = -launchSpeed * Math.sin(angle);
                     player.isGrounded = false;
 
-                    // Scatter all currently collected parts on parabolic arc trajectories
+                    // Scatter collected rocket parts
                     let scatteredCount = 0;
                     parts.forEach(part => {
                         if (part.collected) {
@@ -971,7 +1026,6 @@
                         showToast("EJECTED FROM ALIEN SLIME!", 2200);
                     }
 
-                    // Slime burst effect
                     for (let p = 0; p < 35; p++) {
                         particles.push({
                             x: slug.x,
@@ -991,7 +1045,7 @@
                 return;
             }
 
-            // 3. PLAYER TRAPPED IN MOON BUGGY NET STATE
+            // 4. PLAYER TRAPPED IN MOON BUGGY NET STATE
             if (player.netState) {
                 const buggy = player.netState.buggy;
                 player.x = buggy.x;
@@ -1023,48 +1077,54 @@
                 playSound('jump');
             }
 
+            // BUG FIX #7: DISABLE FLY SWATTER SPAM INSIDE SLIME / BUGGY
             // FLY SWATTER MECHANIC & FAST DROP (S Key)
             if (keys['KEYS'] || keys['KeyS']) {
-                // If airborne, S provides fast descent
+                // Airborne S key gives fast drop
                 if (!player.isGrounded) {
                     player.vy += 0.42;
                 }
 
-                // USE FLY SWATTER ATTACK (Key "S")
-                if (player.swatterCooldown <= 0) {
-                    player.swatterCooldown = 0.35;
-                    player.swatterAnimTimer = 0.22;
+                // BUG FIX #3: FLY SWATTER 3-SECOND COOLDOWN & BUG FIX #4: TWICE THE RANGE
+                if (player.swatterCooldown <= 0 && !player.eatenState && !player.netState && !player.insideRocket) {
+                    player.swatterCooldown = player.swatterCooldownMax; // 3 SECONDS COOLDOWN
+                    player.swatterAnimTimer = 0.28;
                     player.isSwatting = true;
                     playSound('swat');
 
-                    // Check hitting Alien Slime Monsters
-                    const swatBox = {
-                        x: player.facing === 1 ? player.x + 10 : player.x - 70,
-                        y: GROUND_Y - 50,
-                        w: 60,
-                        h: 50
-                    };
+                    // BUG FIX #4: TWICE THE RANGE (Width increased to 130px, Height 70px)
+                    // BUG FIX #2: SWATTER AIR FIX (Swat Y evaluates at Stickman's actual height)
+                    const swatW = 130; // Twice the range!
+                    const swatH = 70;
+                    const swatX = player.facing === 1 ? player.x + 5 : player.x - 135;
+                    const swatY = player.y - 45; // Follows player height in air!
 
                     groundSlugs.forEach(slug => {
-                        if (slug.respawnTimer <= 0) {
-                            if (
-                                slug.x > swatBox.x &&
-                                slug.x < swatBox.x + swatBox.w &&
-                                !slug.isEating
-                            ) {
+                        if (slug.respawnTimer <= 0 && !slug.isEating) {
+                            // Check collision between swatter area and slug bounding box
+                            const slugX = slug.x - slug.width / 2;
+                            const slugY = slug.y - slug.height;
+
+                            const hit = (
+                                swatX < slugX + slug.width &&
+                                swatX + swatW > slugX &&
+                                swatY < slugY + slug.height &&
+                                swatY + swatH > slugY
+                            );
+
+                            if (hit) {
                                 // DEFEAT SLIME MONSTER!
                                 slug.respawnTimer = 7.0; // Defeated! Respawns after 7s
                                 playSound('splat');
 
-                                // Slime Splat Burst
-                                for (let p = 0; p < 25; p++) {
+                                for (let p = 0; p < 28; p++) {
                                     particles.push({
                                         x: slug.x,
                                         y: GROUND_Y - 10,
-                                        vx: (Math.random() - 0.5) * 12,
-                                        vy: -Math.random() * 8 - 2,
+                                        vx: (Math.random() - 0.5) * 14,
+                                        vy: -Math.random() * 9 - 2,
                                         life: 30,
-                                        size: Math.random() * 6 + 3,
+                                        size: Math.random() * 7 + 3,
                                         color: slug.color
                                     });
                                 }
@@ -1077,7 +1137,7 @@
                                     color: '#00ffcc'
                                 });
 
-                                showToast("SLIME SPLATTED WITH FLY SWATTER!", 1500);
+                                showToast("SLIME SPLATTED WITH FLY SWATTER!", 1800);
                             }
                         }
                     });
@@ -1180,11 +1240,11 @@
         }
 
         function updateEnemies(dt) {
-            // 1. GROUND SLUGS AI
+            // BUG FIX #6: REFACTORED GROUND SLUG AI & STUCK PREVENTION
             groundSlugs.forEach(slug => {
                 if (slug.respawnTimer > 0) {
                     slug.respawnTimer -= dt;
-                    return; // Defeated/Splatted slug is inactive until timer expires
+                    return;
                 }
 
                 if (slug.eatCooldown > 0) slug.eatCooldown -= dt;
@@ -1194,11 +1254,39 @@
 
                 // Chase player when within line of sight
                 const dxToPlayer = player.x - slug.x;
-                if (Math.abs(dxToPlayer) < 650) {
+                if (Math.abs(dxToPlayer) < 700) {
                     slug.vx = (dxToPlayer > 0 ? 1 : -1) * slug.speed;
                 }
 
+                // Apply slug gravity & hopping
+                slug.vy += 0.2;
+                slug.y += slug.vy;
+                if (slug.y >= GROUND_Y) {
+                    slug.y = GROUND_Y;
+                    slug.vy = 0;
+                }
+
                 slug.x += slug.vx;
+
+                // Hop over grounded asteroid rocks if blocked
+                groundedAsteroids.forEach(ast => {
+                    if (Math.abs(slug.x - ast.x) < 30 && slug.y >= GROUND_Y) {
+                        slug.vy = -3.8; // Mini hop over rock!
+                    }
+                });
+
+                // STUCK DETECTION & UN-STICKING LOGIC
+                if (Math.abs(slug.x - slug.lastX) < 0.2) {
+                    slug.stuckTimer += dt;
+                    if (slug.stuckTimer > 0.8) {
+                        slug.vx *= -1; // Reverse direction
+                        slug.vy = -4.2; // Un-stick hop!
+                        slug.stuckTimer = 0;
+                    }
+                } else {
+                    slug.stuckTimer = 0;
+                }
+                slug.lastX = slug.x;
 
                 if (slug.x < 150) { slug.x = 150; slug.vx *= -1; }
                 if (slug.x > WORLD_WIDTH - 150) { slug.x = WORLD_WIDTH - 150; slug.vx *= -1; }
@@ -1220,7 +1308,7 @@
                 }
             });
 
-            // 2. MOON BUGGY SLUGS AI (Going 25% Slower!)
+            // MOON BUGGY SLUGS AI
             buggySlugs.forEach(buggy => {
                 if (buggy.cooldown > 0) buggy.cooldown -= dt;
 
@@ -1360,38 +1448,36 @@
             }
         }
 
-        // RENDER INTRO SCENE
+        // RENDER INTRO CUTSCENE
         function drawIntroScene() {
             ctx.fillStyle = '#020208';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             if (intro.phase === 2) {
-                // Swirling Rainbow Dimensional Wormhole Effect!
                 const cx = canvas.width / 2;
                 const cy = canvas.height / 2;
-                for (let r = 350; r > 10; r -= 20) {
+                for (let r = 380; r > 10; r -= 20) {
                     ctx.strokeStyle = `hsl(${(intro.warpHue + r) % 360}, 100%, 50%)`;
-                    ctx.lineWidth = 12;
+                    ctx.lineWidth = 14;
                     ctx.beginPath();
                     ctx.arc(cx + Math.sin(intro.timer * 5 + r) * 15, cy + Math.cos(intro.timer * 5 + r) * 15, r, 0, Math.PI * 2);
                     ctx.stroke();
                 }
 
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 28px Courier New';
+                ctx.font = '900 30px Courier New';
                 ctx.textAlign = 'center';
                 ctx.fillText("DIMENSIONAL WARP!!", cx, 80);
                 return;
             }
 
-            // Draw Space Starfield Background
+            // Draw Space Starfield
             ctx.fillStyle = '#ffffff';
             stars.forEach(star => {
                 ctx.fillRect((star.x) % canvas.width, star.y * canvas.height, star.size, star.size);
             });
 
             if (intro.phase === 0 || intro.phase === 1) {
-                // Draw Flying Cockpit Spaceship & Stickman with Burger
                 const shipX = intro.shipX;
                 const shipY = intro.shipY;
 
@@ -1421,7 +1507,7 @@
                 ctx.font = 'bold 9px Courier New';
                 ctx.fillText("GO", shipX + 24, shipY - 2);
 
-                // Giant Delicious Burger on Dashboard / Falling
+                // Giant Burger on Dashboard
                 ctx.save();
                 ctx.translate(shipX + 20 + intro.burgerX, shipY - 28 + intro.burgerY);
                 ctx.rotate(intro.burgerAngle);
@@ -1438,7 +1524,7 @@
                 ctx.fillStyle = '#e69933'; ctx.fillRect(-11, 4, 22, 4);
                 ctx.restore();
 
-                // Caption Text
+                // Subtitle Text
                 ctx.fillStyle = '#ffff00';
                 ctx.font = 'bold 20px Courier New';
                 ctx.textAlign = 'center';
@@ -1451,7 +1537,6 @@
                 }
             }
             else if (intro.phase === 3) {
-                // Falling crashing ship onto moon
                 drawMoonForeground(0);
 
                 ctx.save();
@@ -1465,13 +1550,13 @@
                 ctx.restore();
 
                 ctx.fillStyle = '#ffaa00';
-                ctx.font = 'bold 24px Courier New';
+                ctx.font = '900 24px Courier New';
                 ctx.textAlign = 'center';
                 ctx.fillText("CRASH LANDING ON THE MOON!!", canvas.width / 2, 70);
             }
         }
 
-        // RENDER FUNCTIONS
+        // RENDER GAME ENVIRONMENT
         function drawBackground(camX) {
             ctx.fillStyle = '#020208';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1511,7 +1596,7 @@
                 }
             });
 
-            // 3. Earth & Planets
+            // 3. Earth & Outer Planets
             planets.forEach(planet => {
                 const renderX = planet.x - camX * 0.12;
                 if (renderX > -100 && renderX < canvas.width + 100) {
@@ -1538,7 +1623,7 @@
                 }
             });
 
-            // 4. Lunar Mountain Ranges (Daylight Moon Palette)
+            // 4. Lunar Mountains
             ctx.fillStyle = '#525766';
             ctx.beginPath();
             ctx.moveTo(0, canvas.height);
@@ -1551,7 +1636,7 @@
             ctx.closePath();
             ctx.fill();
 
-            // Mountain Highlights
+            // Highlights
             ctx.fillStyle = '#7a8194';
             ctx.beginPath();
             ctx.moveTo(0, canvas.height);
@@ -1606,7 +1691,7 @@
                 }
             });
 
-            // Grounded Asteroid Obstacles
+            // Grounded Asteroids
             groundedAsteroids.forEach(ast => {
                 const renderX = ast.x - camX;
                 if (renderX > -60 && renderX < canvas.width + 60) {
@@ -1642,7 +1727,7 @@
                 ctx.rotate(-0.22);
             }
 
-            // Rocket Body
+            // Body
             ctx.fillStyle = '#e8e8e8';
             ctx.fillRect(-20, -90, 40, 70);
 
@@ -1674,7 +1759,7 @@
             ctx.moveTo(20, -40); ctx.lineTo(35, -20); ctx.lineTo(20, -20);
             ctx.closePath(); ctx.fill();
 
-            // Engine Nozzle
+            // Engine
             ctx.fillStyle = '#444444';
             ctx.fillRect(-12, -20, 24, 12);
 
@@ -1693,22 +1778,22 @@
                     : GROUND_Y - 22 + Math.sin(Date.now() * 0.005 + part.floatOffset) * 6;
 
                 // Glowing Aura
-                const grad = ctx.createRadialGradient(renderX, floatY, 2, renderX, floatY, 24);
+                const grad = ctx.createRadialGradient(renderX, floatY, 2, renderX, floatY, 26);
                 grad.addColorStop(0, 'rgba(0, 255, 255, 0.95)');
                 grad.addColorStop(1, 'rgba(0, 255, 255, 0)');
                 ctx.fillStyle = grad;
                 ctx.beginPath();
-                ctx.arc(renderX, floatY, 24, 0, Math.PI * 2);
+                ctx.arc(renderX, floatY, 26, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Part Box Graphic
+                // Part Graphic Box
                 ctx.fillStyle = '#00ffff';
                 ctx.strokeStyle = '#ffffff';
                 ctx.lineWidth = 2;
-                ctx.fillRect(renderX - 9, floatY - 9, 18, 18);
-                ctx.strokeRect(renderX - 9, floatY - 9, 18, 18);
+                ctx.fillRect(renderX - 10, floatY - 10, 20, 20);
+                ctx.strokeRect(renderX - 10, floatY - 10, 20, 20);
 
-                // Part Label Text
+                // Label Text
                 ctx.fillStyle = '#00ffff';
                 ctx.font = 'bold 11px Courier New';
                 ctx.textAlign = 'center';
@@ -1717,7 +1802,7 @@
         }
 
         function drawEnemies(camX) {
-            // 1. FALLING ANGRY ASTEROIDS
+            // 1. FALLING METEORS
             fallingAsteroids.forEach(ast => {
                 const renderX = ast.x - camX;
                 if (renderX < -50 || renderX > canvas.width + 50) return;
@@ -1766,15 +1851,15 @@
 
             // 2. GROUND ALIEN SLUGS
             groundSlugs.forEach(slug => {
-                if (slug.respawnTimer > 0) return; // Defeated slug hidden
+                if (slug.respawnTimer > 0) return;
 
                 const renderX = slug.x - camX;
                 if (renderX < -60 || renderX > canvas.width + 60) return;
 
                 const pulseY = Math.sin(slug.pulse) * 3;
-                const renderY = GROUND_Y - slug.height + pulseY;
+                const renderY = slug.y - slug.height + pulseY;
 
-                // Slug Body
+                // Body
                 ctx.fillStyle = slug.color;
                 ctx.globalAlpha = slug.isEating ? 0.75 : 1.0;
                 ctx.beginPath();
@@ -1804,7 +1889,7 @@
                 ctx.arc(renderX + stalkDir * 15, renderY - 10, 2, 0, Math.PI * 2);
                 ctx.fill();
 
-                // TRAPPED STICKMAN IN BELLY
+                // TRAPPED STICKMAN IN SLIME
                 if (slug.isEating && player.eatenState) {
                     drawStickman(renderX, renderY + 18, 1, 0, true);
 
@@ -1836,7 +1921,7 @@
                 ctx.lineWidth = 2;
                 ctx.strokeRect(-28, -12, 56, 16);
 
-                // Spinning Wheels
+                // Wheels
                 ctx.fillStyle = '#333333';
                 ctx.beginPath();
                 ctx.arc(-18, 6, 8, 0, Math.PI * 2);
@@ -1852,7 +1937,7 @@
                 ctx.arc(buggy.facing * 8, -20, 10, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Net Container Cage
+                // Cage
                 ctx.strokeStyle = '#ff3300';
                 ctx.lineWidth = 2.5;
                 ctx.strokeRect(-20, -32, 22, 20);
@@ -1887,7 +1972,7 @@
             const headY = neckY - headRadius;
             const shoulderY = neckY + 4;
 
-            // Helmet Visor Bubble
+            // Helmet Bubble
             ctx.strokeStyle = '#00cdff';
             ctx.beginPath();
             ctx.arc(x, headY, headRadius + 3, 0, Math.PI * 2);
@@ -1932,26 +2017,44 @@
             ctx.moveTo(x, shoulderY); ctx.lineTo(x + facing * 5 + armSwing, shoulderY + 7);
             ctx.stroke();
 
-            // FLY SWATTER SWING GRAPHIC
+            // BUG FIX #4: DRAW ENHANCED FLY SWATTER WITH TWICE THE RANGE (130px Reach Area)
             if (player.isSwatting && !insideSlug) {
                 ctx.save();
                 ctx.translate(x + facing * 8, shoulderY);
-                const swatAngle = (player.swatterAnimTimer / 0.22) * Math.PI * 0.8;
+                const swatProgress = player.swatterAnimTimer / 0.28;
+                const swatAngle = swatProgress * Math.PI * 0.9;
                 ctx.rotate(facing * (Math.PI / 2 - swatAngle));
 
-                // Handle
-                ctx.strokeStyle = '#ffaa00';
-                ctx.lineWidth = 3;
+                // Motion Swing Arc Arc Trail
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.4)';
+                ctx.lineWidth = 14;
                 ctx.beginPath();
-                ctx.moveTo(0, 0); ctx.lineTo(0, -38);
+                ctx.arc(0, 0, 75, -Math.PI / 3, Math.PI / 3);
                 ctx.stroke();
 
-                // Swatter Mesh Head
-                ctx.fillStyle = '#ff2255';
-                ctx.fillRect(-12, -58, 24, 20);
+                // Long Handle (Twice the range!)
+                ctx.strokeStyle = '#ffaa00';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(0, 0); ctx.lineTo(0, -65);
+                ctx.stroke();
+
+                // Giant Swatter Head
+                ctx.fillStyle = '#ff1155';
+                ctx.fillRect(-20, -100, 40, 35);
                 ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 1.5;
-                ctx.strokeRect(-12, -58, 24, 20);
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-20, -100, 40, 35);
+
+                // Mesh Grid Lines
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(-10, -100); ctx.lineTo(-10, -65);
+                ctx.moveTo(10, -100); ctx.lineTo(10, -65);
+                ctx.moveTo(-20, -88); ctx.lineTo(20, -88);
+                ctx.moveTo(-20, -76); ctx.lineTo(20, -76);
+                ctx.stroke();
 
                 ctx.restore();
             }
@@ -1981,12 +2084,12 @@
         }
 
         function drawHUD() {
-            // Top Left Parts Box
-            ctx.fillStyle = 'rgba(5, 10, 25, 0.88)';
+            // Top Left Parts Progress Box
+            ctx.fillStyle = 'rgba(5, 10, 25, 0.92)';
             ctx.strokeStyle = '#00ffff';
-            ctx.lineWidth = 1.5;
-            ctx.fillRect(15, 15, 270, 58);
-            ctx.strokeRect(15, 15, 270, 58);
+            ctx.lineWidth = 2;
+            ctx.fillRect(15, 15, 280, 60);
+            ctx.strokeRect(15, 15, 280, 60);
 
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 12px Courier New';
@@ -1999,50 +2102,58 @@
                 ctx.fillText(`STATUS: Collect 5 Parts`, 25, 52);
             } else if (!player.insideRocket) {
                 ctx.fillStyle = '#00ff00';
-                ctx.fillText(`STATUS: Board Rocket Now!`, 25, 52);
+                ctx.fillText(`STATUS: Board Rocket Base Now!`, 25, 52);
             } else {
                 ctx.fillStyle = '#00ffff';
                 ctx.fillText(`STATUS: TAKEOFF SUCCESS!`, 25, 52);
             }
 
-            // ITEM BAR HUD (Bottom Center)
-            const barW = 220;
-            const barH = 50;
+            // ITEM BAR HUD (Bottom Center) - BUG FIX #3: SWATTER 3s COOLDOWN PROGRESS BAR
+            const barW = 260;
+            const barH = 54;
             const barX = (canvas.width - barW) / 2;
-            const barY = canvas.height - 65;
+            const barY = canvas.height - 68;
 
-            ctx.fillStyle = 'rgba(10, 15, 30, 0.9)';
+            ctx.fillStyle = 'rgba(10, 15, 30, 0.95)';
             ctx.strokeStyle = '#ffaa00';
             ctx.lineWidth = 2;
             ctx.fillRect(barX, barY, barW, barH);
             ctx.strokeRect(barX, barY, barW, barH);
 
-            // Item Slot
+            // Icon Slot
             ctx.fillStyle = '#1e2838';
-            ctx.fillRect(barX + 8, barY + 6, 38, 38);
+            ctx.fillRect(barX + 8, barY + 7, 40, 40);
             ctx.strokeStyle = '#00ffff';
-            ctx.strokeRect(barX + 8, barY + 6, 38, 38);
+            ctx.strokeRect(barX + 8, barY + 7, 40, 40);
 
             // Swatter Icon 🧹
             ctx.font = '22px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText('🧹', barX + 27, barY + 33);
+            ctx.fillText('🧹', barX + 28, barY + 35);
 
-            // Text Description
+            // Swatter Label & Cooldown Timer Display
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 11px Courier New';
             ctx.textAlign = 'left';
-            ctx.fillText("FLY SWATTER", barX + 54, barY + 22);
+            ctx.fillText("SUPER SWATTER (2x RANGE)", barX + 56, barY + 22);
 
             if (player.swatterCooldown <= 0) {
                 ctx.fillStyle = '#00ffcc';
-                ctx.fillText("READY [KEY: S]", barX + 54, barY + 38);
+                ctx.fillText("READY! [PRESS S]", barX + 56, barY + 38);
             } else {
-                ctx.fillStyle = '#ff5555';
-                ctx.fillText("RECHARGING...", barX + 54, barY + 38);
+                // Cooldown Bar
+                const cooldownRatio = 1 - (player.swatterCooldown / player.swatterCooldownMax);
+                ctx.fillStyle = '#ff3355';
+                ctx.fillRect(barX + 56, barY + 28, 180 * cooldownRatio, 12);
+                ctx.strokeStyle = '#ffffff';
+                ctx.strokeRect(barX + 56, barY + 28, 180, 12);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px Courier New';
+                ctx.fillText(`RECHARGING (${player.swatterCooldown.toFixed(1)}s)`, barX + 60, barY + 38);
             }
 
-            // Off-screen Rocket Compass Arrow
+            // Off-Screen Rocket Base Navigation Marker
             const cameraX = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, player.x - canvas.width / 2));
             const rocketScreenX = rocket.x - cameraX;
             if (rocketScreenX < 0 || rocketScreenX > canvas.width) {
